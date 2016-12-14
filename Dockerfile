@@ -9,13 +9,20 @@ RUN apk add --no-cache su-exec curl bash git make
 
 # Install glide
 RUN curl https://glide.sh/get | sh
+ENV GLIDE_HOME /home/user/.glide
 
 # Install ginkgo CLI tool for running tests
 RUN go get github.com/onsi/ginkgo/ginkgo
 
-RUN chmod -R 777 /go
+# Disable cgo so that binaries we build will be fully static.
+ENV CGO_ENABLED=0
 
-ENV GLIDE_HOME /home/user/.glide
+# Recompile the standard library with cgo disabled.  This prevents the standard library from being
+# marked stale, causing full rebuilds every time.
+RUN go install -v std
+
+# Ensure that everything under the GOPATH is writable by everyone
+RUN chmod -R 777 $GOPATH
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

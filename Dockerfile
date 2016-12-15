@@ -5,7 +5,7 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 # Install bash for the entry script (and because it's generally useful)
 # Install curl to download glide
 # Install git for fetching Go dependencies
-RUN apk add --no-cache su-exec curl bash git make ca-certificates wget
+RUN apk add --no-cache su-exec curl bash git make ca-certificates wget libltdl
 
 # Install glibc
 RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub

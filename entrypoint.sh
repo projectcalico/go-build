@@ -10,4 +10,10 @@ echo "Starting with UID : $USER_ID"
 adduser -D -s /bin/bash -u $USER_ID -g "" user
 export HOME=/home/user
 
+if [ -n "$EXTRA_GROUP_ID"  ]; then
+  echo "Adding user to additional GID : $EXTRA_GROUP_ID"
+  addgroup -g $EXTRA_GROUP_ID group
+  addgroup user group
+fi  
+
 exec /sbin/su-exec user "$@"

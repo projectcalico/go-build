@@ -12,8 +12,13 @@ export HOME=/home/user
 
 if [ -n "$EXTRA_GROUP_ID"  ]; then
   echo "Adding user to additional GID : $EXTRA_GROUP_ID"
-  addgroup -g $EXTRA_GROUP_ID group
-  addgroup user group
+  # Adding the group can fail if it already exists.
+  if addgroup -g $EXTRA_GROUP_ID group; then
+    addgroup user group
+  else
+    echo "Adding user to existing group instead"
+    addgroup user `getent group $EXTRA_GROUP_ID | cut -d: -f1`
+  fi
 fi  
 
 exec /sbin/su-exec user "$@"

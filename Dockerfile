@@ -7,7 +7,8 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 # Install git for fetching Go dependencies
 # Install wget for fetching glibc
 # Install make for building things
-RUN apk add --no-cache su-exec curl bash git make wget
+# Install util-linux for column command (used for output formatting).
+RUN apk add --no-cache su-exec curl bash git make wget util-linux
 
 # Install glibc
 RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
@@ -31,6 +32,12 @@ RUN go get github.com/onsi/ginkgo/ginkgo
 # Install linting tools
 RUN go get -u github.com/alecthomas/gometalinter
 RUN gometalinter --install
+
+# Install license checking tool.
+RUN go get github.com/pmezard/licenses
+
+# Install tool to merge coverage reports.
+RUN go get github.com/wadey/gocovmerge
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

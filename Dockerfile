@@ -39,6 +39,11 @@ RUN go get github.com/pmezard/licenses
 # Install tool to merge coverage reports.
 RUN go get github.com/wadey/gocovmerge
 
+# Install patched version of goveralls (upstream is bugged if not used from Travis).
+RUN wget https://github.com/fasaxc/goveralls/releases/download/v0.0.1-smc/goveralls && \
+    chmod +x goveralls && \
+    mv goveralls /usr/bin/
+
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 

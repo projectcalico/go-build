@@ -32,7 +32,7 @@ RUN go install -v -a syscall
 RUN go install -v std
 
 # Install glide
-RUN curl https://glide.sh/get | sh
+RUN go get github.com/Masterminds/glide
 ENV GLIDE_HOME /home/user/.glide
 
 # Install ginkgo CLI tool for running tests

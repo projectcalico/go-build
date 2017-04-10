@@ -1,4 +1,4 @@
-FROM golang:1.7-alpine
+FROM golang:1.8.1-alpine
 MAINTAINER Tom Denham <tom@projectcalico.org>
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
@@ -39,7 +39,8 @@ ENV GLIDE_HOME /home/user/.glide
 RUN go get github.com/onsi/ginkgo/ginkgo
 
 # Install linting tools
-RUN go get -u github.com/alecthomas/gometalinter
+RUN go get -u gopkg.in/alecthomas/gometalinter.v1
+RUN ln -s `which gometalinter.v1` /usr/local/bin/gometalinter
 RUN gometalinter --install
 
 # Install license checking tool.

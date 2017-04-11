@@ -5,11 +5,17 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 # Install bash for the entry script (and because it's generally useful)
 # Install curl to download glide
 # Install git for fetching Go dependencies
+# Install ssh for fetching Go dependencies
 # Install mercurial for fetching go dependencies
 # Install wget for fetching glibc
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-RUN apk add --no-cache su-exec curl bash git mercurial make wget util-linux
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux
+
+# Disable ssh host key checking
+RUN mkdir -p ~/.ssh
+RUN echo 'Host *' >> ~/.ssh/config
+RUN echo '    StrictHostKeyChecking no' >> ~/.ssh/config 
 
 # Install glibc
 RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub

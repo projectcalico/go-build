@@ -13,9 +13,8 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux
 
 # Disable ssh host key checking
-RUN mkdir -p ~/.ssh
-RUN echo 'Host *' >> ~/.ssh/config
-RUN echo '    StrictHostKeyChecking no' >> ~/.ssh/config 
+RUN echo 'Host *' >> /etc/ssh/ssh_config
+RUN echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
 # Install glibc
 RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub

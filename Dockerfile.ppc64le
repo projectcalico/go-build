@@ -1,0 +1,39 @@
+FROM ppc64le/golang:1.8.1
+
+# Install bash for the entry script (and because it's generally useful)
+# Install curl to download glide
+# Install git for fetching Go dependencies
+# Install wget for fetching things
+# Install make for building things
+# Install gcc for compiling things
+RUN apt-get install -y bash curl git make wget gcc
+
+# Disable cgo so that binaries we build will be fully static.
+ENV CGO_ENABLED=0
+
+# Recompile the standard library with cgo disabled.  This prevents the standard library from being
+# marked stale, causing full rebuilds every time.
+RUN go install -v std
+
+# Install glide
+RUN go get github.com/Masterminds/glide
+
+# Install ginkgo CLI tool for running tests
+RUN go get github.com/onsi/ginkgo/ginkgo
+
+# Install linting tools
+RUN go get -u github.com/alecthomas/gometalinter
+RUN gometalinter --install
+
+# Install license checking tool.
+RUN go get github.com/pmezard/licenses
+
+# Install tool to merge coverage reports.
+RUN go get github.com/wadey/gocovmerge
+
+# Install tool for continuous code coverage tracking
+RUN go get github.com/mattn/goveralls
+
+# Ensure that everything under the GOPATH is writable by everyone
+RUN chmod -R 777 $GOPATH
+

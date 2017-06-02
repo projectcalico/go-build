@@ -54,6 +54,9 @@ RUN go get github.com/pmezard/licenses
 # Install tool to merge coverage reports.
 RUN go get github.com/wadey/gocovmerge
 
+# Install CLI tool for working with yaml files
+RUN go get github.com/mikefarah/yaml
+
 # Install patched version of goveralls (upstream is bugged if not used from Travis).
 RUN wget https://github.com/fasaxc/goveralls/releases/download/v0.0.1-smc/goveralls && \
     chmod +x goveralls && \

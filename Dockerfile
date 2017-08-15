@@ -10,7 +10,7 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 # Install wget for fetching glibc
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker
 
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config

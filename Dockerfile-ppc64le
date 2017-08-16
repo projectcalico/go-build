@@ -1,0 +1,48 @@
+FROM ppc64le/golang:1.8.3
+
+MAINTAINER Tom Denham <tom@projectcalico.org>
+
+# Install git for fetching Go dependencies
+# Install wget and curl for fetching stuff.
+# Install make for building things
+# Install gcc
+# Install bsdmainutils for the column command
+RUN apt-get update; apt-get install -y git curl wget make gcc bsdmainutils
+
+# Disable cgo so that binaries we build will be fully static.
+ENV CGO_ENABLED=0
+
+# Recompile the standard library with cgo disabled.  This prevents the standard library from being
+# marked stale, causing full rebuilds every time.
+RUN go install -v std
+
+# Install glide
+RUN go get github.com/Masterminds/glide
+
+# Install ginkgo CLI tool for running tests
+RUN go get github.com/onsi/ginkgo/ginkgo
+
+# Install linting tools
+RUN go get -u github.com/alecthomas/gometalinter
+RUN gometalinter --install
+
+# Install license checking tool.
+RUN go get github.com/pmezard/licenses
+
+# Install tool to merge coverage reports.
+RUN go get github.com/wadey/gocovmerge
+
+# Install CLI tool for working with yaml files
+RUN go get github.com/mikefarah/yaml
+
+# Build and install su-exec, used by entrypoint.sh
+RUN git clone https://github.com/ncopa/su-exec.git; \
+	cd su-exec; \
+	make; \
+	cp ./su-exec /sbin
+
+# Ensure that everything under the GOPATH is writable by everyone
+RUN chmod -R 777 $GOPATH
+
+COPY entrypoint-ppc64le.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

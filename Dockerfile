@@ -63,12 +63,13 @@ RUN wget https://github.com/fasaxc/goveralls/releases/download/v0.0.1-smc/govera
     mv goveralls /usr/bin/
 
 # Install deepcopy-gen
-RUN go get github.com/golang/glog
-RUN go get k8s.io/gengo/args
-RUN wget https://raw.githubusercontent.com/kubernetes/code-generator/master/cmd/deepcopy-gen/main.go -O deepcopy-gen.go
-RUN go build deepcopy-gen.go
-RUN mv deepcopy-gen /usr/local/bin/
-RUN chmod 755 /usr/local/bin/deepcopy-gen
+RUN go get github.com/golang/glog && \
+    go get k8s.io/gengo/args && \
+    wget https://raw.githubusercontent.com/kubernetes/code-generator/master/cmd/deepcopy-gen/main.go -O deepcopy-gen.go && \
+    go build deepcopy-gen.go && \
+    mv deepcopy-gen /usr/local/bin/ && \
+    chmod 755 /usr/local/bin/deepcopy-gen && \
+    rm -rf deepcopy-gen.go ~/go/src/golang/glog ~/go/k8s.io/gengo/args
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

@@ -1,4 +1,4 @@
-FROM golang:1.8.5-alpine3.6
+FROM golang:1.9.2-alpine3.6
 MAINTAINER Tom Denham <tom@projectcalico.org>
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
@@ -10,7 +10,7 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 # Install wget for fetching glibc
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker tini
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking
@@ -24,14 +24,6 @@ RUN apk add glibc-2.23-r3.apk
 
 # Disable cgo so that binaries we build will be fully static.
 ENV CGO_ENABLED=0
-
-# Apply patches to Go runtime and recompile.
-# See https://github.com/golang/go/issues/5838 for defails of vfork patch.
-COPY patches/use-clone-vfork-b7edfba429d982e3e065d637334bcc63ad49f8f9.patch \
-     /tmp/use-clone-vfork-b7edfba429d982e3e065d637334bcc63ad49f8f9.patch
-RUN cd /usr/local/go && \
-    patch -p 1 < /tmp/use-clone-vfork-b7edfba429d982e3e065d637334bcc63ad49f8f9.patch
-RUN go install -v -a syscall
 
 # Recompile the standard library with cgo disabled.  This prevents the standard library from being
 # marked stale, causing full rebuilds every time.
@@ -67,4 +59,4 @@ RUN wget https://github.com/fasaxc/goveralls/releases/download/v0.0.1-smc/govera
 RUN chmod -R 777 $GOPATH
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

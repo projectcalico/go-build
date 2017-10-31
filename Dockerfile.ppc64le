@@ -1,4 +1,4 @@
-FROM ppc64le/golang:1.8.1-alpine
+FROM ppc64le/golang:1.8.5-alpine3.6
 MAINTAINER Tom Denham <tom@projectcalico.org>
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
@@ -11,6 +11,7 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
 RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux
+RUN apk upgrade --no-cache
 
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config

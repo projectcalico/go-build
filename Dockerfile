@@ -36,9 +36,13 @@ ENV GLIDE_HOME /home/user/.glide
 # Install ginkgo CLI tool for running tests
 RUN go get github.com/onsi/ginkgo/ginkgo
 
-# Install linting tools
-RUN go get -u gopkg.in/alecthomas/gometalinter.v1
-RUN ln -s `which gometalinter.v1` /usr/local/bin/gometalinter
+# Install linting tools.  We pin gometalinter to a working master revision to pick up
+# a go v1.9 compatibility patch that hasn't been released.
+RUN go get -u -d github.com/alecthomas/gometalinter && \
+    cd /go/src/github.com/alecthomas/gometalinter && \
+    git checkout cc4415ed09f7073d595ee504cad4d98b71a3038e && \
+    go install github.com/alecthomas/gometalinter
+RUN ln -s `which gometalinter` /usr/local/bin/gometalinter
 RUN gometalinter --install
 
 # Install license checking tool.

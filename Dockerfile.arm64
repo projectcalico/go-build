@@ -58,20 +58,18 @@ RUN go get github.com/pmezard/licenses
 # Install tool to merge coverage reports
 RUN go get github.com/wadey/gocovmerge
 
-# Install patched version of goveralls
-RUN wget https://github.com/fasaxc/goveralls/archive/v0.0.1-smc.tar.gz && \
-    tar zxvf v0.0.1-smc.tar.gz && \
-    mv goveralls-0.0.1-smc $GOPATH/src/github.com/goveralls && cd $GOPATH/src/github.com/goveralls && \
+
+# Install patched version of goveralls (upstream is bugged if not used from Travis).
+RUN go get -u -d github.com/fasaxc/goveralls && \
     go get golang.org/x/tools/cover && \
     go get golang.org/x/net/html && \
     go get golang.org/x/net/websocket && \
     go get github.com/stretchr/testify/assert && \
     go get golang.org/x/text/encoding && \
     go get golang.org/x/crypto/ssh/terminal && \
-    go build && \
-    mv goveralls /usr/bin/
-
-
+    cd /go/src/github.com/fasaxc/goveralls && \
+    git checkout tags/v0.0.1-smc && \
+    go install github.com/fasaxc/goveralls
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

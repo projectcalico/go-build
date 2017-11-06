@@ -1,5 +1,5 @@
 FROM ppc64le/golang:1.9.2-alpine3.6
-MAINTAINER Tom Denham <tom@projectcalico.org>
+MAINTAINER David Wilder <wilder@ibm.com>
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
 # Install bash for the entry script (and because it's generally useful)
@@ -43,6 +43,7 @@ RUN go get -u -d github.com/alecthomas/gometalinter && \
     git checkout cc4415ed09f7073d595ee504cad4d98b71a3038e && \
     go install github.com/alecthomas/gometalinter
 RUN ln -s `which gometalinter` /usr/local/bin/gometalinter
+RUN gometalinter --install
 
 # Install license checking tool.
 RUN go get github.com/pmezard/licenses
@@ -51,9 +52,10 @@ RUN go get github.com/pmezard/licenses
 RUN go get github.com/wadey/gocovmerge
 
 # Install patched version of goveralls (upstream is bugged if not used from Travis).
-RUN wget https://github.com/fasaxc/goveralls/releases/download/v0.0.1-smc/goveralls && \
-    chmod +x goveralls && \
-    mv goveralls /usr/bin/
+RUN go get -u -d github.com/fasaxc/goveralls && \
+    cd /go/src/github.com/fasaxc/goveralls && \
+    git checkout tags/v0.0.1-smc && \
+    go install github.com/fasaxc/goveralls
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

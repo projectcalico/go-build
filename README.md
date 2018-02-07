@@ -24,3 +24,21 @@ As of this writing, the only way to create such manifests is using the [manifest
 
 Until such time as the `docker manifest` is ready, or we decide to use `manifest-tool`, the default image name will point to `amd64`. Thus, `calico/go-build:latest` refers to `calico/go-build:latest-amd64`.
 
+
+## Cross building using go-build:
+
+Ppc64le and arm64 are supported for cross-building. This example assumes you are running on an amd64/linux system.
+
+Register qemu-*-static for all supported processors except the current one using the following command:
+
+```
+sudo docker run --rm --privileged multiarch/qemu-user-static:register
+```
+
+Specify the target arch by setting GOARCH.
+
+```
+docker run -e GOARCH=<somearch> calico/go-build:latest-amd64 sh -c 'go build hello.go || ./hello'
+```
+
+If a cross built binary is executed in the go-build container qemu-static will automatically be used.

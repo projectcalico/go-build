@@ -10,7 +10,7 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 # Install wget for fetching glibc
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker tini
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker tini file
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking
@@ -58,6 +58,14 @@ RUN go get github.com/mikefarah/yaml
 RUN wget https://github.com/fasaxc/goveralls/releases/download/v0.0.1-smc/goveralls && \
     chmod +x goveralls && \
     mv goveralls /usr/bin/
+
+# Install qemu user static for all our supported architectures.
+COPY bin/qemu-*-static /usr/bin/
+
+# When running cross built binaries run-times will be auto-installed,
+# insure the install directory is writable by everyone.
+RUN mkdir -m +w -p /usr/local/go/pkg/linux_ppc64le
+RUN mkdir -m +w -p /usr/local/go/pkg/linux_arm64
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

@@ -10,6 +10,11 @@ MAINTAINER Trevor Tao <trevor.tao@arm.com>
 # Install wget for fetching glibc
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
+
+# Enable non-native builds of this image on an amd64 hosts.
+# This must be positioned as the first executable command in this file! 
+COPY  bin/qemu-aarch64-static /usr/bin/qemu-aarch64-static
+
 RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker tini
 RUN apk upgrade --no-cache
 

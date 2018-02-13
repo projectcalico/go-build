@@ -24,3 +24,49 @@ As of this writing, the only way to create such manifests is using the [manifest
 
 Until such time as the `docker manifest` is ready, or we decide to use `manifest-tool`, the default image name will point to `amd64`. Thus, `calico/go-build:latest` refers to `calico/go-build:latest-amd64`.
 
+## Cross building using go-build:
+Any supported platform can be built natively from its own platform, i.e.g `amd64` from `amd64`, `arm64` from `arm64` and `ppc64le` from `ppc64le`. In addition,
+`ppc64le` and `arm64` are supported for cross-building from `amd64` only. We do not (yet) support cross-building from `arm64` and `ppc64le`.
+
+The cross-build itself will function normally on any platform, since golang supports cross-compiling using `GOARCH=<target> go build `.
+
+```
+docker run -e GOARCH=<somearch> calico/go-build:latest-amd64 sh -c 'go build hello.go || ./hello'
+```
+
+The above will output a binary `hello` built for the architecture `<somearch>`.
+
+## Running a Binary
+To *run* a binary from a different architecture, you need to use `binfmt` and `qemu` static. 
+
+Register `qemu-*-static` for all supported processors except the current one using the following command:
+
+```
+docker run --rm --privileged multiarch/qemu-user-static:register
+```
+
+
+If a cross built binary is executed in the go-build container qemu-static will automatically be used.
+
+
+### Testing Cross-Run
+There is a `Makefile` target that cross-builds and runs a binary. To run it on your own architecture:
+
+```
+make testcompile
+```
+
+or
+
+```
+make testcompile ARCH=$(uname -m)
+```
+
+To test on a different architecture, for example `arm64` when you are running on `amd64`, pass it an alternate architecture:
+
+```
+make testcompile ARCH=arm64
+```
+
+You should see the "success" message.
+

@@ -1,16 +1,26 @@
-ARCH ?= $(shell uname -m)
+BUILDARCH ?= $(shell uname -m)
+ARCH ?= $(BUILDARCH)
 
+ifeq ($(BUILDARCH),aarch64)
+        override BUILDARCH=arm64
+endif
+ifeq ($(BUILDARCH),x86_64)
+        override BUILDARCH=amd64
+endif
 ifeq ($(ARCH),aarch64)
-        ARCH=arm64
+        override ARCH=arm64
 endif
 ifeq ($(ARCH),x86_64)
-        ARCH=amd64
+        override ARCH=amd64
 endif
 
 DOCKERFILE ?= Dockerfile.$(ARCH)
 VERSION ?= latest
 DEFAULTIMAGE ?= calico/go-build:$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
+BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
+
+ARCHES=$(patsubst Dockerfile.%,%,$(wildcard Dockerfile.*))
 
 all: build
 
@@ -38,3 +48,18 @@ defaulttarget:
 	docker tag $(ARCHIMAGE) $(DEFAULTIMAGE)
 	docker push $(DEFAULTIMAGE)
 
+# Enable binfmt adding support for miscellaneous binary formats.
+.PHONY: register
+register:
+ifeq ($(ARCH),amd64)
+	docker run --rm --privileged multiarch/qemu-user-static:register --reset
+endif
+
+
+test: register
+	for arch in $(ARCHES) ; do ARCH=$$arch $(MAKE) testcompile; done
+
+testcompile:
+	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(ARCH) hello.go
+	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(ARCH) | grep -q "hello world"
+	@echo "success"

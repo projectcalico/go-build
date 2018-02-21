@@ -37,6 +37,7 @@ build: calico/go-build
 calico/go-build:
 	# Make sure we re-pull the base image to pick up security fixes.
 	docker build --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	$(MAKE) test
 
 push: build pusharch pushdefault
 

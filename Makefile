@@ -20,6 +20,9 @@ DEFAULTIMAGE ?= calico/go-build:$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
 BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
 
+# ARCHES=amd64 arm64 ppc64le s390x
+ARCHES=amd64 arm64 ppc64le
+
 all: build
 
 # to handle default case, because we do not use the manifest for multi-arch yet
@@ -46,7 +49,23 @@ defaulttarget:
 	docker tag $(ARCHIMAGE) $(DEFAULTIMAGE)
 	docker push $(DEFAULTIMAGE)
 
+# Enable binfmt adding support for miscellaneous binary formats.
+.PHONY: register
+register:
+ifeq ($(ARCH),amd64)
+	docker run --rm --privileged multiarch/qemu-user-static:register --reset
+endif
+
+test: register
+	for arch in $(ARCHES) ; do ARCH=$$arch $(MAKE) testcompile; done
+
 testcompile:
-	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(ARCH) hello.go
-	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(ARCH) | grep -q "hello world"
+	docker run --rm -e LOCAL_USER_ID=$(shell id -u) \
+	 	-e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) \
+	 	go build -o hello-$(ARCH) hello.go
+	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(ARCH) \
+		 | grep -q "hello world"
 	@echo "success"
+
+clean:
+	-rm hello-*

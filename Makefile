@@ -40,13 +40,17 @@ calico/go-build:
 push: build pusharch pushdefault
 
 pusharch:
+	docker tag $(ARCHIMAGE) quay.io/$(ARCHIMAGE)
 	docker push $(ARCHIMAGE)
+	docker push quay.io/$(ARCHIMAGE)
 
 pushdefault: maybedefault
 
 defaulttarget:
 	docker tag $(ARCHIMAGE) $(DEFAULTIMAGE)
+	docker tag $(ARCHIMAGE) quay.io/$(DEFAULTIMAGE)
 	docker push $(DEFAULTIMAGE)
+	docker push quay.io/$(DEFAULTIMAGE)
 
 # Enable binfmt adding support for miscellaneous binary formats.
 .PHONY: register

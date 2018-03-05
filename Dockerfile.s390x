@@ -1,0 +1,66 @@
+FROM s390x/golang:1.9.2-alpine3.6
+MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
+
+# Install su-exec for use in the entrypoint.sh (so processes run as the right user)
+# Install bash for the entry script (and because it's generally useful)
+# Install curl to download glide
+# Install git for fetching Go dependencies
+# Install ssh for fetching Go dependencies
+# Install mercurial for fetching go dependencies
+# Install wget for fetching glibc
+# Install make for building things
+# Install util-linux for column command (used for output formatting).
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini
+RUN apk upgrade --no-cache
+
+# Disable ssh host key checking
+RUN echo 'Host *' >> /etc/ssh/ssh_config
+RUN echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
+
+# Install glibc
+RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
+RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-2.23-r3.apk
+RUN apk add glibc-2.23-r3.apk
+
+# Disable cgo so that binaries we build will be fully static.
+ENV CGO_ENABLED=0
+
+# Recompile the standard library with cgo disabled.  This prevents the standard library from being
+# marked stale, causing full rebuilds every time.
+RUN go install -v std
+
+# Install glide
+RUN go get github.com/Masterminds/glide
+ENV GLIDE_HOME /home/user/.glide
+
+# Install ginkgo CLI tool for running tests
+RUN go get github.com/onsi/ginkgo/ginkgo
+
+# Install linting tools.  We pin gometalinter to a working master revision to pick up
+# a go v1.9 compatibility patch that hasn't been released.
+RUN go get -u -d github.com/alecthomas/gometalinter && \
+    cd /go/src/github.com/alecthomas/gometalinter && \
+    git checkout cc4415ed09f7073d595ee504cad4d98b71a3038e && \
+    go install github.com/alecthomas/gometalinter
+RUN ln -s `which gometalinter` /usr/local/bin/gometalinter
+RUN gometalinter --install
+
+# Install license checking tool.
+RUN go get github.com/pmezard/licenses
+
+# Install tool to merge coverage reports.
+RUN go get github.com/wadey/gocovmerge
+
+RUN go get github.com/mikefarah/yaml
+
+# Install patched version of goveralls (upstream is bugged if not used from Travis).
+RUN go get -u -d github.com/fasaxc/goveralls && \
+    cd /go/src/github.com/fasaxc/goveralls && \
+    git checkout tags/v0.0.1-smc && \
+    go install github.com/fasaxc/goveralls
+
+# Ensure that everything under the GOPATH is writable by everyone
+RUN chmod -R 777 $GOPATH
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

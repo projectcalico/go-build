@@ -68,10 +68,7 @@ RUN chmod +x /usr/bin/qemu-*
 
 # When running cross built binaries run-times will be auto-installed,
 # ensure the install directory is writable by everyone.
-RUN mkdir -m +w -p /usr/local/go/pkg/linux_ppc64le
-RUN mkdir -m +w -p /usr/local/go/pkg/linux_arm64
-RUN mkdir -m +w -p /usr/local/go/pkg/linux_s390x
-
+RUN for arch in ${CROSS_ARCHS}; do mkdir -m +w -p /usr/local/go/pkg/linux_${arch}; done
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

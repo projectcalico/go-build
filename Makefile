@@ -20,7 +20,8 @@ DEFAULTIMAGE ?= calico/go-build:$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
 BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
 
-ARCHES=$(patsubst Dockerfile.%,%,$(wildcard Dockerfile.*))
+# We cross build these arches.
+ARCHES=amd64 arm64 ppc64le
 
 all: build
 

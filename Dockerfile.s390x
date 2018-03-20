@@ -7,7 +7,7 @@ MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/communi
 # Install git for fetching Go dependencies
 # Install ssh for fetching Go dependencies
 # Install mercurial for fetching go dependencies
-# Install wget for fetching glibc
+# Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
 RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini
@@ -16,11 +16,6 @@ RUN apk upgrade --no-cache
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config
 RUN echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
-
-# Install glibc
-RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub
-RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.23-r3/glibc-2.23-r3.apk
-RUN apk add glibc-2.23-r3.apk
 
 # Disable cgo so that binaries we build will be fully static.
 ENV CGO_ENABLED=0

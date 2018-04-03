@@ -61,7 +61,12 @@ ifeq ($(ARCH),amd64)
 endif
 
 
-test: register
+dist/qemu-%-static:
+	@mkdir -p dist
+	cp /usr/bin/$(@F) dist
+
+# To build cross platform Docker images, the qemu-static binaries are needed. On ubuntu "apt-get install  qemu-user-static"
+test: register dist/qemu-s390x-static dist/qemu-ppc64le-static dist/qemu-aarch64-static dist/qemu-arm-static
 	for arch in $(ARCHES) ; do ARCH=$$arch $(MAKE) testcompile; done
 
 testcompile: calico/go-build

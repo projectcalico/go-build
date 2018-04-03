@@ -1,6 +1,8 @@
 FROM s390x/golang:1.9.2-alpine3.6
 MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
 
+ADD dist/qemu-s390x-static /usr/bin/qemu-s390x-static
+
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
 # Install bash for the entry script (and because it's generally useful)
 # Install curl to download glide

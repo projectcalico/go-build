@@ -64,7 +64,7 @@ endif
 test: register
 	for arch in $(ARCHES) ; do ARCH=$$arch $(MAKE) testcompile; done
 
-testcompile:
+testcompile: calico/go-build
 	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(ARCH) hello.go
 	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(ARCH) | grep -q "hello world"
 	@echo "success"

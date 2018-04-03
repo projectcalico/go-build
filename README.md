@@ -1,3 +1,5 @@
+[![Build Status](https://semaphoreci.com/api/v1/calico/go-build/branches/master/badge.svg)](https://semaphoreci.com/calico/go-build)
+
 # Calico go-build
 Base image for doing golang builds for the various [project calico](https://projectcalico.org) builds.
 

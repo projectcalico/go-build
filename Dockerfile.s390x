@@ -1,4 +1,4 @@
-FROM s390x/golang:1.9.2-alpine3.6
+FROM s390x/golang:1.10.1-alpine3.7
 MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)

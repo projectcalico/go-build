@@ -1,4 +1,4 @@
-FROM ppc64le/golang:1.9.2-alpine3.6
+FROM ppc64le/golang:1.10.1-alpine3.7
 MAINTAINER David Wilder <wilder@ibm.com>
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)

@@ -1,6 +1,19 @@
 # Calico go-build
 Base image for doing golang builds for the various [project calico](https://projectcalico.org) builds.
 
+| Name |
+|---|
+|[calicoctl](https://github.com/projectcalico/calicoctl)
+|[felix](https://github.com/projectcalico/felix)
+|[typha](https://github.com/projectcalico/typha)
+|[calico/node](https://github.com/projectcalico/calico/blob/master/calico_node/)
+|[libcalico-go](https://github.com/projectcalico/libcalico-go)
+|[cni-plugin](https://github.com/projectcalico/cni-plugin)
+|[libnetwork-plugin](https://github.com/projectcalico/libnetwork-plugin)
+|[kube-controllers](https://github.com/projectcalico/kube-controllers)
+|[calico-upgrade](https://github.com/projectcalico/calico-upgrade)
+|[confd](https://github.com/projectcalico/confd)
+|[calico-bgp-daemon](https://github.com/projectcalico/calico-bgp-daemon)
 
 ## Building the image
 To build the image:

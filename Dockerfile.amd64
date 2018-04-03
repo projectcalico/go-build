@@ -31,6 +31,9 @@ RUN go install -v std
 RUN go get github.com/Masterminds/glide
 ENV GLIDE_HOME /home/user/.glide
 
+# Install dep
+RUN go get github.com/golang/dep/cmd/dep
+
 # Install ginkgo CLI tool for running tests
 RUN go get github.com/onsi/ginkgo/ginkgo
 

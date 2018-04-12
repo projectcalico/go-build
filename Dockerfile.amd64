@@ -51,10 +51,8 @@ RUN go get github.com/wadey/gocovmerge
 # Install CLI tool for working with yaml files
 RUN go get github.com/mikefarah/yaml
 
-# Install patched version of goveralls (upstream is bugged if not used from Travis).
-RUN wget https://github.com/fasaxc/goveralls/releases/download/v0.0.1-smc/goveralls && \
-    chmod +x goveralls && \
-    mv goveralls /usr/bin/
+# Install goveralls
+RUN go get github.com/mattn/goveralls
 
 # Enable non-native runs on amd64 architecture hosts
 RUN for i in ${CROSS_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done

@@ -3,6 +3,7 @@ MAINTAINER Tom Denham <tom@projectcalico.org>
 
 ARG QEMU_VERSION=2.9.1-1
 ARG CROSS_ARCHS="aarch64 ppc64le s390x"
+ARG MANIFEST_TOOL_VERSION=v0.7.0
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
 # Install bash for the entry script (and because it's generally useful)
@@ -64,6 +65,10 @@ RUN for arch in ${CROSS_ARCHS}; do mkdir -m +w -p /usr/local/go/pkg/linux_${arch
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
+
+RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-amd64 > manifest-tool && \
+    chmod +x manifest-tool && \
+    mv manifest-tool /usr/bin/
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

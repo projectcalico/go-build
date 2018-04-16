@@ -1,6 +1,8 @@
 FROM ppc64le/golang:1.10.1-alpine3.7
 MAINTAINER David Wilder <wilder@ibm.com>
 
+ARG MANIFEST_TOOL_VERSION=v0.7.0
+
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
 # Install bash for the entry script (and because it's generally useful)
 # Install curl to download glide
@@ -53,6 +55,10 @@ RUN go get github.com/mattn/goveralls
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
+
+RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-ppc64le > manifest-tool && \
+    chmod +x manifest-tool && \
+    mv manifest-tool /usr/bin/
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

@@ -12,7 +12,7 @@ ARG MANIFEST_TOOL_VERSION=v0.7.0
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker tini
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux file docker tini
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking

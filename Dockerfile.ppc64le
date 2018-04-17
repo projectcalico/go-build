@@ -27,7 +27,7 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux file docker tini
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking

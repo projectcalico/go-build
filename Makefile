@@ -19,39 +19,50 @@ VERSION ?= latest
 DEFAULTIMAGE ?= calico/go-build:$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
 BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
+ALL_ARCH = amd64 arm64 ppc64le
+
+MANIFEST_TOOL_DIR := $(shell mktemp -d)
+export PATH := $(MANIFEST_TOOL_DIR):$(PATH)
+
+MANIFEST_TOOL_VERSION := v0.7.0
+
+space :=
+space +=
+comma := ,
+prefix_linux = $(addprefix linux/,$(strip $1))
+join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 
 # We cross build these arches.
 ARCHES=amd64 arm64 ppc64le
 
-all: build
+all: all-build
 
-# to handle default case, because we do not use the manifest for multi-arch yet
-ifeq ($(ARCH),amd64)
-maybedefault: defaulttarget
-else
-maybedefault:
-endif
+push-manifest:
+	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
+	docker run -t --entrypoint /bin/sh -v $(HOME)/.docker/config.json:/root/.docker/config.json $(ARCHIMAGE) -c "/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(ALL_ARCH)) --template $(DEFAULTIMAGE)-ARCH --target $(DEFAULTIMAGE)"
+
+all-build: $(addprefix sub-build-,$(ALL_ARCH))
+sub-build-%:
+	$(MAKE) build ARCH=$*
 
 build: calico/go-build
 
-calico/go-build:
+calico/go-build: register
 	# Make sure we re-pull the base image to pick up security fixes.
-	docker build --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
+	docker build --cpuset-cpus 0 --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
-push: build pusharch pushdefault
+all-push: $(addprefix sub-push-,$(ALL_ARCH))
+sub-push-%:
+	$(MAKE) push ARCH=$*
 
-pusharch:
-	docker tag $(ARCHIMAGE) quay.io/$(ARCHIMAGE)
+push: build
 	docker push $(ARCHIMAGE)
-	docker push quay.io/$(ARCHIMAGE)
-
-pushdefault: maybedefault
-
-defaulttarget:
-	docker tag $(ARCHIMAGE) $(DEFAULTIMAGE)
+	# to handle default case, because quay.io does not support manifest yet
+ifeq ($(ARCH),amd64)
 	docker tag $(ARCHIMAGE) quay.io/$(DEFAULTIMAGE)
-	docker push $(DEFAULTIMAGE)
 	docker push quay.io/$(DEFAULTIMAGE)
+endif
 
 # Enable binfmt adding support for miscellaneous binary formats.
 .PHONY: register

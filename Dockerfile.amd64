@@ -67,7 +67,7 @@ RUN chmod +x /usr/bin/qemu-*
 
 # When running cross built binaries run-times will be auto-installed,
 # ensure the install directory is writable by everyone.
-RUN for arch in ${CROSS_ARCHS}; do mkdir -m +w -p /usr/local/go/pkg/linux_${arch}; done
+RUN for arch in ${CROSS_ARCHS}; do mkdir -m +w -p /usr/local/go/pkg/linux_${arch}; GOARCH=${arch} go install -v std; done
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

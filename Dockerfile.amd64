@@ -11,7 +11,7 @@ ARG CROSS_ARCHS="arm64 ppc64le s390x"
 
 ARG MANIFEST_TOOL_VERSION=v0.7.0
 
-ENV GOLANG_VERSION=1.10.1
+ENV GOLANG_VERSION=1.10.3
 
 # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
 # Install bash for the entry script (and because it's generally useful)
@@ -22,7 +22,6 @@ ENV GOLANG_VERSION=1.10.1
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-# Install go from a newer version of alpine so v1.10 is installed
 
 # Recompile the standard library with cgo disabled.  This prevents the standard library from being
 # marked stale, causing full rebuilds every time.
@@ -33,9 +32,52 @@ ENV GOLANG_VERSION=1.10.1
 
 # Do all this in a single image layer, otherwise we get a bloated final image (e.g. it copies of the files with and without the permissions changed)
 # Go install steps taken from - https://github.com/docker-library/golang/blob/master/1.10/alpine3.7/Dockerfile
+# When updating the GOLANG_VERSION these steps should be checked against the upstream Dockerfile
 RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file && \
     apk upgrade --no-cache && \
-    set -eux;  apk add --no-cache --virtual .build-deps gcc musl-dev openssl go  ;  export   GOROOT_BOOTSTRAP="$(go env GOROOT)"   GOOS="$(go env GOOS)"   GOARCH="$(go env GOARCH)"   GOHOSTOS="$(go env GOHOSTOS)"   GOHOSTARCH="$(go env GOHOSTARCH)"  ;  apkArch="$(apk --print-arch)";  case "$apkArch" in   armhf) export GOARM='6' ;;   x86) export GO386='387' ;;  esac;   wget -O go.tgz "https://golang.org/dl/go$GOLANG_VERSION.src.tar.gz";  echo '589449ff6c3ccbff1d391d4e7ab5bb5d5643a5a41a04c99315e55c16bbf73ddc *go.tgz' | sha256sum -c -;  tar -C /usr/local -xzf go.tgz;  rm go.tgz;   cd /usr/local/go/src;  for p in /go-alpine-patches/*.patch; do   [ -f "$p" ] || continue;   patch -p2 -i "$p";  done;  ./make.bash;   rm -rf /go-alpine-patches;  apk del .build-deps;   export PATH="/usr/local/go/bin:$PATH";  go version; \
+    set -eux; \
+    	apk add --no-cache --virtual .build-deps \
+    		bash \
+    		gcc \
+    		musl-dev \
+    		openssl \
+    		go \
+    	; \
+    	export \
+    # set GOROOT_BOOTSTRAP such that we can actually build Go
+    		GOROOT_BOOTSTRAP="$(go env GOROOT)" \
+    # ... and set "cross-building" related vars to the installed system's values so that we create a build targeting the proper arch
+    # (for example, if our build host is GOARCH=amd64, but our build env/image is GOARCH=386, our build needs GOARCH=386)
+    		GOOS="$(go env GOOS)" \
+    		GOARCH="$(go env GOARCH)" \
+    		GOHOSTOS="$(go env GOHOSTOS)" \
+    		GOHOSTARCH="$(go env GOHOSTARCH)" \
+    	; \
+    # also explicitly set GO386 and GOARM if appropriate
+    # https://github.com/docker-library/golang/issues/184
+    	apkArch="$(apk --print-arch)"; \
+    	case "$apkArch" in \
+    		armhf) export GOARM='6' ;; \
+    		x86) export GO386='387' ;; \
+    	esac; \
+    	\
+    	wget -O go.tgz "https://golang.org/dl/go$GOLANG_VERSION.src.tar.gz"; \
+    	echo '567b1cc66c9704d1c019c50bef946272e911ec6baf244310f87f4e678be155f2 *go.tgz' | sha256sum -c -; \
+    	tar -C /usr/local -xzf go.tgz; \
+    	rm go.tgz; \
+    	\
+    	cd /usr/local/go/src; \
+    	for p in /go-alpine-patches/*.patch; do \
+    		[ -f "$p" ] || continue; \
+    		patch -p2 -i "$p"; \
+    	done; \
+    	./make.bash; \
+    	\
+    	rm -rf /go-alpine-patches; \
+    	apk del .build-deps; \
+    	\
+    	export PATH="/usr/local/go/bin:$PATH"; \
+    	go version; \
     CGO_ENABLED=0 go install -v std && for arch in ${CROSS_ARCHS}; do GOARCH=${arch} CGO_ENABLED=0 go install -v std; done
 
 # Disable cgo so that binaries we build will be fully static.

@@ -12,12 +12,13 @@ ARG MANIFEST_TOOL_VERSION=v0.7.0
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux file docker tini
+# Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker tini file grep sed
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking
-RUN echo 'Host *' >> /etc/ssh/ssh_config
-RUN echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
+RUN echo 'Host *' >> /etc/ssh/ssh_config \
+  && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
 # Disable cgo so that binaries we build will be fully static.
 ENV CGO_ENABLED=0
@@ -47,6 +48,7 @@ RUN go get github.com/pmezard/licenses
 # Install tool to merge coverage reports.
 RUN go get github.com/wadey/gocovmerge
 
+# Install CLI tool for working with yaml files
 RUN go get github.com/mikefarah/yaml
 
 # Install goveralls

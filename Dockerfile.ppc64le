@@ -69,6 +69,9 @@ RUN go get github.com/mikefarah/yaml
 # Install goveralls
 RUN go get github.com/mattn/goveralls
 
+# Delete all the Go sources that were downloaded, we only rely on the binaries
+RUN rm -rf /go/src/*
+
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 

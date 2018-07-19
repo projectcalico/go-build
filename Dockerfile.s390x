@@ -54,6 +54,9 @@ RUN go get github.com/mikefarah/yaml
 # Install goveralls
 RUN go get github.com/mattn/goveralls
 
+# Install vgo (should be removed once we take Go 1.11)
+RUN go get -u golang.org/x/vgo
+
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 

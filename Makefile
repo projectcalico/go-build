@@ -35,6 +35,13 @@ join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 # We cross build these arches.
 ARCHES=amd64 arm64 ppc64le
 
+# Check if the docker daemon is running in experiemntal mode (to get the --squash flag)
+DOCKER_EXPERIMENTAL=$(shell docker version -f '{{ .Server.Experimental }}')
+DOCKER_BUILD_ARGS=
+ifeq ($(DOCKER_EXPERIMENTAL),true)
+        override BUILD_ARGS=--squash
+endif
+
 all: all-build
 
 push-manifest:
@@ -51,7 +58,7 @@ image: calico/go-build
 calico/go-build: register
 	# Make sure we re-pull the base image to pick up security fixes.
 	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
-	docker build --cpuset-cpus 0 --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	docker build $(DOCKER_BUILD_ARGS) --cpuset-cpus 0 --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
 all-push: $(addprefix sub-push-,$(ALL_ARCH))
 sub-push-%:

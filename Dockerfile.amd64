@@ -59,9 +59,6 @@ RUN go get github.com/wadey/gocovmerge
 # Install CLI tool for working with yaml files
 RUN go get github.com/mikefarah/yaml
 
-# Install goveralls
-RUN go get github.com/mattn/goveralls
-
 # Install vgo (should be removed once we take Go 1.11)
 RUN go get -u golang.org/x/vgo
 

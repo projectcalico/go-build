@@ -21,8 +21,14 @@ ARG MANIFEST_TOOL_VERSION=v0.7.0
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
 # Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed
+# Install libc6-compat for fossa client
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed libc6-compat
 RUN apk upgrade --no-cache
+
+# Install fossa for foss license checks
+ARG FOSSA_VER=0.7.8
+RUN curl -L https://github.com/fossas/fossa-cli/releases/download/v${FOSSA_VER}/fossa-cli_${FOSSA_VER}_linux_amd64.tar.gz | tar zxvf - -C /usr/local/bin --extract fossa
+RUN chmod +x /usr/local/bin/fossa
 
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config \

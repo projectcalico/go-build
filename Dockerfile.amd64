@@ -68,6 +68,9 @@ RUN go get github.com/mikefarah/yaml
 # Install vgo (should be removed once we take Go 1.11)
 RUN go get -u golang.org/x/vgo
 
+# Install tool to convert go-test output to junit
+RUN go get -u github.com/jstemmer/go-junit-report
+
 # Enable non-native runs on amd64 architecture hosts
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*

@@ -26,7 +26,7 @@ RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-li
 RUN apk upgrade --no-cache
 
 # Install fossa for foss license checks
-ARG FOSSA_VER=0.7.14
+ARG FOSSA_VER=0.7.22
 RUN curl -L https://github.com/fossas/fossa-cli/releases/download/v${FOSSA_VER}/fossa-cli_${FOSSA_VER}_linux_amd64.tar.gz | tar zxvf - -C /usr/local/bin --extract fossa
 RUN chmod +x /usr/local/bin/fossa
 

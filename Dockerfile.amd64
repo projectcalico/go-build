@@ -22,7 +22,8 @@ ARG MANIFEST_TOOL_VERSION=v0.7.0
 # Install util-linux for column command (used for output formatting).
 # Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
 # Install libc6-compat for fossa client
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed libc6-compat
+# Install shadow for useradd (it allows to use big UID)
+RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed libc6-compat shadow
 RUN apk upgrade --no-cache
 
 # Install fossa for foss license checks

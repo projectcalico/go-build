@@ -7,7 +7,9 @@
 USER_ID=${LOCAL_USER_ID:-9001}
 
 echo "Starting with UID : $USER_ID" 1>&2
-adduser -D -s /bin/bash -u $USER_ID -g "" user
+# Do not create mail box.
+/bin/sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
+/usr/sbin/useradd -U -s /bin/bash -u $USER_ID user
 export HOME=/home/user
 
 if [ -n "$EXTRA_GROUP_ID"  ]; then

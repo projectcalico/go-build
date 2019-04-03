@@ -8,13 +8,13 @@ Base image for doing golang builds for the various [project calico](https://proj
 To build the image:
 
 ```
-make build
+make image
 ```
 
 The above will build for whatever architecture you are running on. To force a different architecture:
 
 ```
-ARCH=<somearch> make build
+ARCH=<somearch> make image
 ```
 
 ## Tagging

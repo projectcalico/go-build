@@ -1,4 +1,4 @@
-FROM alpine:3.8 as qemu
+FROM alpine:3.9 as qemu
 
 ARG QEMU_VERSION=2.9.1-1
 ARG QEMU_ARCHS="ppc64le"
@@ -9,7 +9,7 @@ RUN apk --update add curl
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
-FROM ppc64le/golang:1.11.9-alpine3.8
+FROM ppc64le/golang:1.12.6-alpine3.9
 MAINTAINER David Wilder <wilder@ibm.com>
 
 ARG MANIFEST_TOOL_VERSION=v0.7.0
@@ -29,7 +29,7 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install util-linux for column command (used for output formatting).
 # Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
 # Install shadow for useradd (it allows to use big UID)
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed shadow
+RUN apk update && apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed shadow
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking

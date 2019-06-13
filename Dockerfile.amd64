@@ -1,4 +1,4 @@
-FROM amd64/golang:1.11.9-alpine3.8
+FROM amd64/golang:1.12.6-alpine3.9
 MAINTAINER Tom Denham <tom@projectcalico.org>
 
 ARG QEMU_VERSION=2.9.1-1
@@ -23,6 +23,7 @@ ARG MANIFEST_TOOL_VERSION=v0.7.0
 # Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
 # Install libc6-compat for fossa client
 # Install shadow for useradd (it allows to use big UID)
+RUN apk update && apk upgrade --available
 RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed libc6-compat shadow
 RUN apk upgrade --no-cache
 

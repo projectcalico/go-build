@@ -39,9 +39,6 @@ RUN GO111MODULE=on go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-amd64 > manifest-tool && \
     chmod +x manifest-tool
 
-# Install vgo (should be removed once we take Go 1.11)
-RUN go get -u golang.org/x/vgo
-
 #
 # The main image.
 #

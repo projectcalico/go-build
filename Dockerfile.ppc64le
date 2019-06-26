@@ -34,10 +34,7 @@ RUN go get github.com/onsi/ginkgo/ginkgo
 RUN go get github.com/pmezard/licenses
 RUN go get github.com/wadey/gocovmerge
 RUN go get -u github.com/jstemmer/go-junit-report
-
-RUN go get -u gopkg.in/alecthomas/gometalinter.v2
-RUN ln -s `which gometalinter.v2` /go/bin/gometalinter
-RUN gometalinter --install
+RUN GO111MODULE=on go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@v1.17.1
 
 RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-amd64 > manifest-tool && \
     chmod +x manifest-tool

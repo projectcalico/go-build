@@ -91,5 +91,23 @@ RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFE
     chmod +x manifest-tool && \
     mv manifest-tool /usr/bin/
 
+# Add Docker, Kind and add to path
+RUN apk add build-base docker
+RUN go get sigs.k8s.io/kind
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl /usr/local/bin
+
+# Set up gcloud
+RUN curl -L  https://sdk.cloud.google.com -o /tmp/install-gcloud.sh
+RUN bash /tmp/install-gcloud.sh --disable-prompts --install-dir=/usr/local/bin
+RUN ln -s /usr/local/bin/google-cloud-sdk/bin/gcloud /usr/bin/gcloud
+RUN echo 'gcloud=/root/google-cloud-sdk/bin/gcloud' >> ~/.bashrc
+
+# Add Helm
+RUN curl -O https://get.helm.sh/helm-v2.14.2-linux-amd64.tar.gz
+RUN tar xzvf helm-v2.14.2-linux-amd64.tar.gz
+RUN install linux-amd64/helm /usr/local/bin/
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

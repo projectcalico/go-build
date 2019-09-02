@@ -29,7 +29,7 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install util-linux for column command (used for output formatting).
 # Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
 # Install shadow for useradd (it allows to use big UID)
-RUN apk update && apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed shadow
+RUN apk update && apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux docker tini file grep sed shadow
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking

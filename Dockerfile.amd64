@@ -91,5 +91,7 @@ RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFE
     chmod +x manifest-tool && \
     mv manifest-tool /usr/bin/
 
+RUN git config --system url."ssh://git@github.com/tigera".insteadOf "https://github.com/tigera"
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

@@ -1,4 +1,4 @@
-FROM alpine:3.9 as qemu
+FROM alpine:3.10 as qemu
 
 ARG QEMU_VERSION=2.9.1-1
 ARG QEMU_ARCHS="aarch64"

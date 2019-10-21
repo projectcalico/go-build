@@ -1,4 +1,4 @@
-FROM amd64/golang:1.13.1-alpine3.10
+FROM amd64/golang:1.13.3-alpine3.10
 MAINTAINER Tom Denham <tom@projectcalico.org>
 
 ARG QEMU_VERSION=2.9.1-1

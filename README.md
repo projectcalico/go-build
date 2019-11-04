@@ -20,7 +20,7 @@ ARCH=<somearch> make image
 ## Tagging
 The image is tagged the version, e.g. `v0.9` or `latest`. In addition, the given architecture is appended to the end. Thus, for example, the latest version on `amd64` will be `calico/go-build:latest-amd64`.
 
-The above tagging scheme keeps everything in a single image repository `calico/go-build` and prepares for using milti-architecture image manifests. 
+The above tagging scheme keeps everything in a single image repository `calico/go-build` and prepares for using milti-architecture image manifests.
 
 As of this writing, the only way to create such manifests is using the [manifest-tool](https://github.com/estesp/manifest-tool), which involves multiple steps. This can be incorporated into the build process, or we can wait until `docker manifest` is rolled into the docker CLI, see [this PR](https://github.com/docker/cli/pull/138).
 
@@ -46,10 +46,10 @@ The Linux kernel has the ability to run binaries built for one arch on another, 
 
 The interpreter must exist in one of two places:
 
-* The container where you are running the other-architecture binary. 
+* The container where you are running the other-architecture binary.
 * The container where you run registration, if you pass the correct flag during registration. This is supported **only** from Linux kernel version 4.8+.
 
-For example, if you registered the `s390x` emulator at `/usr/bin/qemu-s390x-static`, and then wanted to run `docker run -it --rm s390x/alpine:3.7 sh` on an `amd64`, it wouldn't work in the first method, because the new container doesn't have an emulator in it. However, if you followed the second method, it would work, since the kernel already found and loaded the emulator. This works **even if you delete the registration container.**
+For example, if you registered the `s390x` emulator at `/usr/bin/qemu-s390x-static`, and then wanted to run `docker run -it --rm s390x/alpine:3.10 sh` on an `amd64`, it wouldn't work in the first method, because the new container doesn't have an emulator in it. However, if you followed the second method, it would work, since the kernel already found and loaded the emulator. This works **even if you delete the registration container.**
 
 To register emulators, we run:
 
@@ -74,7 +74,7 @@ To use `binfmt` in other projects:
 ```dockerfile
 FROM calico/go-build:v0.16 as qemu
 
-FROM arm64v8/alpine:3.8 as base
+FROM arm64v8/alpine:3.10 as base
 
 # Enable non-native builds of this image on an amd64 hosts.
 # This must be the first RUN command in this file!
@@ -87,7 +87,7 @@ RUN apk --update add curl
 ```
 
 ## Running a Binary
-To *run* a binary from a different architecture, you need to use `binfmt` and `qemu` static. 
+To *run* a binary from a different architecture, you need to use `binfmt` and `qemu` static.
 
 Register `qemu-*-static` for all supported processors except the current one using the following command:
 
@@ -119,4 +119,3 @@ make testcompile ARCH=arm64
 ```
 
 You should see the "success" message.
-

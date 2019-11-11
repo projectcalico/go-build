@@ -171,10 +171,27 @@ define update_pin
 		fi'
 endef
 
+# update_replace_pin updates the given package's version to the latest available in the specified repo and branch.
+# This routine can only be used for packages being replaced in go.mod, such as private versions of open-source packages.
+# $(1) should be the name of the package, $(2) and $(3) the repository and branch from which to update it.
+define update_replace_pin
+	$(eval new_ver := $(call get_remote_version,$(2),$(3)))
+
+	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
+		if [ ! -z "$(new_ver)" ]; then \
+			go mod edit -replace $(1)=$(2)@$(new_ver); \
+			go mod download; \
+		fi'
+endef
+
 TYPHA_BRANCH?=$(PIN_BRANCH)
 TYPHA_REPO?=github.com/projectcalico/typha
 LIBCALICO_BRANCH?=$(PIN_BRANCH)
 LIBCALICO_REPO?=github.com/projectcalico/libcalico-go
+CONFD_BRANCH?=$(PIN_BRANCH)
+CONFD_REPO?=github.com/projectcalico/confd
+FELIX_BRANCH?=$(PIN_BRANCH)
+FELIX_REPO?=github.com/projectcalico/felix
 
 update-typha-pin:
 	$(call update_pin,github.com/projectcalico/typha,$(TYPHA_REPO),$(TYPHA_BRANCH))

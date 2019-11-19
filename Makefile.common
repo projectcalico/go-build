@@ -5,7 +5,7 @@ default: build
 all: build
 
 ## Run the tests for the current platform/architecture
-test: ut fv
+test: ut fv st
 
 ###############################################################################
 # Both native and cross architecture builds are supported.
@@ -142,6 +142,8 @@ DOCKER_RUN := mkdir -p .go-pkg-cache $(GOMOD_CACHE) && \
 		-e GOCACHE=/go-cache \
 		-e GOARCH=$(ARCH) \
 		-e GOPATH=/go \
+		-e OS=$(BUILDOS) \
+		-e GOOS=$(BUILDOS) \
 		-v $(CURDIR):/go/src/$(PACKAGE_NAME):rw \
 		-v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
 		-w /go/src/$(PACKAGE_NAME)
@@ -154,6 +156,8 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache $(GOMOD_CACHE) && \
                 -e GOCACHE=/go-cache \
                 -e GOARCH=$(ARCH) \
                 -e GOPATH=/go \
+		-e OS=$(BUILDOS) \
+		-e GOOS=$(BUILDOS) \
                 -v $(CURDIR):/go/src/$(PACKAGE_NAME):ro \
                 -v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
                 -w /go/src/$(PACKAGE_NAME)
@@ -209,6 +213,12 @@ update-typha-pin:
 
 update-libcalico-pin:
 	$(call update_pin,github.com/projectcalico/libcalico-go,$(LIBCALICO_REPO),$(LIBCALICO_BRANCH))
+
+update-confd-pin:
+	$(call update_pin,github.com/projectcalico/confd,$(CONFD_REPO),$(CONFD_BRANCH))
+
+update-felix-pin:
+	$(call update_pin,github.com/projectcalico/felix,$(FELIX_REPO),$(FELIX_BRANCH))
 
 git-status:
 	git status --porcelain

@@ -89,12 +89,14 @@ endif
 # the one for the host should contain all the necessary cross-compilation tools
 # we do not need to use the arch since go-build:v0.15 now is multi-arch manifest
 CALICO_BUILD=calico/go-build:$(GO_BUILD_VER)
+
+BIRD_VERSION=v0.3.1
+COREDNS_VERSION=1.5.2
 ETCD_VERSION=v3.3.7
 K8S_VERSION=v1.14.1
-PROTOC_VER=v0.1
-PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
-BIRD_VERSION=v0.3.1
 KUBECTL_VERSION=v1.15.3
+PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
+PROTOC_VER=v0.1
 
 # Figure out version information.  To support builds from release tarballs, we default to
 # <unknown> if this isn't a git checkout.
@@ -163,6 +165,8 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
                 -v $(CURDIR):/go/src/$(PACKAGE_NAME):ro \
                 -v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
                 -w /go/src/$(PACKAGE_NAME)
+
+DOCKER_GO_BUILD := $(DOCKER_RUN) $(CALICO_BUILD)
 
 ###############################################################################
 # Updating pins
@@ -244,8 +248,8 @@ commit-pin-updates: update-pins git-status ci git-config git-commit git-push
 #   repos can specify additional checks by setting LOCAL_CHECKS
 ###############################################################################
 .PHONY: static-checks
-static-checks:
-	$(MAKE) golangci-lint $(LOCAL_CHECKS)
+static-checks: $(LOCAL_CHECKS)
+	$(MAKE) golangci-lint
 
 LINT_ARGS := --max-issues-per-linter 0 --max-same-issues 0 --deadline 5m
 

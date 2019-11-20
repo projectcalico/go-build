@@ -95,8 +95,8 @@ COREDNS_VERSION=1.5.2
 ETCD_VERSION=v3.3.7
 K8S_VERSION=v1.14.1
 KUBECTL_VERSION=v1.15.3
-PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
 PROTOC_VER=v0.1
+PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
 
 # Figure out version information.  To support builds from release tarballs, we default to
 # <unknown> if this isn't a git checkout.

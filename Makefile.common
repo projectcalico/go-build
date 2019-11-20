@@ -94,6 +94,7 @@ K8S_VERSION=v1.14.1
 PROTOC_VER=v0.1
 PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
 BIRD_VERSION=v0.3.1
+KUBECTL_VERSION=v1.15.3
 
 # Figure out version information.  To support builds from release tarballs, we default to
 # <unknown> if this isn't a git checkout.
@@ -246,7 +247,7 @@ commit-pin-updates: update-pins git-status ci git-config git-commit git-push
 static-checks:
 	$(MAKE) golangci-lint $(LOCAL_CHECKS)
 
-LINT_ARGS := --max-issues-per-linter 0 --max-same-issues 0
+LINT_ARGS := --max-issues-per-linter 0 --max-same-issues 0 --deadline 5m
 
 .PHONY: golangci-lint
 golangci-lint: $(GENERATED_FILES)

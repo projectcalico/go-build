@@ -89,10 +89,11 @@ endif
 # the one for the host should contain all the necessary cross-compilation tools
 # we do not need to use the arch since go-build:v0.15 now is multi-arch manifest
 CALICO_BUILD=calico/go-build:$(GO_BUILD_VER)
-ETCD_VERSION?=v3.3.7
-K8S_VERSION?=v1.14.1
-PROTOC_VER?=v0.1
-PROTOC_CONTAINER ?=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
+ETCD_VERSION=v3.3.7
+K8S_VERSION=v1.14.1
+PROTOC_VER=v0.1
+PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
+BIRD_VERSION=v0.3.1
 
 # Figure out version information.  To support builds from release tarballs, we default to
 # <unknown> if this isn't a git checkout.
@@ -134,7 +135,7 @@ GIT_DESCRIPTION = $(shell git describe --tags --dirty --always || echo '<unknown
 .PHONY: $(SRC_FILES)
 endif
 
-DOCKER_RUN := mkdir -p .go-pkg-cache $(GOMOD_CACHE) && \
+DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
 		--net=host \
 		$(EXTRA_DOCKER_ARGS) \
@@ -148,7 +149,7 @@ DOCKER_RUN := mkdir -p .go-pkg-cache $(GOMOD_CACHE) && \
 		-v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
 		-w /go/src/$(PACKAGE_NAME)
 
-DOCKER_RUN_RO := mkdir -p .go-pkg-cache $(GOMOD_CACHE) && \
+DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
         docker run --rm \
                 --net=host \
                 $(EXTRA_DOCKER_ARGS) \

@@ -112,8 +112,6 @@ GIT_DESCRIPTION:=$(shell git describe --tags --dirty --always || echo '<unknown>
 # Calculate a timestamp for any build artefacts.
 DATE:=$(shell date -u +'%FT%T%z')
 
-WGET:=/usr/bin/wget
-
 # Figure out the users UID/GID.  These are needed to run docker containers
 # as the current user and ensure that files built inside containers are
 # owned by the current user.

@@ -112,6 +112,8 @@ GIT_DESCRIPTION:=$(shell git describe --tags --dirty --always || echo '<unknown>
 # Calculate a timestamp for any build artefacts.
 DATE:=$(shell date -u +'%FT%T%z')
 
+WGET:=/usr/bin/wget
+
 # Figure out the users UID/GID.  These are needed to run docker containers
 # as the current user and ensure that files built inside containers are
 # owned by the current user.
@@ -246,6 +248,7 @@ git-commit:
 git-push:
 	git push
 
+## Update dependency pins to their latest changeset, committing and pushing it.
 commit-pin-updates: update-pins git-status ci git-config git-commit git-push
 
 ###############################################################################
@@ -253,6 +256,7 @@ commit-pin-updates: update-pins git-status ci git-config git-commit git-push
 #   repos can specify additional checks by setting LOCAL_CHECKS
 ###############################################################################
 .PHONY: static-checks
+## Run static source code checks (lint, formatting, ...)
 static-checks: $(LOCAL_CHECKS)
 	$(MAKE) golangci-lint
 
@@ -339,3 +343,32 @@ tag-images-all: imagetag $(addprefix sub-tag-images-,$(VALIDARCHES))
 sub-tag-images-%:
 	$(MAKE) tag-images ARCH=$* IMAGETAG=$(IMAGETAG)
 
+###############################################################################
+# Helpers
+###############################################################################
+## Help
+.PHONY: help
+help:
+	$(info Available targets)
+	@echo
+	@awk '/^[a-zA-Z\-\_0-9\/]+:/ {                                      \
+	┆   nb = sub( /^## /, "", helpMsg );                                \
+	┆   if(nb == 0) {                                                   \
+	┆   ┆   helpMsg = $$0;                                              \
+	┆   ┆   nb = sub( /^[^:]*:.* ## /, "", helpMsg );                   \
+	┆   }                                                               \
+	┆   if (nb)                                                         \
+	┆   ┆   printf "\033[1;31m%-" width "s\033[0m %s\n", $$1, helpMsg;  \
+	}                                                                   \
+	{ helpMsg = $$0 }'                                                  \
+	width=23                                                            \
+	$(MAKEFILE_LIST)
+	@echo
+	@echo "-----------------------------------------------------------"
+	@echo "Building for $(BUILDOS)-$(ARCH) INSTALL_FLAG=$(INSTALL_FLAG)"
+	@echo
+	@echo "ARCH (target):		$(ARCH)"
+	@echo "OS (target):		$(BUILDOS)"
+	@echo "BUILDARCH (host):	$(BUILDARCH)"
+	@echo "CALICO_BUILD:		$(CALICO_BUILD)"
+	@echo "-----------------------------------------------------------"

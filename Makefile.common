@@ -235,7 +235,7 @@ update-libcalico-pin:
 	$(call update_pin,github.com/projectcalico/libcalico-go,$(LIBCALICO_REPO),$(LIBCALICO_BRANCH))
 
 update-confd-pin:
-	$(call update_pin,github.com/projectcalico/confd,$(CONFD_REPO),$(CONFD_BRANCH))
+	$(call update_replace_pin,github.com/kelseyhightower/confd,$(CONFD_REPO),$(CONFD_BRANCH))
 
 update-felix-pin:
 	$(call update_pin,github.com/projectcalico/felix,$(FELIX_REPO),$(FELIX_BRANCH))

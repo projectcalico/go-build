@@ -89,6 +89,8 @@ PUSH_NONMANIFEST_IMAGES=$(filter-out $(PUSH_MANIFEST_IMAGES),$(PUSH_IMAGES))
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json
 
+# Set -mod=readonly when running in CI to prevent builds from being flagged as dirty due to
+# updates to go.mod or go.sum
 ifeq ($(CI),true)
 	GOFLAGS?="-mod=readonly"
 endif

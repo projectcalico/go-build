@@ -89,8 +89,8 @@ PUSH_NONMANIFEST_IMAGES=$(filter-out $(PUSH_MANIFEST_IMAGES),$(PUSH_IMAGES))
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json
 
-ifneq ($(CI),)
-	GOFLAGS?=-mod=readonly
+ifeq ($(CI),true)
+	GOFLAGS?="-mod=readonly"
 endif
 
 # For building, we use the go-build image for the *host* architecture, even if the target is different
@@ -162,6 +162,7 @@ DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \
+		-e GOFLAGS=$(GOFLAGS) \
 		-v $(CURDIR):/go/src/$(PACKAGE_NAME):rw \
 		-v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
 		-w /go/src/$(PACKAGE_NAME)
@@ -176,6 +177,7 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
                 -e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \
+		-e GOFLAGS=$(GOFLAGS) \
                 -v $(CURDIR):/go/src/$(PACKAGE_NAME):ro \
                 -v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
                 -w /go/src/$(PACKAGE_NAME)

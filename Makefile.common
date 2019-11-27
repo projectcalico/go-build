@@ -91,12 +91,14 @@ DOCKER_CONFIG ?= $(HOME)/.docker/config.json
 
 # If a repository still relies on vendoring, it must set GOMOD_VENDOR to "true". If that's not the
 # case and we're running in CI, set -mod=readonly to prevent builds from being flagged as dirty due to
-# updates in go.mod or go.sum.
+# updates in go.mod or go.sum... except for local builds, which _require_ a change to go.mod.
 ifeq ($(GOMOD_VENDOR),true)
 	GOFLAGS?="-mod=vendor"
 else
 ifeq ($(CI),true)
+ifneq ($(LOCAL_BUILD),true)
 	GOFLAGS?="-mod=readonly"
+endif
 endif
 endif
 

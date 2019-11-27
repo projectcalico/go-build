@@ -89,10 +89,15 @@ PUSH_NONMANIFEST_IMAGES=$(filter-out $(PUSH_MANIFEST_IMAGES),$(PUSH_IMAGES))
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json
 
-# Set -mod=readonly when running in CI to prevent builds from being flagged as dirty due to
-# updates to go.mod or go.sum
+# If a repository still relies on vendoring, it must set GOMOD_VENDOR to "true". If that's not the
+# case and we're running in CI, set -mod=readonly to prevent builds from being flagged as dirty due to
+# updates in go.mod or go.sum.
+ifeq ($(GOMOD_VENDOR),true)
+	GOFLAGS?="-mod=vendor"
+else
 ifeq ($(CI),true)
 	GOFLAGS?="-mod=readonly"
+endif
 endif
 
 # For building, we use the go-build image for the *host* architecture, even if the target is different

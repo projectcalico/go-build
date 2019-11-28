@@ -17,6 +17,12 @@ test: ut fv st
 # When ARCH differs from the host architecture a crossbuild will be performed.
 ARCHES=$(patsubst docker-image/Dockerfile.%,%,$(wildcard docker-image/Dockerfile.*))
 
+# Some repositories keep their Dockerfile(s) in the root directory instead of in
+# the 'docker-image' subdir. Make sure ARCHES gets filled in either way.
+ifeq ($(ARCHES),)
+	ARCHES=$(patsubst Dockerfile.%,%,$(wildcard Dockerfile.*))
+endif
+
 # list of arches *not* to build when doing *-all
 #    until s390x works correctly
 EXCLUDEARCH ?= s390x

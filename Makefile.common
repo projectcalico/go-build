@@ -265,7 +265,7 @@ git-push:
 	git push
 
 ## Update dependency pins to their latest changeset, committing and pushing it.
-commit-pin-updates: update-pins git-status ci git-config git-commit git-push
+commit-pin-updates: update-pins git-status git-config git-commit ci git-push
 
 ###############################################################################
 # Static checks

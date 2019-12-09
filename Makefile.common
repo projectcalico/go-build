@@ -113,6 +113,10 @@ KUBECTL_VERSION=v1.15.3
 PROTOC_VER=v0.1
 PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
 
+ifeq ($(GIT_USE_SSH),true)
+	GIT_CONFIG_SSH ?= git config --global url."ssh://git@github.com/".insteadOf "https://github.com/";
+endif
+
 # Get version from git.
 GIT_VERSION:=$(shell git describe --tags --dirty --always)
 ifeq ($(LOCAL_BUILD),true)
@@ -210,8 +214,9 @@ define update_pin
 
 	$(DOCKER_RUN) $(CALICO_BUILD) sh -c '\
 		if [[ ! -z "$(new_ver)" ]]; then \
-			 go get $(1)@$(new_ver); \
-			 go mod download; \
+			$(GIT_CONFIG_SSH) \
+			go get $(1)@$(new_ver); \
+			go mod download; \
 		fi'
 endef
 
@@ -223,6 +228,7 @@ define update_replace_pin
 
 	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
 		if [ ! -z "$(new_ver)" ]; then \
+			$(GIT_CONFIG_SSH) \
 			go mod edit -replace $(1)=$(2)@$(new_ver); \
 			go mod download; \
 		fi'
@@ -302,7 +308,7 @@ foss-checks:
 # go mod helpers
 ###############################################################################
 mod-download:
-	-$(DOCKER_RUN) $(CALICO_BUILD) go mod download
+	-$(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) go mod download'
 
 ###############################################################################
 # Helpers

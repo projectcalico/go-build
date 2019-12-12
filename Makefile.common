@@ -113,6 +113,10 @@ KUBECTL_VERSION=v1.15.3
 PROTOC_VER=v0.1
 PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
 
+ifeq ($(GIT_USE_SSH),true)
+	GIT_CONFIG_SSH ?= git config --global url."ssh://git@github.com/".insteadOf "https://github.com/";
+endif
+
 # Get version from git.
 GIT_VERSION:=$(shell git describe --tags --dirty --always)
 ifeq ($(LOCAL_BUILD),true)
@@ -175,19 +179,19 @@ DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		-w /go/src/$(PACKAGE_NAME)
 
 DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
-        docker run --rm \
-                --net=host \
-                $(EXTRA_DOCKER_ARGS) \
-                -e LOCAL_USER_ID=$(LOCAL_USER_ID) \
-                -e GOCACHE=/go-cache \
-                -e GOARCH=$(ARCH) \
-                -e GOPATH=/go \
+	docker run --rm \
+		--net=host \
+		$(EXTRA_DOCKER_ARGS) \
+		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
+		-e GOCACHE=/go-cache \
+		-e GOARCH=$(ARCH) \
+		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \
 		-e GOFLAGS=$(GOFLAGS) \
-                -v $(CURDIR):/go/src/$(PACKAGE_NAME):ro \
-                -v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
-                -w /go/src/$(PACKAGE_NAME)
+		-v $(CURDIR):/go/src/$(PACKAGE_NAME):ro \
+		-v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
+		-w /go/src/$(PACKAGE_NAME)
 
 DOCKER_GO_BUILD := $(DOCKER_RUN) $(CALICO_BUILD)
 
@@ -210,8 +214,9 @@ define update_pin
 
 	$(DOCKER_RUN) $(CALICO_BUILD) sh -c '\
 		if [[ ! -z "$(new_ver)" ]]; then \
-			 go get $(1)@$(new_ver); \
-			 go mod download; \
+			$(GIT_CONFIG_SSH) \
+			go get $(1)@$(new_ver); \
+			go mod download; \
 		fi'
 endef
 
@@ -223,6 +228,7 @@ define update_replace_pin
 
 	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
 		if [ ! -z "$(new_ver)" ]; then \
+			$(GIT_CONFIG_SSH) \
 			go mod edit -replace $(1)=$(2)@$(new_ver); \
 			go mod download; \
 		fi'
@@ -236,18 +242,32 @@ CONFD_BRANCH?=$(PIN_BRANCH)
 CONFD_REPO?=github.com/projectcalico/confd
 FELIX_BRANCH?=$(PIN_BRANCH)
 FELIX_REPO?=github.com/projectcalico/felix
+CNI_BRANCH?=$(PIN_BRANCH)
+CNI_REPO?=github.com/projectcalico/cni-plugin
 
 update-typha-pin:
 	$(call update_pin,github.com/projectcalico/typha,$(TYPHA_REPO),$(TYPHA_BRANCH))
 
+replace-typha-pin:
+	$(call update_replace_pin,github.com/projectcalico/typha,$(TYPHA_REPO),$(TYPHA_BRANCH))
+
 update-libcalico-pin:
 	$(call update_pin,github.com/projectcalico/libcalico-go,$(LIBCALICO_REPO),$(LIBCALICO_BRANCH))
+
+replace-libcalico-pin:
+	$(call update_replace_pin,github.com/projectcalico/libcalico-go,$(LIBCALICO_REPO),$(LIBCALICO_BRANCH))
 
 update-confd-pin:
 	$(call update_replace_pin,github.com/kelseyhightower/confd,$(CONFD_REPO),$(CONFD_BRANCH))
 
 update-felix-pin:
 	$(call update_pin,github.com/projectcalico/felix,$(FELIX_REPO),$(FELIX_BRANCH))
+
+replace-felix-pin:
+	$(call update_replace_pin,github.com/projectcalico/felix,$(FELIX_REPO),$(FELIX_BRANCH))
+
+replace-cni-pin:
+	$(call update_replace_pin,github.com/projectcalico/cni-plugin,$(CNI_REPO),$(CNI_BRANCH))
 
 git-status:
 	git status --porcelain
@@ -265,7 +285,7 @@ git-push:
 	git push
 
 ## Update dependency pins to their latest changeset, committing and pushing it.
-commit-pin-updates: update-pins mod-download git-status ci git-config git-commit git-push
+commit-pin-updates: update-pins build git-status git-config git-commit ci git-push
 
 ###############################################################################
 # Static checks
@@ -276,7 +296,7 @@ commit-pin-updates: update-pins mod-download git-status ci git-config git-commit
 static-checks: $(LOCAL_CHECKS)
 	$(MAKE) golangci-lint
 
-LINT_ARGS := --max-issues-per-linter 0 --max-same-issues 0 --deadline 5m
+LINT_ARGS ?= --max-issues-per-linter 0 --max-same-issues 0 --deadline 5m
 
 .PHONY: golangci-lint
 golangci-lint: $(GENERATED_FILES)
@@ -302,7 +322,7 @@ foss-checks:
 # go mod helpers
 ###############################################################################
 mod-download:
-	-$(DOCKER_RUN) $(CALICO_BUILD) go mod download
+	-$(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) go mod download'
 
 ###############################################################################
 # Helpers

@@ -296,7 +296,7 @@ commit-pin-updates: update-pins build git-status git-config git-commit ci git-pu
 static-checks: $(LOCAL_CHECKS)
 	$(MAKE) golangci-lint
 
-LINT_ARGS := --max-issues-per-linter 0 --max-same-issues 0 --deadline 5m
+LINT_ARGS ?= --max-issues-per-linter 0 --max-same-issues 0 --deadline 5m
 
 .PHONY: golangci-lint
 golangci-lint: $(GENERATED_FILES)

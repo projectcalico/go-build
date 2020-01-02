@@ -218,7 +218,7 @@ DOCKER_GO_BUILD := $(DOCKER_RUN) $(CALICO_BUILD)
 PIN_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 
 define get_remote_version
-	$(shell git ls-remote http://$(1) $(2) 2>/dev/null | cut -f 1)
+	$(shell $(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) git ls-remote https://$(1) $(2) | cut -f1')
 endef
 
 # update_pin updates the given package's version to the latest available in the specified repo and branch.
@@ -226,7 +226,7 @@ endef
 define update_pin
 	$(eval new_ver := $(call get_remote_version,$(2),$(3)))
 
-	$(DOCKER_RUN) $(CALICO_BUILD) sh -c '\
+	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
 		if [[ ! -z "$(new_ver)" ]]; then \
 			$(GIT_CONFIG_SSH) \
 			go get $(1)@$(new_ver); \

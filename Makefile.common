@@ -141,7 +141,11 @@ endif
 # <unknown> if this isn't a git checkout.
 GIT_COMMIT:=$(shell git rev-parse HEAD || echo '<unknown>')
 BUILD_ID:=$(shell git rev-parse HEAD || uuidgen | sed 's/-//g')
-GIT_DESCRIPTION:=$(shell git describe --tags --dirty --always || echo '<unknown>')
+
+# Lazily set the git version we embed into the binaries we build. We want the
+# git tag at the time we build the binary. 
+# Variables elsewhere that depend on this (such as LDFLAGS) must also be lazy.
+GIT_DESCRIPTION=$(shell git describe --tags --dirty --always || echo '<unknown>')
 
 # Calculate a timestamp for any build artefacts.
 DATE:=$(shell date -u +'%FT%T%z')

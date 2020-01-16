@@ -76,7 +76,7 @@ endif
 
 # If this is a release, also tag and push additional images.
 ifeq ($(RELEASE),true)
-	PUSH_IMAGES+=$(RELEASE_IMAGES)
+PUSH_IMAGES+=$(RELEASE_IMAGES)
 endif
 
 # remove from the list to push to manifest any registries that do not support multi-arch

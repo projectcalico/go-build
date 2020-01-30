@@ -184,6 +184,7 @@ endif
 DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
 		--net=host \
+		--init \
 		$(EXTRA_DOCKER_ARGS) \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
@@ -199,6 +200,7 @@ DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
 		--net=host \
+		--init \
 		$(EXTRA_DOCKER_ARGS) \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \

@@ -6,6 +6,10 @@
 
 USER_ID=${LOCAL_USER_ID:-9001}
 
+if [ "${RUN_AS_ROOT}" = "true" ]; then
+  exec "$@"
+fi
+
 echo "Starting with UID : $USER_ID" 1>&2
 # Do not create mail box.
 /bin/sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd

@@ -31,6 +31,12 @@ if [ -n "$EXTRA_GROUP_ID"  ]; then
     echo "Adding user to existing group instead" 1>&2
     addgroup user `getent group $EXTRA_GROUP_ID | cut -d: -f1`
   fi
-fi  
+fi
+
+if [ $CGO_ENABLED = "1" ]; then
+  echo "CGO enabled, switching GOROOT to $GOCGO."
+  export GOROOT=$GOCGO
+  export PATH=$GOCGO/bin:$PATH
+fi
 
 exec /sbin/su-exec user "$@"

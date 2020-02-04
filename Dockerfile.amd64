@@ -50,6 +50,22 @@ RUN chmod +x /usr/local/bin/fossa
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
+# We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
+# results in parts of the stdlib getting rebuilt (which fails due tot he container's read-only
+# filesystem).  As a workaround: take a copy of the go root for cgo builds and have the
+# entrypoint script swap it into the path if it detects CGO_ENABLED=1.
+ENV GOROOT=/usr/local/go
+ENV GOCGO=$GOROOT/../go-cgo
+
+RUN cp -ra $GOROOT $GOCGO
+
+# Disable cgo by default so that binaries we build will be fully static by default.
+ENV CGO_ENABLED=0
+
+# Recompile the standard library with cgo disabled.  This avoids issues with read-only file system
+# and primes the cache.
+RUN go install -v std
+
 # Install glide
 RUN go get github.com/Masterminds/glide
 ENV GLIDE_HOME /home/user/.glide

@@ -33,6 +33,8 @@ RUN apt-get -y update &&  \
         ca-certificates gcc libc-dev bsdmainutils strace && \
     rm -rf /var/lib/apt/lists/*
 
+# su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
+# (sudo doesn't work easily in a container.)  The version was current master at the time of writing.
 ARG SU_EXEC_VER=212b75144bbc06722fbd7661f651390dc47a43d1
 RUN  set -ex; \
      curl -o /sbin/su-exec.c https://raw.githubusercontent.com/ncopa/su-exec/${SU_EXEC_VER}/su-exec.c; \
@@ -51,7 +53,7 @@ RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
 # We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
-# results in parts of the stdlib getting rebuilt (which fails due tot he container's read-only
+# results in parts of the stdlib getting rebuilt (which fails due to the container's read-only
 # filesystem).  As a workaround: take a copy of the go root for cgo builds and have the
 # entrypoint script swap it into the path if it detects CGO_ENABLED=1.
 ENV GOROOT=/usr/local/go
@@ -60,7 +62,7 @@ ENV GOCGO=/usr/local/go-cgo
 # Disable cgo by default so that binaries we build will be fully static by default.
 ENV CGO_ENABLED=0
 
-RUN cp -ra $GOROOT $GOCGO && \
+RUN cp -a $GOROOT $GOCGO && \
   go install -v std && \
   rm -rf /go/src/* /root/.cache
 

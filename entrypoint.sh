@@ -6,6 +6,10 @@
 
 USER_ID=${LOCAL_USER_ID:-9001}
 
+if [ "${RUN_AS_ROOT}" = "true" ]; then
+  exec "$@"
+fi
+
 echo "Starting with UID : $USER_ID" 1>&2
 # Do not create mail box.
 /bin/sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
@@ -27,6 +31,12 @@ if [ -n "$EXTRA_GROUP_ID"  ]; then
     echo "Adding user to existing group instead" 1>&2
     addgroup user `getent group $EXTRA_GROUP_ID | cut -d: -f1`
   fi
-fi  
+fi
+
+if [ $CGO_ENABLED = "1" ]; then
+  echo "CGO enabled, switching GOROOT to $GOCGO."
+  export GOROOT=$GOCGO
+  export PATH=$GOCGO/bin:$PATH
+fi
 
 exec /sbin/su-exec user "$@"

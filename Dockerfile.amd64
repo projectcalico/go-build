@@ -1,5 +1,7 @@
-FROM amd64/golang:1.12.14-alpine3.10
-MAINTAINER Tom Denham <tom@projectcalico.org>
+FROM calico/bpftool:v5.3-amd64 as bpftool
+
+FROM amd64/golang:1.13.7-buster
+MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
 ARG QEMU_VERSION=2.9.1-1
 
@@ -21,11 +23,25 @@ ARG MANIFEST_TOOL_VERSION=v0.7.0
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
 # Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
-# Install libc6-compat for fossa client
-# Install shadow for useradd (it allows to use big UID)
-RUN apk update && apk upgrade --available
-RUN apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed libc6-compat shadow
-RUN apk upgrade --no-cache
+# Install gcc for cgo.
+# Install clang for building BPF binaries.
+RUN apt-get -y update &&  \
+    apt-get -y upgrade && \
+    apt-get install --no-install-recommends -y \
+        curl bash git openssh-client mercurial make wget util-linux file grep sed \
+        llvm clang libbpf-dev binutils file iproute2 \
+        ca-certificates gcc libc-dev bsdmainutils strace && \
+    rm -rf /var/lib/apt/lists/*
+
+# su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
+# (sudo doesn't work easily in a container.)  The version was current master at the time of writing.
+ARG SU_EXEC_VER=212b75144bbc06722fbd7661f651390dc47a43d1
+RUN  set -ex; \
+     curl -o /sbin/su-exec.c https://raw.githubusercontent.com/ncopa/su-exec/${SU_EXEC_VER}/su-exec.c; \
+     gcc -Wall /sbin/su-exec.c -o/sbin/su-exec; \
+     chown root:root /sbin/su-exec; \
+     chmod 0755 /sbin/su-exec; \
+     rm /sbin/su-exec.c
 
 # Install fossa for foss license checks
 ARG FOSSA_VER=1.0.1
@@ -36,42 +52,35 @@ RUN chmod +x /usr/local/bin/fossa
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
-# Disable cgo so that binaries we build will be fully static.
+# We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
+# results in parts of the stdlib getting rebuilt (which fails due to the container's read-only
+# filesystem).  As a workaround: take a copy of the go root for cgo builds and have the
+# entrypoint script swap it into the path if it detects CGO_ENABLED=1.
+ENV GOROOT=/usr/local/go
+ENV GOCGO=/usr/local/go-cgo
+
+# Disable cgo by default so that binaries we build will be fully static by default.
 ENV CGO_ENABLED=0
 
-# Recompile the standard library with cgo disabled.  This prevents the standard library from being
-# marked stale, causing full rebuilds every time.
-RUN go install -v std
+RUN cp -a $GOROOT $GOCGO && \
+  go install -v std && \
+  rm -rf /go/src/* /root/.cache
 
-# Install glide
-RUN go get github.com/Masterminds/glide
+# Install go programs that we rely on
 ENV GLIDE_HOME /home/user/.glide
-
-# Install dep
-RUN go get github.com/golang/dep/cmd/dep
-
-# Install ginkgo CLI tool for running tests
-RUN go get github.com/onsi/ginkgo/ginkgo
-
-# Install linting tools.
-RUN go get golang.org/x/tools/cmd/goimports
-RUN wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.20.0
-RUN golangci-lint --version
-
-# Install license checking tool.
-RUN go get github.com/pmezard/licenses
-
-# Install tool to merge coverage reports.
-RUN go get github.com/wadey/gocovmerge
-
-# Install CLI tool for working with yaml files
-RUN go get github.com/mikefarah/yaml
-
-# Install vgo (should be removed once we take Go 1.11)
-RUN go get -u golang.org/x/vgo
-
-# Install tool to convert go-test output to junit
-RUN go get -u github.com/jstemmer/go-junit-report
+RUN go get github.com/Masterminds/glide && \
+  go get github.com/golang/dep/cmd/dep && \
+  go get github.com/onsi/ginkgo/ginkgo && \
+  go get golang.org/x/tools/cmd/goimports && \
+  wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.20.0 && \
+  golangci-lint --version && \
+  go get github.com/pmezard/licenses && \
+  go get github.com/wadey/gocovmerge && \
+  go get github.com/mikefarah/yaml && \
+  go get -u golang.org/x/vgo && \
+  go get -u github.com/jstemmer/go-junit-report && \
+  go get -u golang.org/x/tools/cmd/stringer && \
+  rm -rf /go/src/* /root/.cache
 
 # Enable non-native runs on amd64 architecture hosts
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
@@ -81,9 +90,6 @@ RUN chmod +x /usr/bin/qemu-*
 # ensure the install directory is writable by everyone.
 RUN for arch in ${CROSS_ARCHS}; do mkdir -m +w -p /usr/local/go/pkg/linux_${arch}; GOARCH=${arch} go install -v std; done
 
-# Delete all the Go sources that were downloaded, we only rely on the binaries
-RUN rm -rf /go/src/*
-
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 
@@ -91,5 +97,8 @@ RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFE
     chmod +x manifest-tool && \
     mv manifest-tool /usr/bin/
 
+# Add bpftool for Felix UT/FV.
+COPY --from=bpftool /bpftool /usr/bin
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

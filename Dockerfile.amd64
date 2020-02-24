@@ -24,12 +24,16 @@ ARG MANIFEST_TOOL_VERSION=v0.7.0
 # Install util-linux for column command (used for output formatting).
 # Install grep and sed for use in some Makefiles (e.g. pulling versions out of glide.yaml)
 # Install gcc for cgo.
-# Install clang for building BPF binaries.
-RUN apt-get -y update &&  \
+# Install clang, libbpf and newer kernel headers for building BPF binaries.
+RUN echo 'APT::Default-Release "stable";' > /etc/apt/apt.conf.d/99defaultrelease && \
+    echo 'deb     http://ftp.de.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
+    apt-get -y update &&  \
     apt-get -y upgrade && \
+    apt-get install --no-install-recommends -y -t buster-backports \
+        libbpf-dev linux-headers-amd64  && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed \
-        llvm clang libbpf-dev binutils file iproute2 \
+        llvm clang binutils file iproute2 \
         ca-certificates gcc libc-dev bsdmainutils strace && \
     rm -rf /var/lib/apt/lists/*
 

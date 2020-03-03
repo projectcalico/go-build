@@ -292,20 +292,17 @@ replace-cni-pin:
 git-status:
 	git status --porcelain
 
-git-config:
-ifdef CONFIRM
-	git config --global user.name "Semaphore Automatic Update"
-	git config --global user.email "marvin@projectcalico.io"
-endif
-
+AUTHOR  = "Semaphore Automatic Update"
+COMMENT = "Semaphore Automatic Update"
+EMAIL   = "marvin@projectcalico.io"
 git-commit:
-	git diff --quiet HEAD || git commit -m "Semaphore Automatic Update" go.mod go.sum
+	git diff --quiet HEAD || git commit -m $(COMMENT) -c "user.name=$(AUTHOR)" -c "user.email=$(EMAIL)" go.mod go.sum
 
 git-push:
 	git push
 
 ## Update dependency pins to their latest changeset, committing and pushing it.
-commit-pin-updates: update-pins build git-status git-config git-commit ci git-push
+commit-pin-updates: update-pins build git-status git-commit ci git-push
 
 ###############################################################################
 # Static checks

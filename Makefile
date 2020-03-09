@@ -35,11 +35,11 @@ ifeq ($(ARCH),x86_64)
 endif
 
 ###############################################################################
-DOCKERFILE ?= Dockerfile.$(ARCH)
+DOCKERFILE ?= Dockerfile.$(subst /,.,$(ARCH))
 VERSION ?= latest
 DEFAULTIMAGE ?= calico/go-build:$(VERSION)
-ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
-BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
+ARCHIMAGE ?= $(DEFAULTIMAGE)-$(subst /,,$(ARCH))
+BUILDIMAGE ?= $(DEFAULTIMAGE)-$(subst /,,$(BUILDARCH))
 
 MANIFEST_TOOL_VERSION := v1.0.2
 MANIFEST_TOOL_DIR := $(shell mktemp -d)
@@ -92,7 +92,7 @@ sub-push-%:
 
 push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
-	docker run -t --entrypoint /bin/sh -v $(HOME)/.docker/config.json:/root/.docker/config.json $(ARCHIMAGE) -c "/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(ARCHES)) --template $(DEFAULTIMAGE)-ARCH --target $(DEFAULTIMAGE)"
+	docker run -t --entrypoint /bin/sh -v $(HOME)/.docker/config.json:/root/.docker/config.json $(ARCHIMAGE) -c "/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(ARCHES)) --template $(DEFAULTIMAGE)-ARCHVARIANT --target $(DEFAULTIMAGE)"
 
 ###############################################################################
 # UTs
@@ -101,8 +101,8 @@ test: register
 	for arch in $(ARCHES) ; do ARCH=$$arch $(MAKE) testcompile; done
 
 testcompile:
-	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(ARCH) hello.go
-	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(ARCH) | grep -q "hello world"
+	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(firstword $(subst /, ,$(ARCH))) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(subst /,,$(ARCH)) hello.go
+	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(subst /,,$(ARCH)) | grep -q "hello world"
 	@echo "success"
 
 ###############################################################################

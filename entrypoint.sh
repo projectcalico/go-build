@@ -25,11 +25,11 @@ export HOME=/home/user
 if [ -n "$EXTRA_GROUP_ID"  ]; then
   echo "Adding user to additional GID : $EXTRA_GROUP_ID" 1>&2
   # Adding the group can fail if it already exists.
-  if addgroup -g $EXTRA_GROUP_ID group; then
-    addgroup user group
+  if addgroup --gid $EXTRA_GROUP_ID group; then
+    adduser user group
   else
     echo "Adding user to existing group instead" 1>&2
-    addgroup user `getent group $EXTRA_GROUP_ID | cut -d: -f1`
+    adduser user `getent group $EXTRA_GROUP_ID | cut -d: -f1`
   fi
 fi
 

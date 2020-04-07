@@ -3,7 +3,7 @@ FROM calico/bpftool:v5.3-amd64 as bpftool
 FROM amd64/golang:1.13.7-buster
 MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
-ARG QEMU_VERSION=2.9.1-1
+ARG QEMU_VERSION=4.2.0-6
 
 # we need these two distinct lists. The first one is the names used by the qemu distributions
 # these second is the names used by golang see https://github.com/golang/go/blob/master/src/go/build/syslist.go

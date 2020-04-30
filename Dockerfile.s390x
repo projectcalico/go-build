@@ -12,7 +12,7 @@ RUN chmod +x /usr/bin/qemu-*
 FROM s390x/golang:1.13.7-alpine3.8
 MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
 
-ARG MANIFEST_TOOL_VERSION=v0.7.0
+ARG MANIFEST_TOOL_VERSION=v1.0.2
 
 # Enable non-native builds of this image on an amd64 hosts.
 # This must be the first RUN command in this file!

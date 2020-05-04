@@ -304,8 +304,17 @@ git-commit:
 git-push:
 	git push
 
+# When we update the pins, we need to trigger go.mod and go.sum to be recomputed;
+# Unfortunately, go currently has a deficiency where the only way to get a
+# canonical go.sum is to do a build.  This target is broken out so that projects
+# that use this makefile can add additional dependencies to `fix-go-sum`; for example,
+# to rebuild UT/FV files that have different dependencies.
+.PHONY fix-go-sum
+fix-go-sum: build
+
 ## Update dependency pins to their latest changeset, committing and pushing it.
-commit-pin-updates: update-pins build git-status git-config git-commit ci git-push
+.PHONY: commit-pin-updates
+commit-pin-updates: update-pins fix-go-sum git-status git-config git-commit ci git-push
 
 ###############################################################################
 # Static checks

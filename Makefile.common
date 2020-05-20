@@ -309,7 +309,7 @@ git-push:
 # canonical go.sum is to do a build.  This target is broken out so that projects
 # that use this makefile can add additional dependencies to `fix-go-sum`; for example,
 # to rebuild UT/FV files that have different dependencies.
-.PHONY fix-go-sum
+.PHONY: fix-go-sum
 fix-go-sum: build
 
 ## Update dependency pins to their latest changeset, committing and pushing it.

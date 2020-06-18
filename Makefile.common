@@ -323,7 +323,7 @@ commit-pin-updates: update-pins fix-go-sum git-status git-config git-commit ci g
 .PHONY: static-checks
 ## Run static source code checks (lint, formatting, ...)
 static-checks: $(LOCAL_CHECKS)
-	$(MAKE) golangci-lint
+	$(MAKE) check-fmt golangci-lint
 
 LINT_ARGS ?= --max-issues-per-linter 0 --max-same-issues 0 --timeout 5m
 
@@ -334,6 +334,10 @@ golangci-lint: $(GENERATED_FILES)
 .PHONY: go-fmt goimports fix
 fix go-fmt goimports:
 	$(DOCKER_RUN) $(CALICO_BUILD) sh -c 'find . -iname "*.go" ! -wholename "./vendor/*" | xargs goimports -w -local github.com/projectcalico/'
+
+check-fmt:
+	@echo "Checking code formatting.  Any listed files don't match goimports:"
+	$(DOCKER_RUN) $(CALICO_BUILD) sh -c 'find . -iname "*.go" ! -wholename "./vendor/*" | xargs goimports -l -local github.com/projectcalico/'
 
 .PHONY: pre-commit
 pre-commit:

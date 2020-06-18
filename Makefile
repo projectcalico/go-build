@@ -8,7 +8,7 @@ all: image-all
 # The target architecture is select by setting the ARCH variable.
 # When ARCH is undefined it is set to the detected host architecture.
 # When ARCH differs from the host architecture a crossbuild will be performed.
-ARCHES = amd64 arm64 ppc64le s390x
+ARCHES = amd64 arm64 ppc64le
 
 # BUILDARCH is the host architecture
 # ARCH is the target architecture

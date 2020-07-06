@@ -77,7 +77,7 @@ sub-image-%:
 # Enable binfmt adding support for miscellaneous binary formats.
 .PHONY: register
 register:
-ifeq ($(ARCH),amd64)
+ifeq ($(BUILDARCH),amd64)
 	docker run --rm --privileged multiarch/qemu-user-static:register --reset
 endif
 

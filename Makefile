@@ -53,9 +53,12 @@ join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 
 # Check if the docker daemon is running in experimental mode (to get the --squash flag)
 DOCKER_EXPERIMENTAL=$(shell docker version -f '{{ .Server.Experimental }}')
-DOCKER_BUILD_ARGS=
+DOCKER_BUILD_ARGS?=
 ifeq ($(DOCKER_EXPERIMENTAL),true)
-        override DOCKER_BUILD_ARGS=--squash
+DOCKER_BUILD_ARGS+=--squash
+endif
+ifneq ($(ARCH),amd64)
+DOCKER_BUILD_ARGS+=--cpuset-cpus 0
 endif
 
 ###############################################################################
@@ -65,7 +68,7 @@ image: calico/go-build
 calico/go-build: register
 	# Make sure we re-pull the base image to pick up security fixes.
 	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
-	docker build $(DOCKER_BUILD_ARGS) --cpuset-cpus 0 --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	docker build $(DOCKER_BUILD_ARGS) --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
@@ -74,7 +77,7 @@ sub-image-%:
 # Enable binfmt adding support for miscellaneous binary formats.
 .PHONY: register
 register:
-ifeq ($(ARCH),amd64)
+ifeq ($(BUILDARCH),amd64)
 	docker run --rm --privileged multiarch/qemu-user-static:register --reset
 endif
 

@@ -22,7 +22,7 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-# Install grep, sed, and jq for use in some Makefiles (e.g. pulling versions out of glide.yaml)
+# Install grep, sed, zip, and jq for use in some Makefiles (e.g. pulling versions out of glide.yaml)
 # Install gcc for cgo.
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
 RUN echo 'APT::Default-Release "stable";' > /etc/apt/apt.conf.d/99defaultrelease && \
@@ -32,7 +32,7 @@ RUN echo 'APT::Default-Release "stable";' > /etc/apt/apt.conf.d/99defaultrelease
     apt-get install --no-install-recommends -y -t buster-backports \
         libbpf-dev linux-headers-amd64  && \
     apt-get install --no-install-recommends -y \
-        curl bash git openssh-client mercurial make wget util-linux file grep sed jq \
+        curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
         llvm clang binutils file iproute2 \
         ca-certificates gcc libc-dev bsdmainutils strace && \
     rm -rf /var/lib/apt/lists/*

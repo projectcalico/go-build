@@ -229,7 +229,9 @@ DOCKER_GO_BUILD := $(DOCKER_RUN) $(CALICO_BUILD)
 PIN_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 
 define get_remote_version
-	$(shell $(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) git ls-remote https://$(1) $(2) | cut -f1')
+	# The docker entrypoint script might echo output that could be included in the output of the following command, so this
+	# prefixes the commit tag with "commit-tag:" so can reliable get the commit tag from the output.
+	$(shell $(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) echo "commit-tag:$$(git ls-remote https://$(1) $(2) | cut -f1)"' | awk -F "commit-tag:" '{print $$2}')
 endef
 
 # update_pin updates the given package's version to the latest available in the specified repo and branch.

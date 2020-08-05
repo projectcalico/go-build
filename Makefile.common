@@ -241,7 +241,7 @@ define update_pin
 		if [ ! -z "$(new_ver)" ]; then \
 			$(GIT_CONFIG_SSH) \
 			go get $(1)@$(new_ver); \
-			go mod download; \
+			go mod tidy; \
 		fi'
 endef
 
@@ -255,7 +255,7 @@ define update_replace_pin
 		if [ ! -z "$(new_ver)" ]; then \
 			$(GIT_CONFIG_SSH) \
 			go mod edit -replace $(1)=$(2)@$(new_ver); \
-			go mod download; \
+			go mod tidy; \
 		fi'
 endef
 
@@ -309,17 +309,9 @@ git-commit:
 git-push:
 	git push
 
-# When we update the pins, we need to trigger go.mod and go.sum to be recomputed;
-# Unfortunately, go currently has a deficiency where the only way to get a
-# canonical go.sum is to do a build.  This target is broken out so that projects
-# that use this makefile can add additional dependencies to `fix-go-sum`; for example,
-# to rebuild UT/FV files that have different dependencies.
-.PHONY: fix-go-sum
-fix-go-sum: build
-
 ## Update dependency pins to their latest changeset, committing and pushing it.
 .PHONY: commit-pin-updates
-commit-pin-updates: update-pins fix-go-sum git-status git-config git-commit ci git-push
+commit-pin-updates: update-pins git-status git-config git-commit ci git-push
 
 ###############################################################################
 # Static checks

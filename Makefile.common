@@ -229,7 +229,9 @@ DOCKER_GO_BUILD := $(DOCKER_RUN) $(CALICO_BUILD)
 PIN_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 
 define get_remote_version
-	$(shell $(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) git ls-remote https://$(1) $(2) | cut -f1')
+	# The docker entrypoint script might echo output that could be included in the output of the following command, so this
+	# prefixes the commit tag with "commit-tag:" so can reliable get the commit tag from the output.
+	$(shell $(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) echo "commit-tag:$$(git ls-remote https://$(1) $(2) | cut -f1)"' | awk -F "commit-tag:" '{print $$2}')
 endef
 
 # update_pin updates the given package's version to the latest available in the specified repo and branch.
@@ -241,7 +243,7 @@ define update_pin
 		if [ ! -z "$(new_ver)" ]; then \
 			$(GIT_CONFIG_SSH) \
 			go get $(1)@$(new_ver); \
-			go mod download; \
+			go mod tidy; \
 		fi'
 endef
 
@@ -255,7 +257,7 @@ define update_replace_pin
 		if [ ! -z "$(new_ver)" ]; then \
 			$(GIT_CONFIG_SSH) \
 			go mod edit -replace $(1)=$(2)@$(new_ver); \
-			go mod download; \
+			go mod tidy; \
 		fi'
 endef
 
@@ -309,17 +311,9 @@ git-commit:
 git-push:
 	git push
 
-# When we update the pins, we need to trigger go.mod and go.sum to be recomputed;
-# Unfortunately, go currently has a deficiency where the only way to get a
-# canonical go.sum is to do a build.  This target is broken out so that projects
-# that use this makefile can add additional dependencies to `fix-go-sum`; for example,
-# to rebuild UT/FV files that have different dependencies.
-.PHONY: fix-go-sum
-fix-go-sum: build
-
 ## Update dependency pins to their latest changeset, committing and pushing it.
 .PHONY: commit-pin-updates
-commit-pin-updates: update-pins fix-go-sum git-status git-config git-commit ci git-push
+commit-pin-updates: update-pins git-status git-config git-commit ci git-push
 
 ###############################################################################
 # Static checks

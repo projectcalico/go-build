@@ -242,7 +242,7 @@ define update_pin
 	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
 		if [ ! -z "$(new_ver)" ]; then \
 			$(GIT_CONFIG_SSH) \
-			go get $(1)@$(new_ver); \
+			go get -d $(1)@$(new_ver); \
 			go mod tidy; \
 		fi'
 endef
@@ -311,9 +311,112 @@ git-commit:
 git-push:
 	git push
 
+commit-and-push-pr:
+	git add $(GIT_COMMIT_FILES)
+	git commit -m $(GIT_COMMIT_MESSAGE)
+	git push origin $(GIT_PR_BRANCH_HEAD)
+
+###############################################################################
+# Github API helpers
+#   Helper macros and targets to help with communicating with the github API
+###############################################################################
+GIT_COMMIT_MESSAGE?="Automatic Pin Updates"
+GIT_PR_BRANCH_HEAD?=$(PIN_UPDATE_BRANCH)
+GIT_PR_BRANCH_BASE?=$(SEMAPHORE_GIT_BRANCH)
+GIT_REPO_SLUG?=$(SEMAPHORE_GIT_REPO_SLUG)
+GIT_PIN_UPDATE_COMMIT_FILES?=go.mod go.sum
+GIT_PIN_UPDATE_COMMIT_EXTRA_FILES?=$(GIT_COMMIT_EXTRA_FILES)
+GIT_COMMIT_FILES?=$(GIT_PIN_UPDATE_COMMIT_FILES) $(GIT_PIN_UPDATE_COMMIT_EXTRA_FILES)
+
+# Call the github API. $(1) is the http method type for the https request, $(2) is the repo slug, and is $(3) is for json
+# data (if omitted then no data is set for the request). If GITHUB_API_EXIT_ON_FAILURE is set then the macro exits with 1
+# on failure. On success, the ENV variable GITHUB_API_RESPONSE will contain the response from github
+define github_call_api
+	$(eval CMD := curl -f -X$(1) \
+		-H "Content-Type: application/json"\
+		-H "Authorization: token ${GITHUB_TOKEN}"\
+		https://api.github.com/repos/$(2) $(if $(3),--data '$(3)',))
+	@echo $(CMD)
+	$(eval GITHUB_API_RESPONSE := $(shell $(CMD) | sed -e 's/#/\\\#/g'))
+	$(if $(GITHUB_API_EXIT_ON_FAILURE), $(if $(GITHUB_API_RESPONSE),,exit 1),)
+endef
+
+# Create the pull request. $(1) is the repo slug, $(2) is the title, $(3) is the head branch and $(4) is the base branch.
+# If the call was successful then the ENV variable PR_NUMBER will contain the pull request number of the created pull request.
+define github_pr_create
+	$(eval JSON := {"title": "$(2)", "head": "$(3)", "base": "$(4)"})
+	$(call github_call_api,POST,$(1)/pulls,$(JSON))
+	$(eval PR_NUMBER := $(filter-out null,$(shell echo '$(GITHUB_API_RESPONSE)' | jq '.number')))
+endef
+
+# Create a comment on a pull request. $(1) is the repo slug, $(2) is the pull request number, and $(3) is the comment
+# body.
+define github_pr_add_comment
+	$(eval JSON := {"body":"$(3)"})
+	$(call github_call_api,POST,$(1)/issues/$(2)/comments,$(JSON))
+endef
+
+# List pull open pull requests for a head and base. $(1) is the repo slug, $(2) is the branch head, $(3) is the branch base,
+# and $(4) is the state.
+define github_pr_list
+	$(eval JSON := {$(if $(2),"head": "$(2)",)$(if $(3),$(comma) "base": "$(3)")$(if $(4),$(comma) "state": "$(4)",)})
+	$(call github_call_api,GET,$(1)/pulls,$(JSON))
+endef
+
+# Exit with status 1 if there is a pull request with head GIT_PR_BRANCH_HEAD and base GIT_PR_BRANCH_BASE for the repo
+# with slug GIT_REPO_SLUG.
+fail-if-pr-exists:
+	$(call github_pr_list,$(GIT_REPO_SLUG),$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE),open)
+	$(if $(filter-out 0,$(shell echo '$(GITHUB_API_RESPONSE)' | jq '. | length')),echo "A pull request for head '$(GIT_PR_BRANCH_HEAD)'" \
+		"and base '$(GIT_PR_BRANCH_BASE)' already exists." && exit 1,)
+
+###############################################################################
+# Auto pin update targets
+#   Targets updating the pins
+###############################################################################
+PIN_UPDATE_BRANCH?=semaphore-auto-pin-updates
+GITHUB_API_EXIT_ON_FAILURE?=1
+
 ## Update dependency pins to their latest changeset, committing and pushing it.
+## DEPRECATED This will be removed along with associated helper functions in future releases. Use the trigger-auto-pin-update-process
+## to create PR with the pin updates.
 .PHONY: commit-pin-updates
 commit-pin-updates: update-pins git-status git-config git-commit ci git-push
+
+# Creates and checks out the branch defined by GIT_PR_BRANCH_HEAD. It attempts to delete the branch from the local and
+# remote repositories. Requires CONFIRM to be set, otherwise it fails with an error.
+create-pin-update-head: fail-if-pr-exists
+ifndef CONFIRM
+	@echo "Setting up the pull request branches is destructive, you must confirm to run this operation (CONFIRM=true)."
+	exit 1
+endif
+ifeq ($(shell git rev-parse --abbrev-ref HEAD),$(GIT_PR_BRANCH_HEAD))
+	@echo "Current branch is pull request head, cannot set it up."
+	exit 1
+endif
+	-git branch -D $(GIT_PR_BRANCH_HEAD)
+	-git push origin --delete $(GIT_PR_BRANCH_HEAD)
+	git checkout -b $(GIT_PR_BRANCH_HEAD)
+
+create-pin-update-pr:
+	$(call github_pr_create,$(GIT_REPO_SLUG),Semaphore Auto Pin Update PR,$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE))
+	echo 'Created pin update pull request $(PR_NUMBER)'
+
+# Add the "/merge-when-ready" comment to enable the "merge when ready" functionality, i.e. when the pull request is passing
+# the tests and approved merge it. The PR_NUMBER is set by the dependent target
+set-merge-when-ready-on-pin-update-pr:
+	$(call github_pr_add_comment,$(GIT_REPO_SLUG),$(PR_NUMBER),/merge-when-ready)
+	echo "Added '/merge-when-ready' comment command to pull request $(PR_NUMBER)"
+
+# Call the update-pins target with the GIT_PR_BRANCH_BASE as the PIN_BRANCH
+trigger-pin-updates:
+	PIN_BRANCH=$(GIT_PR_BRANCH_BASE) $(MAKE) update-pins
+
+# Trigger the auto pin update process. This involves updating the pins, committing and pushing them to github, creating
+# a pull request, and add the "/merge-when-ready" comment command.
+trigger-auto-pin-update-process: create-pin-update-head trigger-pin-updates
+	$(if $(shell git diff --quiet HEAD $(GIT_COMMIT_FILES) || echo "true"),\
+		$(MAKE) commit-and-push-pr create-pin-update-pr set-merge-when-ready-on-pin-update-pr,echo "Pins are up to date")
 
 ###############################################################################
 # Static checks

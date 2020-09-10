@@ -336,7 +336,6 @@ define github_call_api
 		-H "Content-Type: application/json"\
 		-H "Authorization: token ${GITHUB_TOKEN}"\
 		https://api.github.com/repos/$(2) $(if $(3),--data '$(3)',))
-	@echo $(CMD)
 	$(eval GITHUB_API_RESPONSE := $(shell $(CMD) | sed -e 's/#/\\\#/g'))
 	$(if $(GITHUB_API_EXIT_ON_FAILURE), $(if $(GITHUB_API_RESPONSE),,exit 1),)
 endef
@@ -359,14 +358,14 @@ endef
 # List pull open pull requests for a head and base. $(1) is the repo slug, $(2) is the branch head, $(3) is the branch base,
 # and $(4) is the state.
 define github_pr_list
-	$(eval JSON := {$(if $(2),"head": "$(2)",)$(if $(3),$(comma) "base": "$(3)")$(if $(4),$(comma) "state": "$(4)",)})
-	$(call github_call_api,GET,$(1)/pulls,$(JSON))
+	$(eval QUERY := $(if $(2),head=$(2),)$(if $(3),\&base=$(3))$(if $(4),\&state=$(4),))
+	$(call github_call_api,GET,$(1)/pulls?$(QUERY),)
 endef
 
 # Exit with status 1 if there is a pull request with head GIT_PR_BRANCH_HEAD and base GIT_PR_BRANCH_BASE for the repo
 # with slug GIT_REPO_SLUG.
 fail-if-pr-exists:
-	$(call github_pr_list,$(GIT_REPO_SLUG),$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE),open)
+	$(call github_pr_list,$(GIT_REPO_SLUG),$(ORGANIZATION):$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE),open)
 	$(if $(filter-out 0,$(shell echo '$(GITHUB_API_RESPONSE)' | jq '. | length')),echo "A pull request for head '$(GIT_PR_BRANCH_HEAD)'" \
 		"and base '$(GIT_PR_BRANCH_BASE)' already exists." && exit 1,)
 

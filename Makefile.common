@@ -261,6 +261,7 @@ define update_replace_pin
 		fi'
 endef
 
+GIT_REMOTE?=origin
 TYPHA_BRANCH?=$(PIN_BRANCH)
 TYPHA_REPO?=github.com/projectcalico/typha
 LIBCALICO_BRANCH?=$(PIN_BRANCH)
@@ -314,7 +315,7 @@ git-push:
 commit-and-push-pr:
 	git add $(GIT_COMMIT_FILES)
 	git commit -m $(GIT_COMMIT_MESSAGE)
-	git push origin $(GIT_PR_BRANCH_HEAD)
+	git push $(GIT_REMOTE) $(GIT_PR_BRANCH_HEAD)
 
 ###############################################################################
 # Github API helpers
@@ -394,7 +395,7 @@ ifeq ($(shell git rev-parse --abbrev-ref HEAD),$(GIT_PR_BRANCH_HEAD))
 	exit 1
 endif
 	-git branch -D $(GIT_PR_BRANCH_HEAD)
-	-git push origin --delete $(GIT_PR_BRANCH_HEAD)
+	-git push $(GIT_REMOTE) --delete $(GIT_PR_BRANCH_HEAD)
 	git checkout -b $(GIT_PR_BRANCH_HEAD)
 
 create-pin-update-pr:
@@ -464,6 +465,20 @@ mod-tidy:
 ###############################################################################
 # Semaphore helpers
 ###############################################################################
+
+# This semaphore project IDs are defined here because you cannot easily look them up in the semaphore API. This gives
+# us a single place to define these values, then projects can reference the readable ENV variable when they need a semaphore
+# project ID.
+SEMAPHORE_LIBCALICO_GO_PROJECT_ID=ce3e6bed-1fb6-4501-80e5-2121a266a386
+SEMAPHORE_LIBCALICO_GO_PRIVATE_PROJECT_ID=72fa12b5-5ad5-43ae-b0ac-17f9f7c71030
+SEMAPHORE_TYPHA_PROJECT_ID=c2ea3f0a-58a0-427a-9ed5-6eff8d6543b3
+SEMAPHORE_TYPHA_PRIVATE_PROJECT_ID=51e84cb9-0f38-408a-a113-0f5ca71844d7
+SEMAPHORE_FELIX_PROJECT_ID=48267e65-4acc-4f27-a88f-c3df0e8e2c3b
+SEMAPHORE_FELIX_PRIVATE_PROJECT_ID=e439cca4-156c-4d23-b611-002601440ad0
+SEMAPHORE_NODE_PROJECT_ID=980a06a4-9d43-43f8-aedd-a3bfad258de6
+SEMAPHORE_NODE_PRIVATE_PROJECT_ID=edd8246c-7116-473a-81c8-7a3bbbc07228
+SEMAPHORE_NODE_PROJECT_ID=741ec781-5dbb-4494-ba90-ec6831a9b176
+SEMAPHORE_NODE_PRIVATE_PROJECT_ID=f2c02a84-5fcd-49ed-b4cb-a6273409f0de
 
 # Sends a request to the semaphore API to run the request workflow. It requires setting the SEMAPHORE_API_TOKEN, SEMAPHORE_PROJECT_ID,
 # SEMAPHORE_WORKFLOW_BRANCH, and SEMAPHORE_WORKFLOW_FILE ENV variables.

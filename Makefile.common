@@ -462,6 +462,25 @@ mod-tidy:
 	-$(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(GIT_CONFIG_SSH) go mod tidy'
 
 ###############################################################################
+# Semaphore helpers
+###############################################################################
+
+# Sends a request to the semaphore API to run the request workflow. It requires setting the SEMAPHORE_API_TOKEN, SEMAPHORE_PROJECT_ID,
+# SEMAPHORE_WORKFLOW_BRANCH, and SEMAPHORE_WORKFLOW_FILE ENV variables.
+semaphore-run-workflow:
+	$(eval CMD := curl -f -i -X POST \
+		-H "Authorization: Token $(SEMAPHORE_API_TOKEN)" \
+		-d "project_id=$(SEMAPHORE_PROJECT_ID)&reference=$(SEMAPHORE_WORKFLOW_BRANCH)&pipeline_file=.semaphore/$(SEMAPHORE_WORKFLOW_FILE)" \
+		"https://tigera.semaphoreci.com/api/v1alpha/plumber-workflows")
+	$(eval SEMAPHORE_API_RESPONSE := $(shell $(CMD) | sed -e 's/#/\\\#/g'))
+	$(if $(SEMAPHORE_API_RESPONSE),,exit 1)
+
+# This is a helpful wrapper of the semaphore-run-workflow target to run the update_pins workflow file for a project.
+semaphore-run-auto-pin-update-workflow:
+	SEMAPHORE_WORKFLOW_FILE=update_pins.yml $(MAKE) semaphore-run-workflow
+	@echo Successully triggered the semaphore pin update workflow
+
+###############################################################################
 # Helpers
 ###############################################################################
 ## Help

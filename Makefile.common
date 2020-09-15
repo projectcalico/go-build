@@ -322,8 +322,9 @@ commit-and-push-pr:
 #   Helper macros and targets to help with communicating with the github API
 ###############################################################################
 GIT_COMMIT_MESSAGE?="Automatic Pin Updates"
-GIT_PR_BRANCH_HEAD?=$(PIN_UPDATE_BRANCH)
 GIT_PR_BRANCH_BASE?=$(SEMAPHORE_GIT_BRANCH)
+PIN_UPDATE_BRANCH?=semaphore-auto-pin-updates-$(GIT_PR_BRANCH_BASE)
+GIT_PR_BRANCH_HEAD?=$(PIN_UPDATE_BRANCH)
 GIT_REPO_SLUG?=$(SEMAPHORE_GIT_REPO_SLUG)
 GIT_PIN_UPDATE_COMMIT_FILES?=go.mod go.sum
 GIT_PIN_UPDATE_COMMIT_EXTRA_FILES?=$(GIT_COMMIT_EXTRA_FILES)
@@ -374,7 +375,6 @@ fail-if-pr-exists:
 # Auto pin update targets
 #   Targets updating the pins
 ###############################################################################
-PIN_UPDATE_BRANCH?=semaphore-auto-pin-updates
 GITHUB_API_EXIT_ON_FAILURE?=1
 
 ## Update dependency pins to their latest changeset, committing and pushing it.
@@ -494,6 +494,13 @@ semaphore-run-workflow:
 semaphore-run-auto-pin-update-workflow:
 	SEMAPHORE_WORKFLOW_FILE=update_pins.yml $(MAKE) semaphore-run-workflow
 	@echo Successully triggered the semaphore pin update workflow
+
+# This target triggers the 'semaphore-run-auto-pin-update-workflow' target for every SEMAPHORE_PROJECT_ID in the list of
+# SEMAPHORE_AUTO_PIN_UPDATE_PROJECT_IDS.
+semaphore-run-auto-pin-update-workflows:
+	for ID in $(SEMAPHORE_AUTO_PIN_UPDATE_PROJECT_IDS); do\
+		SEMAPHORE_WORKFLOW_BRANCH=$(SEMAPHORE_GIT_BRANCH) SEMAPHORE_PROJECT_ID=$$ID $(MAKE) semaphore-run-auto-pin-update-workflow; \
+	done
 
 ###############################################################################
 # Helpers

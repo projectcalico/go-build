@@ -516,7 +516,7 @@ semaphore-run-auto-pin-update-workflows:
 help:
 	$(info Available targets)
 	@echo
-	@awk '/^[a-zA-Z\-\_0-9\/]+:/ {                                    \
+	@awk '/^[a-zA-Z\-\_\%0-9\/]+:/ {                                  \
 	   nb = sub( /^## /, "", helpMsg );                               \
 	   if(nb == 0) {                                                  \
 	      helpMsg = $$0;                                              \
@@ -526,7 +526,7 @@ help:
 	      printf "\033[1;31m%-" width "s\033[0m %s\n", $$1, helpMsg;  \
 	}                                                                 \
 	{ helpMsg = $$0 }'                                                \
-	width=23                                                          \
+	width=30                                                          \
 	$(MAKEFILE_LIST)
 	@echo
 	@echo "-----------------------------------------------------------"

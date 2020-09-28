@@ -405,7 +405,7 @@ create-pin-update-pr:
 # Add the "/merge-when-ready" comment to enable the "merge when ready" functionality, i.e. when the pull request is passing
 # the tests and approved merge it. The PR_NUMBER is set by the dependent target
 set-merge-when-ready-on-pin-update-pr:
-	$(call github_pr_add_comment,$(GIT_REPO_SLUG),$(PR_NUMBER),/merge-when-ready)
+	$(call github_pr_add_comment,$(GIT_REPO_SLUG),$(PR_NUMBER),/merge-when-ready delete-branch)
 	echo "Added '/merge-when-ready' comment command to pull request $(PR_NUMBER)"
 
 # Call the update-pins target with the GIT_PR_BRANCH_BASE as the PIN_BRANCH

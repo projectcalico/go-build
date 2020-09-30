@@ -302,7 +302,7 @@ git-status:
 
 git-config:
 ifdef CONFIRM
-	git config --global user.name "Semaphore Automatic Update"
+	git config --global user.name "marvin-tigera"
 	git config --global user.email "marvin@projectcalico.io"
 endif
 

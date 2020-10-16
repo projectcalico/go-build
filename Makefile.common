@@ -516,6 +516,24 @@ semaphore-run-auto-pin-update-workflows:
 	done
 
 ###############################################################################
+# Mock helpers
+###############################################################################
+# Helper targets for testify mock generation
+
+# Generate testify mocks in the build container.
+gen-mocks:
+	$(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(MAKE) mockery-run'
+
+# Run mockery for each path in MOCKERY_FILE_PATHS. The the generated mocks are
+# created in package and in test files. Look here for more information https://github.com/vektra/mockery
+mockery-run:
+	for FILE_PATH in $(MOCKERY_FILE_PATHS); do\
+		DIR=$$(dirname $$FILE_PATH); \
+		INTERFACE_NAME=$$(basename $$FILE_PATH); \
+		mockery --dir $$DIR --name $$INTERFACE_NAME --inpackage --testonly; \
+	done
+
+###############################################################################
 # Helpers
 ###############################################################################
 ## Help

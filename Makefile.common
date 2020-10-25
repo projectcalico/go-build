@@ -530,7 +530,7 @@ mockery-run:
 	for FILE_PATH in $(MOCKERY_FILE_PATHS); do\
 		DIR=$$(dirname $$FILE_PATH); \
 		INTERFACE_NAME=$$(basename $$FILE_PATH); \
-		mockery --dir $$DIR --name $$INTERFACE_NAME --inpackage --testonly; \
+		mockery --dir $$DIR --name $$INTERFACE_NAME --inpackage; \
 	done
 
 ###############################################################################

@@ -399,7 +399,7 @@ endif
 	git checkout -b $(GIT_PR_BRANCH_HEAD)
 
 create-pin-update-pr:
-	$(call github_pr_create,$(GIT_REPO_SLUG),Semaphore Auto Pin Update PR,$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE))
+	$(call github_pr_create,$(GIT_REPO_SLUG),[$(GIT_PR_BRANCH_BASE)] Semaphore Auto Pin Update,$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE))
 	echo 'Created pin update pull request $(PR_NUMBER)'
 
 # Add the "/merge-when-ready" comment to enable the "merge when ready" functionality, i.e. when the pull request is passing

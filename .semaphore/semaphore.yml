@@ -39,7 +39,8 @@ blocks:
   dependencies: []
   task:
     secrets:
-    - name: quay-robot-calico+semaphoreci
+    - name: docker-hub
+    - name: quay-robot-calico-and-semaphoreci
     - name: docker
     jobs:
     - name: Build and push image
@@ -61,7 +62,8 @@ blocks:
   dependencies: ["Build images"]
   task:
     secrets:
-    - name: quay-robot-calico+semaphoreci
+    - name: docker-hub
+    - name: quay-robot-calico-and-semaphoreci
     - name: docker
     jobs:
     - name: Push multi-arch manifest

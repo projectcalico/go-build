@@ -294,6 +294,9 @@ update-felix-pin:
 replace-felix-pin:
 	$(call update_replace_pin,github.com/projectcalico/felix,$(FELIX_REPO),$(FELIX_BRANCH))
 
+update-cni-plugin-pin:
+	$(call update_pin,github.com/projectcalico/cni-plugin,$(CNI_REPO),$(CNI_BRANCH))
+
 replace-cni-pin:
 	$(call update_replace_pin,github.com/projectcalico/cni-plugin,$(CNI_REPO),$(CNI_BRANCH))
 

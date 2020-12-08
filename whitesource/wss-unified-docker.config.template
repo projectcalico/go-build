@@ -1,0 +1,20 @@
+#! /bin/bash
+cat > wss-unified-docker.config <<-EOF
+wss.url=https://app.whitesourcesoftware.com/agent
+resolveAllDependencies=true
+checkPolicies=false
+forceCheckAllDependencies=true
+forceUpdate=false
+forceUpdate.failBuildOnPolicyViolation=false
+log.level=info
+includes=*.*
+excludes=**/*sources.jar **/*javadoc.jar
+case.sensitive.glob=false
+followSymbolicLinks=true
+archiveExtractionDepth=7
+archiveIncludes=**/*.war **/*.ear **/*.zip **/*.tar
+docker.scanImages=true
+docker.includes=${DOCKER_INCLUDES}
+docker.pull.enable=true
+docker.projectNameFormat=repositoryFormat
+EOF

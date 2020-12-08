@@ -132,9 +132,9 @@ ifeq ($(GIT_USE_SSH),true)
 endif
 
 # Get version from git.
-GIT_VERSION:=$(shell git describe --tags --dirty --always)
+GIT_VERSION:=$(shell git describe --tags --dirty --always --abbrev=12)
 ifeq ($(LOCAL_BUILD),true)
-	GIT_VERSION = $(shell git describe --tags --dirty --always)-dev-build
+	GIT_VERSION = $(shell git describe --tags --dirty --always --abbrev=12)-dev-build
 endif
 
 # Figure out version information.  To support builds from release tarballs, we default to
@@ -145,7 +145,7 @@ BUILD_ID:=$(shell git rev-parse HEAD || uuidgen | sed 's/-//g')
 # Lazily set the git version we embed into the binaries we build. We want the
 # git tag at the time we build the binary. 
 # Variables elsewhere that depend on this (such as LDFLAGS) must also be lazy.
-GIT_DESCRIPTION=$(shell git describe --tags --dirty --always || echo '<unknown>')
+GIT_DESCRIPTION=$(shell git describe --tags --dirty --always --abbrev=12 || echo '<unknown>')
 
 # Calculate a timestamp for any build artefacts.
 DATE:=$(shell date -u +'%FT%T%z')
@@ -180,7 +180,7 @@ endif
 EXTRA_DOCKER_ARGS += -e GO111MODULE=on -v $(GOMOD_CACHE):/go/pkg/mod:rw
 
 ifeq ($(LOCAL_BUILD),true)
-GIT_DESCRIPTION = $(shell git describe --tags --dirty --always || echo '<unknown>')-dev-build
+GIT_DESCRIPTION = $(shell git describe --tags --dirty --always --abbrev=12 || echo '<unknown>')-dev-build
 # If local build is set, then always build the binary since we might not
 # detect when another local repository has been modified.
 .PHONY: $(SRC_FILES)

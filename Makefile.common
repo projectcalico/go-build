@@ -156,6 +156,11 @@ DATE:=$(shell date -u +'%FT%T%z')
 LOCAL_USER_ID:=$(shell id -u)
 LOCAL_GROUP_ID:=$(shell id -g)
 
+ifeq ("$(LOCAL_USER_ID)", "0")
+# The build needs to run as root.
+EXTRA_DOCKER_ARGS+=-e RUN_AS_ROOT='true'
+endif
+
 # Allow the ssh auth sock to be mapped into the build container.
 ifdef SSH_AUTH_SOCK
 	EXTRA_DOCKER_ARGS += -v $(SSH_AUTH_SOCK):/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent

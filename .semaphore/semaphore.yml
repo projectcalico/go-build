@@ -69,7 +69,7 @@ blocks:
     jobs:
     - name: Push multi-arch manifest
       commands:
-      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin~
+      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
       - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
       - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
       - export VERSION=$BRANCH_NAME

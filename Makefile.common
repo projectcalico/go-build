@@ -236,27 +236,32 @@ endef
 
 # update_pin updates the given package's version to the latest available in the specified repo and branch.
 # $(1) should be the name of the package, $(2) and $(3) the repository and branch from which to update it.
+# If $(4) is specified it's treated as the module version and use in the go get -d command.
 define update_pin
 	$(eval new_ver := $(call get_remote_version,$(2),$(3)))
+	$(eval repo := $(if $(4),$(1)/$(4),$(1)))
 
 	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
 		if [ ! -z "$(new_ver)" ]; then \
 			$(GIT_CONFIG_SSH) \
-			go get -d $(1)@$(new_ver); \
+			go get -d $(repo)@$(new_ver); \
 			go mod tidy; \
 		fi'
 endef
 
 # update_replace_pin updates the given package's version to the latest available in the specified repo and branch.
 # This routine can only be used for packages being replaced in go.mod, such as private versions of open-source packages.
-# $(1) should be the name of the package, $(2) and $(3) the repository and branch from which to update it.
+# $(1) should be the name of the package, $(2) and $(3) the repository and branch from which to update it. If $(4) is
+# specified it's treated as the module version and use in the go mod edit -replace command.
 define update_replace_pin
 	$(eval new_ver := $(call get_remote_version,$(2),$(3)))
+	$(eval original_repo := $(if $(4),$(1)/$(4),$(1)))
+	$(eval replace_repo := $(if $(4),$(2)/$(4),$(2)))
 
 	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
 		if [ ! -z "$(new_ver)" ]; then \
 			$(GIT_CONFIG_SSH) \
-			go mod edit -replace $(1)=$(2)@$(new_ver); \
+			go mod edit -replace $(original_repo)=$(replace_repo)@$(new_ver); \
 			go mod tidy; \
 		fi'
 endef

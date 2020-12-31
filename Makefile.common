@@ -548,6 +548,57 @@ mockery-run:
 	done
 
 ###############################################################################
+# Docker helpers
+###############################################################################
+# Helper targets working with docker images.
+
+# docker-compress takes the docker image specified by IMAGE_NAME and compresses all the layers into a single one. This is
+# done by exporting the given image then re importing it with the given IMAGE_NAME.
+#
+# When a docker image is exported all of the instructions are lost (i.e. ENTRYPOINT, ENV, ...), so before the image is
+# compressed the target inspects the image and pulls out the instructions. Each instruction that is pulled out is converted
+# into a change directive, or change directives, of the format "--change 'INSTRUCTION <instruction>". These directives
+# are given to the docker import command so the instructions can be re added to the compressed image.
+#
+# NOTE: This target does not attempt to copy every instruction from the original image to the compressed one. Any user of
+# this target should ensure that any required instructions are copied over by this target.
+docker-compress:
+	$(eval JSONOBJ := "$(shell docker inspect $(IMAGE_NAME) | jq '.[0].Config' | jq -R '.' | sed -e 's/#/\\\#/g' ) ")
+#	Re add the entry point.
+	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+		"if has(\"Entrypoint\") and .Entrypoint != \"\" then \" --change 'ENTRYPOINT \(.Entrypoint)'\" else \"\" end"\
+	))
+#	Re add the command.
+	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+		"if has(\"Cmd\") and .Cmd != \"\" then \" --change 'CMD \(.Cmd)'\" else \"\" end"\
+	))
+#	Re add the working directory.
+	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+		"if has(\"WorkingDir\") and .WorkingDir != \"\" then \" --change 'WORKDIR \(.WorkingDir)'\" else \"\" end"\
+	))
+#	Re add the user.
+	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+		"if has(\"User\") and .User != \"\" then \" --change 'USER \(.User)'\" else \"\" end"\
+	))
+#	Re add the environment variables. .Env is an array of strings so add a "--change 'ENV <value>'" for each value in
+#	the array.
+	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+		"if has(\"Env\") and (.Env | length) > 0 then .Env | map(\" --change 'ENV \(.)'\") | join(\"\") else \"\" end"\
+	))
+#	Re add the labels. .Labels is a map of label names to label values, so add a "--change 'LABEL <key> <value>'" for
+#	each map entry.
+	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+		"if has(\"Labels\") and (.Labels | length) > 0 then .Labels | to_entries | map(\" --change 'LABEL \(.key) \(.value)'\") | join(\"\") else \"\" end"\
+	))
+#	Re add the exposed ports. .ExposedPorts is a map, but we're only interested in the keys of the map so for each key
+#	add "--change EXPOSE <key>".
+	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+		"if has(\"ExposedPorts\") and (.ExposedPorts | length) > 0 then .ExposedPorts | keys | map(\" --change 'EXPOSE \(.)'\") | join(\"\") else \"\" end"\
+	))
+	$(eval CONTAINER_ID := $(shell docker run -d -it --entrypoint /bin/true $(IMAGE_NAME) /bin/true))
+	docker export $(CONTAINER_ID) | docker import $(CHANGE) - $(IMAGE_NAME)
+
+###############################################################################
 # Helpers
 ###############################################################################
 ## Help

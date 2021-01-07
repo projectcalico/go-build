@@ -70,6 +70,9 @@ calico/go-build: register
 	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
 	docker build $(DOCKER_BUILD_ARGS) --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
+calico/whitesource:
+	docker build whitesource/. -t calico/whitesource:$(VERSION)
+
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
 	$(MAKE) image ARCH=$*

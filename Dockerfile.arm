@@ -10,7 +10,7 @@ RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-st
 RUN chmod +x /usr/bin/qemu-*
 
 FROM arm32v7/golang:1.14-alpine3.11
-MAINTAINER Trevor Tao <trevor.tao@arm.com>
+MAINTAINER Marc Crebassa <aalaesar@gmail.com>
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 

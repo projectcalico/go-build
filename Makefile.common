@@ -132,9 +132,9 @@ ifeq ($(GIT_USE_SSH),true)
 endif
 
 # Get version from git.
-GIT_VERSION:=$(shell git describe --tags --dirty --always --abbrev=12)
+GIT_VERSION:=$(shell git describe --tags --dirty --long --always --abbrev=12)
 ifeq ($(LOCAL_BUILD),true)
-	GIT_VERSION = $(shell git describe --tags --dirty --always --abbrev=12)-dev-build
+	GIT_VERSION = $(shell git describe --tags --dirty --long --always --abbrev=12)-dev-build
 endif
 
 # Figure out version information.  To support builds from release tarballs, we default to

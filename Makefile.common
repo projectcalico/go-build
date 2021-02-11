@@ -41,6 +41,9 @@ endif
 ifeq ($(BUILDARCH),x86_64)
 	BUILDARCH=amd64
 endif
+ifeq ($(BUILDARCH),armv7l)
+        BUILDARCH=armhf
+endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
 ARCH ?= $(BUILDARCH)
@@ -51,6 +54,12 @@ ifeq ($(ARCH),aarch64)
 endif
 ifeq ($(ARCH),x86_64)
 	override ARCH=amd64
+endif
+ifeq ($(ARCH),armv7l)
+        override ARCH=armhf
+endif
+ifeq ($(ARCH),armhfv7)
+        override ARCH=armhf
 endif
 
 # these macros create a list of valid architectures for pushing manifests

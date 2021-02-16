@@ -194,6 +194,12 @@ GIT_DESCRIPTION = $(shell git describe --tags --dirty --always --abbrev=12 || ec
 # detect when another local repository has been modified.
 .PHONY: $(SRC_FILES)
 endif
+# Define go architecture flags to support arm variants
+GOARCH_FLAGS :=-e GOARCH=$(ARCH)
+ifeq ("$(ARCH)","armhf")
+GOARCH_FLAGS :=-e GOARCH=arm -e GOARM=7
+endif
+
 
 DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
@@ -202,7 +208,7 @@ DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		$(EXTRA_DOCKER_ARGS) \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
-		-e GOARCH=$(ARCH) \
+		$(GOARCH_FLAGS) \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \

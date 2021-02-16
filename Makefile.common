@@ -41,6 +41,9 @@ endif
 ifeq ($(BUILDARCH),x86_64)
 	BUILDARCH=amd64
 endif
+ifeq ($(BUILDARCH),armv7l)
+        BUILDARCH=armhf
+endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
 ARCH ?= $(BUILDARCH)
@@ -51,6 +54,12 @@ ifeq ($(ARCH),aarch64)
 endif
 ifeq ($(ARCH),x86_64)
 	override ARCH=amd64
+endif
+ifeq ($(ARCH),armv7l)
+        override ARCH=armhf
+endif
+ifeq ($(ARCH),armhfv7)
+        override ARCH=armhf
 endif
 
 # these macros create a list of valid architectures for pushing manifests
@@ -185,6 +194,12 @@ GIT_DESCRIPTION = $(shell git describe --tags --dirty --always --abbrev=12 || ec
 # detect when another local repository has been modified.
 .PHONY: $(SRC_FILES)
 endif
+# Define go architecture flags to support arm variants
+GOARCH_FLAGS :=-e GOARCH=$(ARCH)
+ifeq ("$(ARCH)","armhf")
+GOARCH_FLAGS :=-e GOARCH=arm -e GOARM=7
+endif
+
 
 DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
@@ -193,7 +208,7 @@ DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		$(EXTRA_DOCKER_ARGS) \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
-		-e GOARCH=$(ARCH) \
+		$(GOARCH_FLAGS) \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \
@@ -209,7 +224,7 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		$(EXTRA_DOCKER_ARGS) \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
-		-e GOARCH=$(ARCH) \
+		$(GOARCH_FLAGS) \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \

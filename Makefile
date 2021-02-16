@@ -8,7 +8,7 @@ all: image-all
 # The target architecture is select by setting the ARCH variable.
 # When ARCH is undefined it is set to the detected host architecture.
 # When ARCH differs from the host architecture a crossbuild will be performed.
-ARCHES = amd64 arm64 ppc64le
+ARCHES = amd64 armhf arm64 ppc64le
 
 # BUILDARCH is the host architecture
 # ARCH is the target architecture
@@ -22,6 +22,9 @@ endif
 ifeq ($(BUILDARCH),x86_64)
         BUILDARCH=amd64
 endif
+ifeq ($(BUILDARCH),armv7l)
+        BUILDARCH=armhf
+endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
 ARCH ?= $(BUILDARCH)
@@ -29,6 +32,9 @@ ARCH ?= $(BUILDARCH)
 # canonicalized names for target architecture
 ifeq ($(ARCH),aarch64)
         override ARCH=arm64
+endif
+ifeq ($(ARCH),armv7l)
+        override ARCH=armhf
 endif
 ifeq ($(ARCH),x86_64)
         override ARCH=amd64

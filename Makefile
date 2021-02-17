@@ -54,7 +54,8 @@ export PATH := $(MANIFEST_TOOL_DIR):$(PATH)
 space :=
 space +=
 comma := ,
-prefix_linux = $(addprefix linux/,$(strip $1))
+docker_armhf := arm/v7
+prefix_linux = $(addprefix linux/,$(strip $(subst armhf,$(docker_armhf),$1)))
 join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 
 # Check if the docker daemon is running in experimental mode (to get the --squash flag)

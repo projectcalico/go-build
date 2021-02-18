@@ -42,7 +42,7 @@ ifeq ($(BUILDARCH),x86_64)
 	BUILDARCH=amd64
 endif
 ifeq ($(BUILDARCH),armv7l)
-        BUILDARCH=armhf
+        BUILDARCH=armv7
 endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
@@ -56,18 +56,22 @@ ifeq ($(ARCH),x86_64)
 	override ARCH=amd64
 endif
 ifeq ($(ARCH),armv7l)
-        override ARCH=armhf
+        override ARCH=armv7
 endif
 ifeq ($(ARCH),armhfv7)
-        override ARCH=armhf
+        override ARCH=armv7
+endif
+
+# If ARCH is arm based, find the requested version/variant
+ifeq ($(word 1,$(subst v, ,$(ARCH))),arm)
+ARM_VERSION := $(word 2,$(subst v, ,$(ARCH)))
 endif
 
 # these macros create a list of valid architectures for pushing manifests
 space :=
 space +=
 comma := ,
-docker_armhf := arm/v7
-prefix_linux = $(addprefix linux/,$(strip $(subst armhf,$(docker_armhf),$1)))
+prefix_linux = $(addprefix linux/,$(strip $(subst armv,arm/v,$1)))
 join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 
 ## Targets used when cross building.
@@ -197,8 +201,8 @@ GIT_DESCRIPTION = $(shell git describe --tags --dirty --always --abbrev=12 || ec
 endif
 # Define go architecture flags to support arm variants
 GOARCH_FLAGS :=-e GOARCH=$(ARCH)
-ifeq ("$(ARCH)","armhf")
-GOARCH_FLAGS :=-e GOARCH=arm -e GOARM=7
+ifdef ARM_VERSION
+GOARCH_FLAGS :=-e GOARCH=arm -e GOARM=$(ARM_VERSION)
 endif
 
 

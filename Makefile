@@ -8,7 +8,7 @@ all: image-all
 # The target architecture is select by setting the ARCH variable.
 # When ARCH is undefined it is set to the detected host architecture.
 # When ARCH differs from the host architecture a crossbuild will be performed.
-ARCHES = amd64 armhf arm64 ppc64le
+ARCHES = amd64 armv7 arm64 ppc64le
 
 # BUILDARCH is the host architecture
 # ARCH is the target architecture
@@ -23,7 +23,7 @@ ifeq ($(BUILDARCH),x86_64)
         BUILDARCH=amd64
 endif
 ifeq ($(BUILDARCH),armv7l)
-        BUILDARCH=armhf
+        BUILDARCH=armv7
 endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
@@ -34,7 +34,7 @@ ifeq ($(ARCH),aarch64)
         override ARCH=arm64
 endif
 ifeq ($(ARCH),armv7l)
-        override ARCH=armhf
+        override ARCH=armv7
 endif
 ifeq ($(ARCH),x86_64)
         override ARCH=amd64
@@ -54,8 +54,7 @@ export PATH := $(MANIFEST_TOOL_DIR):$(PATH)
 space :=
 space +=
 comma := ,
-docker_armhf := arm/v7
-prefix_linux = $(addprefix linux/,$(strip $(subst armhf,$(docker_armhf),$1)))
+prefix_linux = $(addprefix linux/,$(strip $(subst armv,arm/v,$1)))
 join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 
 # Check if the docker daemon is running in experimental mode (to get the --squash flag)
@@ -102,7 +101,7 @@ sub-push-%:
 
 push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
-	docker run -t --entrypoint /bin/sh -v $(HOME)/.docker/config.json:/root/.docker/config.json $(ARCHIMAGE) -c "/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(ARCHES)) --template $(DEFAULTIMAGE)-ARCH --target $(DEFAULTIMAGE)"
+	docker run -t --entrypoint /bin/sh -v $(HOME)/.docker/config.json:/root/.docker/config.json $(ARCHIMAGE) -c "/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(ARCHES)) --template $(DEFAULTIMAGE)-ARCHVARIANT --target $(DEFAULTIMAGE)"
 
 ###############################################################################
 # UTs

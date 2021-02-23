@@ -13,6 +13,8 @@ global_job_config:
     - name: docker-hub
   prologue:
     commands:
+      # This login uses the basic credentials for pulling images.  The jobs that need to push will use the
+      # push-enabled secret below.
       - echo $DOCKERHUB_PASSWORD | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
       - >
         if [ $SEMAPHORE_GIT_REF_TYPE = "tag" ]; then
@@ -56,6 +58,7 @@ blocks:
     jobs:
     - name: Build and push image
       commands:
+      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
       - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
       - make image ARCH=$ARCH
       - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$ARCH CONFIRM=true; fi
@@ -75,6 +78,7 @@ blocks:
     jobs:
     - name: Push multi-arch manifest
       commands:
+      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
       - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
       - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-manifest CONFIRM=true; fi
 

@@ -8,8 +8,8 @@ ARG QEMU_VERSION=4.2.0-6
 # we need these two distinct lists. The first one is the names used by the qemu distributions
 # these second is the names used by golang see https://github.com/golang/go/blob/master/src/go/build/syslist.go
 # the primary difference as of this writing is that qemu uses aarch64 and golang uses arm64
-ARG QEMU_ARCHS="aarch64 ppc64le s390x"
-ARG CROSS_ARCHS="arm64 ppc64le s390x"
+ARG QEMU_ARCHS="arm aarch64 ppc64le s390x"
+ARG CROSS_ARCHS="arm arm64 ppc64le s390x"
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 

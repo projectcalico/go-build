@@ -41,6 +41,9 @@ endif
 ifeq ($(BUILDARCH),x86_64)
 	BUILDARCH=amd64
 endif
+ifeq ($(BUILDARCH),armv7l)
+        BUILDARCH=armv7
+endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
 ARCH ?= $(BUILDARCH)
@@ -52,12 +55,23 @@ endif
 ifeq ($(ARCH),x86_64)
 	override ARCH=amd64
 endif
+ifeq ($(ARCH),armv7l)
+        override ARCH=armv7
+endif
+ifeq ($(ARCH),armhfv7)
+        override ARCH=armv7
+endif
+
+# If ARCH is arm based, find the requested version/variant
+ifeq ($(word 1,$(subst v, ,$(ARCH))),arm)
+ARM_VERSION := $(word 2,$(subst v, ,$(ARCH)))
+endif
 
 # these macros create a list of valid architectures for pushing manifests
 space :=
 space +=
 comma := ,
-prefix_linux = $(addprefix linux/,$(strip $1))
+prefix_linux = $(addprefix linux/,$(strip $(subst armv,arm/v,$1)))
 join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 
 ## Targets used when cross building.
@@ -185,6 +199,12 @@ GIT_DESCRIPTION = $(shell git describe --tags --dirty --always --abbrev=12 || ec
 # detect when another local repository has been modified.
 .PHONY: $(SRC_FILES)
 endif
+# Define go architecture flags to support arm variants
+GOARCH_FLAGS :=-e GOARCH=$(ARCH)
+ifdef ARM_VERSION
+GOARCH_FLAGS :=-e GOARCH=arm -e GOARM=$(ARM_VERSION)
+endif
+
 
 DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
@@ -193,7 +213,7 @@ DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		$(EXTRA_DOCKER_ARGS) \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
-		-e GOARCH=$(ARCH) \
+		$(GOARCH_FLAGS) \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \
@@ -209,7 +229,7 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		$(EXTRA_DOCKER_ARGS) \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
-		-e GOARCH=$(ARCH) \
+		$(GOARCH_FLAGS) \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \

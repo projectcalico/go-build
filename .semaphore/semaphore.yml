@@ -17,7 +17,7 @@ global_job_config:
       - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
       - >
         if [ $SEMAPHORE_GIT_REF_TYPE = "tag" ]; then
-          export BRANCH_NAME=$SEMAPHORE_GIT_TAG;
+          export BRANCH_NAME=$SEMAPHORE_GIT_TAG_NAME;
         else
           export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH;
         fi;

@@ -26,7 +26,7 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install gcc for cgo.
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
 RUN echo 'APT::Default-Release "stable";' > /etc/apt/apt.conf.d/99defaultrelease && \
-    echo 'deb     http://ftp.de.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
+    echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
     apt-get -y update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \

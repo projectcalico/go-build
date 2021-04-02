@@ -541,7 +541,7 @@ SEMAPHORE_WORKFLOW_BRANCH?=master
 semaphore-run-workflow:
 	$(eval CMD := curl -f -X POST \
 		-H "Authorization: Token $(SEMAPHORE_API_TOKEN)" \
-		-d "project_id=$(SEMAPHORE_PROJECT_ID)&reference=$(SEMAPHORE_WORKFLOW_BRANCH)&pipeline_file=.semaphore/$(SEMAPHORE_WORKFLOW_FILE)" \
+		-d "project_id=$(SEMAPHORE_PROJECT_ID)&reference=$(SEMAPHORE_WORKFLOW_BRANCH)&commit_sha=$(SEMAPHORE_COMMIT_SHA)&pipeline_file=.semaphore/$(SEMAPHORE_WORKFLOW_FILE)" \
 		"https://tigera.semaphoreci.com/api/v1alpha/plumber-workflows")
 	$(eval SEMAPHORE_API_RESPONSE := $(shell $(CMD) | jq -R '.' | sed -e 's/#/\\\#/g'))
 	$(if $(SEMAPHORE_API_RESPONSE),,exit 1)

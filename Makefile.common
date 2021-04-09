@@ -395,6 +395,10 @@ endef
 # Exit with status 1 if there is a pull request with head GIT_PR_BRANCH_HEAD and base GIT_PR_BRANCH_BASE for the repo
 # with slug GIT_REPO_SLUG.
 fail-if-pr-exists:
+ifndef ORGANIZATION
+	@echo "ORGANIZATION must be set for the project."
+	exit 1
+endif
 	$(call github_pr_list,$(GIT_REPO_SLUG),$(ORGANIZATION):$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE),open)
 	$(if $(filter-out 0,$(shell echo '$(GITHUB_API_RESPONSE)' | jq '. | length')),echo "A pull request for head '$(GIT_PR_BRANCH_HEAD)'" \
 		"and base '$(GIT_PR_BRANCH_BASE)' already exists." && exit 1,)

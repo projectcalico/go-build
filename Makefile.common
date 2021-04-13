@@ -392,16 +392,15 @@ define github_pr_list
 	$(call github_call_api,GET,$(1)/pulls?$(QUERY),)
 endef
 
-# Exit with status 1 if there is a pull request with head GIT_PR_BRANCH_HEAD and base GIT_PR_BRANCH_BASE for the repo
-# with slug GIT_REPO_SLUG.
-fail-if-pr-exists:
+# Check if there is a pull request with head GIT_PR_BRANCH_HEAD and base GIT_PR_BRANCH_BASE for the repo with slug
+# GIT_REPO_SLUG. If there is a PR that exists the PR_EXISTS will be set to 0, otherwise it is set to 1.
+check-if-pin-update-pr-exists:
 ifndef ORGANIZATION
 	@echo "ORGANIZATION must be set for the project."
 	exit 1
 endif
 	$(call github_pr_list,$(GIT_REPO_SLUG),$(ORGANIZATION):$(GIT_PR_BRANCH_HEAD),$(GIT_PR_BRANCH_BASE),open)
-	$(if $(filter-out 0,$(shell echo '$(GITHUB_API_RESPONSE)' | jq '. | length')),echo "A pull request for head '$(GIT_PR_BRANCH_HEAD)'" \
-		"and base '$(GIT_PR_BRANCH_BASE)' already exists." && exit 1,)
+	$(eval PR_EXISTS := $(if $(filter-out 0,$(shell echo '$(GITHUB_API_RESPONSE)' | jq '. | length')),0,1))
 
 ###############################################################################
 # Auto pin update targets
@@ -417,7 +416,7 @@ commit-pin-updates: update-pins git-status git-config git-commit ci git-push
 
 # Creates and checks out the branch defined by GIT_PR_BRANCH_HEAD. It attempts to delete the branch from the local and
 # remote repositories. Requires CONFIRM to be set, otherwise it fails with an error.
-create-pin-update-head: fail-if-pr-exists
+create-pin-update-head:
 ifndef CONFIRM
 	@echo "Setting up the pull request branches is destructive, you must confirm to run this operation (CONFIRM=true)."
 	exit 1
@@ -445,8 +444,13 @@ trigger-pin-updates:
 	PIN_BRANCH=$(GIT_PR_BRANCH_BASE) $(MAKE) update-pins
 
 # Trigger the auto pin update process. This involves updating the pins, committing and pushing them to github, creating
-# a pull request, and add the "/merge-when-ready" comment command.
-trigger-auto-pin-update-process: create-pin-update-head trigger-pin-updates
+# a pull request, and add the "/merge-when-ready" comment command. If there is already a pin update PR for the base
+# branch the pin update is not done and the target will exit.
+trigger-auto-pin-update-process: check-if-pin-update-pr-exists
+	$(if $(filter $(PR_EXISTS),0),echo "A pull request for head '$(GIT_PR_BRANCH_HEAD)' and base '$(GIT_PR_BRANCH_BASE)' already exists.",\
+		$(MAKE) trigger-auto-pin-update-process-wrapped)
+
+trigger-auto-pin-update-process-wrapped: create-pin-update-head trigger-pin-updates
 	$(if $(shell git diff --quiet HEAD $(GIT_COMMIT_FILES) || echo "true"),\
 		$(MAKE) commit-and-push-pr create-pin-update-pr set-merge-when-ready-on-pin-update-pr,echo "Pins are up to date")
 

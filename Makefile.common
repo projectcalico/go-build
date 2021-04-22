@@ -288,6 +288,8 @@ define update_replace_pin
 endef
 
 GIT_REMOTE?=origin
+APISERVER_BRANCH?=$(PIN_BRANCH)
+APISERVER_REPO?=github.com/projectcalico/apiserver
 TYPHA_BRANCH?=$(PIN_BRANCH)
 TYPHA_REPO?=github.com/projectcalico/typha
 LIBCALICO_BRANCH?=$(PIN_BRANCH)
@@ -298,6 +300,12 @@ FELIX_BRANCH?=$(PIN_BRANCH)
 FELIX_REPO?=github.com/projectcalico/felix
 CNI_BRANCH?=$(PIN_BRANCH)
 CNI_REPO?=github.com/projectcalico/cni-plugin
+
+update-typha-pin:
+	$(call update_pin,github.com/projectcalico/apiserver,$(APISERVER_REPO),$(APISERVER_BRANCH))
+
+replace-apiserver-pin:
+	$(call update_replace_pin,github.com/projectcalico/apiserver,$(APISERVER_REPO),$(APISERVER_BRANCH))
 
 update-typha-pin:
 	$(call update_pin,github.com/projectcalico/typha,$(TYPHA_REPO),$(TYPHA_BRANCH))

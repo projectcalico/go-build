@@ -147,9 +147,9 @@ ifeq ($(GIT_USE_SSH),true)
 endif
 
 # Get version from git.
-GIT_VERSION:=$(shell git describe --tags --dirty --long --always --abbrev=12)
+GIT_VERSION:=$(shell git describe --tags --dirty --always --abbrev=12)
 ifeq ($(LOCAL_BUILD),true)
-	GIT_VERSION = $(shell git describe --tags --dirty --long --always --abbrev=12)-dev-build
+	GIT_VERSION = $(shell git describe --tags --dirty --always --abbrev=12)-dev-build
 endif
 
 # Figure out version information.  To support builds from release tarballs, we default to
@@ -741,7 +741,7 @@ endif
 # and BRANCH_NAME env variables to figure out what to tag and where to push it to.
 cd-common: require-confirm require-branch-name
 	$(MAKE) tag-images-all push-all push-manifests push-non-manifests IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
-	$(MAKE) tag-images-all push-all push-manifests push-non-manifests IMAGETAG=$(GIT_VERSION) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) tag-images-all push-all push-manifests push-non-manifests IMAGETAG=$(shell git describe --tags --dirty --long --always --abbrev=12) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 ###############################################################################
 # Helpers

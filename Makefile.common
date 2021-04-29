@@ -346,8 +346,22 @@ endif
 git-commit:
 	git diff --quiet HEAD || git commit -m "Semaphore Automatic Update" go.mod go.sum $(EXTRA_FILES_TO_COMMIT)
 
-git-push:
-	git push
+ifdef DRYRUN
+define crane-cp
+	echo [DRY RUN] crane cp $(1) $(2)
+endef
+
+define git-push
+	echo [DRY RUN] git push $(1) $(2)
+endef
+else
+define crane-cp
+	crane cp $(1) $(2)
+endef
+define git-push
+	git push $(1) $(2)
+endef
+endif
 
 commit-and-push-pr:
 	git add $(GIT_COMMIT_FILES)
@@ -742,6 +756,92 @@ endif
 cd-common: require-confirm require-branch-name
 	$(MAKE) tag-images-all push-all push-manifests push-non-manifests IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 	$(MAKE) tag-images-all push-all push-manifests push-non-manifests IMAGETAG=$(shell git describe --tags --dirty --long --always --abbrev=12) EXCLUDEARCH="$(EXCLUDEARCH)"
+
+###############################################################################
+# Release targets and helpers
+###############################################################################
+fetch-all:
+	git fetch --all -q
+
+# git-dev-tag retrieves the dev tag for the current commit (the one are dev images are tagged with).
+git-dev-tag = $(shell git describe --tags --long --always --abbrev=12 --match "*dev*")
+# git-dev-tag-release-version get's the release version from the current commits dev tag.
+git-dev-tag-release-version = $(shell echo $(call git-dev-tag) | grep -P -o "^v\d*.\d*.\d*")
+# git-release-tag gets the release tag for the current commit (the one our release images are tagged with).
+git-release-tag = $(shell git describe --tags --exact-match --exclude "*dev*")
+
+git-list-branches = $(shell git for-each-ref --format='%(refname:short)' refs/heads)
+# release-branch-for-tag finds the latest branch that corresponds to the given tag.
+release-branch-for-tag = $(firstword $(shell git --no-pager branch --format='%(refname:short)' --contains tag/$1 | grep -P "^release"))
+# commit-for-tag finds the latest commit that corresponds to the given tag.
+commit-for-tag = $(shell git rev-list -n 1 $1)
+# current-branch gets the name of the branch for the current commit.
+current-branch = $(shell git rev-parse --abbrev-ref HEAD)
+# current-commit-sha gets the sha for the current commit.
+current-commit-sha = $(shell git rev-parse HEAD)
+
+# var-set-% checks if there is a non empty variable for the value describe by %. If FAIL_NOT_SET is set, then var-set-%
+# fails with an error message. If FAIL_NOT_SET is not set, then var-set-% appends a 1 to VARSET if the variable isn't
+# set.
+var-set-%:
+	$(if $($*),$(eval VARSET+=1),$(if $(FAIL_NOT_SET),$(error $* is required but not set),))
+
+# var-require is used to check if one or all of the variables are set in REQUIRED_VARS, and fails if not. The variables
+# in REQUIRE_VARS are hyphen separated.
+#
+# If FAIL_NOT_SET is set, then all variables described in REQUIRED_VARS must be set for var-require to not fail,
+# otherwise only one variable needs to be set for var-require to not fail.
+var-require: $(addprefix var-set-,$(subst -, ,$(REQUIRED_VARS)))
+	$(if $(VARSET),,$(error one of $(subst -, ,$(REQUIRED_VARS)) is not set or empty, but at least one is required))
+
+# var-require-all-% checks if the there are non empty variables set for the hyphen separated values in %, and fails if
+# there isn't a non empty variable for each given value. For instance, to require FOO and BAR both must be set you would
+# call var-require-all-FOO-BAR.
+var-require-all-%:
+	$(MAKE) var-require REQUIRED_VARS=$* FAIL_NOT_SET=true
+
+# var-require-one-of-% checks if the there are non empty variables set for the hyphen separated values in %, and fails
+# there isn't a non empty variable for at least one of the given values. For instance, to require either FOO or BAR both
+# must be set you would call var-require-all-FOO-BAR.
+var-require-one-of-%:
+	$(MAKE) var-require REQUIRED_VARS=$*
+
+sem-cut-release: var-require-one-of-CONFIRM-DRYRUN var-require-all-TAG
+	SEMAPHORE_WORKFLOW_BRANCH=$(call release-branch-for-tag,$(TAG)) SEMAPHORE_COMMIT_SHA=$(call commit-for-tag,$(TAG)) SEMAPHORE_WORKFLOW_FILE=cut-release.yml $(MAKE) semaphore-run-workflow
+
+cut-release: var-require-one-of-CONFIRM-DRYRUN tag-release-commit tag-release-images
+
+tag-release-images: var-require-one-of-CONFIRM-DRYRUN var-require-all-BUILD_IMAGES $(addprefix publish-dev-image-,$(call escapefs, $(BUILD_IMAGES)))
+
+publish-dev-image-%: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_IMAGE_REPO-RELEASE_IMAGE_REPOS
+	for RELEASE_IMAGE_REPO in $(RELEASE_IMAGE_REPOS); do \
+		$(call crane-cp,$(DEV_IMAGE_REPO)/$(call unescapefs,$*):$(call current-dev-tag),$$RELEASE_IMAGE_REPO/$(call unescapefs,$*):$(call git-release-tag)); \
+	done
+
+tag-release-commit: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_TAG_SUFFIX
+	$(eval NEXT_PATCH_RELEASE_VERSION := $(shell echo "$(call git-dev-tag-release-version)" | awk -F  "." '{print $$1"."$$2"."$$3+1}'))
+	git tag -a $(call git-dev-tag-release-version) $(call current-commit-sha) -m "Release $(call git-dev-tag-release-version)"
+	$(call git-push,origin,$(call git-dev-tag-release-version))
+	$(MAKE) git-create-next-dev-tag NEXT_RELEASE_VERSION=$(NEXT_PATCH_RELEASE_VERSION) DEV_TAG_SUFFIX=$(DEV_TAG_SUFFIX)
+	# Make sure we exit this target on the commit that was tagged with the release.
+	git checkout $(call git-dev-tag-release-version)
+
+create-release-branch: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_TAG_SUFFIX fetch-all
+	$(eval NEXT_RELEASE_VERSION := $(shell echo "$(call git-dev-tag-release-version)" | awk -F  "." '{print $$1"."$$2+1"."0}'))
+	$(eval RELEASE_BRANCH_VERSION := $(shell echo "$(call git-dev-tag-release-version)" | awk -F  "." '{print $$1"."$$2}'))
+	git checkout -B $(RELEASE_BRANCH_PREFIX)-$(RELEASE_BRANCH_VERSION) origin/master
+	$(call git-push,origin,$(RELEASE_BRANCH_PREFIX)-$(RELEASE_BRANCH_VERSION))
+	git checkout master
+	git pull origin master
+	$(MAKE) git-create-next-dev-tag NEXT_RELEASE_VERSION=$(NEXT_RELEASE_VERSION) DEV_TAG_SUFFIX=$(DEV_TAG_SUFFIX)
+
+# Creates and pushes the next github tag for development on the next release. This target creates a new commit and
+# annotates it with the next dev tag.
+git-create-next-dev-tag: var-require-one-of-CONFIRM-DRYRUN var-require-all-NEXT_RELEASE_VERSION-DEV_TAG_SUFFIX
+	git commit --allow-empty -m "Begin development on $(NEXT_RELEASE_VERSION)"
+	git tag $(NEXT_RELEASE_VERSION)-$(DEV_TAG_SUFFIX)
+	$(call git-push,origin,$(call current-branch))
+	$(call git-push,origin,$(NEXT_RELEASE_VERSION)-$(DEV_TAG_SUFFIX))
 
 ###############################################################################
 # Helpers

@@ -925,8 +925,9 @@ release-dev-images: var-require-one-of-CONFIRM-DRYRUN var-require-all-BUILD_IMAG
 # tag in RELEASE_TAG.
 release-retag-dev-image-%: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_REGISTRIES-DEV_TAG-RELEASE_TAG
 	$(foreach dev_registry,$(DEV_REGISTRIES),\
-		$(call crane-cp,$(dev_registry)/$(call unescapefs,$*):$(DEV_TAG),\
-		$(dev_registry)/$(call unescapefs,$*):$(RELEASE_TAG)))
+		$(if $(filter $(RELEASE_REGISTRIES),$(dev_registry)),,\
+			 $(call crane-cp,$(dev_registry)/$(call unescapefs,$*):$(DEV_TAG),\
+			 $(dev_registry)/$(call unescapefs,$*):$(RELEASE_TAG))))
 
 # release-dev-image-% copies and retags the image specified by % from the dev registry specified by DEV_REGISTRY to the
 # release registries specified by RELEASE_REGISTRIES using the tag in RELEASE_TAG.

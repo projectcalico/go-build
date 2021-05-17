@@ -354,7 +354,7 @@ crane-cp 	= $(shell echo echo [DRY RUN] crane cp $(1) $(2))
 git-push 	= $(shell echo echo [DRY RUN] git push $(1) $(2))
 docker-push = $(shell echo echo [DRY RUN] docker push $1)
 else
-crane-cp 	= $(shell echo crane cp $(1) $(2))
+crane-cp 	= $(shell echo $(DOCKER_GO_BUILD) crane cp $(1) $(2))
 git-push 	= $(shell echo git push $(1) $(2))
 docker-push = $(shell echo docker push $1)
 endif

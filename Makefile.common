@@ -98,9 +98,10 @@ endif
 DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
 
 # remove from the list to push to manifest any registries that do not support multi-arch
-EXCLUDE_MANIFEST_REGISTRIES ?= quay.io/
-PUSH_MANIFEST_IMAGES=$(PUSH_IMAGES:$(EXCLUDE_MANIFEST_REGISTRIES)%=)
-PUSH_NONMANIFEST_IMAGES=$(filter-out $(PUSH_MANIFEST_IMAGES),$(PUSH_IMAGES))
+NONMANIFEST_REGISTRIES      ?= quay.io
+MANIFEST_REGISTRIES         ?= $(DEV_REGISTRIES:$(NONMANIFEST_REGISTRIES)%=)
+
+PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(registry)/$(image)))
 
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json
@@ -132,12 +133,10 @@ endif
 endif
 endif
 
-
 # For building, we use the go-build image for the *host* architecture, even if the target is different
 # the one for the host should contain all the necessary cross-compilation tools
 # we do not need to use the arch since go-build:v0.15 now is multi-arch manifest
-GO_BUILD_IMAGE ?= calico/go-build
-CALICO_BUILD    = $(GO_BUILD_IMAGE):$(GO_BUILD_VER)
+CALICO_BUILD=calico/go-build:$(GO_BUILD_VER)
 
 BIRD_VERSION=v0.3.1
 COREDNS_VERSION=1.5.2
@@ -163,7 +162,7 @@ GIT_COMMIT:=$(shell git rev-parse HEAD || echo '<unknown>')
 BUILD_ID:=$(shell git rev-parse HEAD || uuidgen | sed 's/-//g')
 
 # Lazily set the git version we embed into the binaries we build. We want the
-# git tag at the time we build the binary. 
+# git tag at the time we build the binary.
 # Variables elsewhere that depend on this (such as LDFLAGS) must also be lazy.
 GIT_DESCRIPTION=$(shell git describe --tags --dirty --always --abbrev=12 || echo '<unknown>')
 
@@ -351,14 +350,37 @@ endif
 git-commit:
 	git diff --quiet HEAD || git commit -m "Semaphore Automatic Update" go.mod go.sum $(EXTRA_FILES_TO_COMMIT)
 
+###############################################################################
+# External resource affecting macros
+# The following macros affect resources outside of the local environment that
+# they're run in, i.e. pushing to docker or github. If DRYRUN is defined, then
+# the commands are just printed, instead of run.
+#
+# The <command>-cmd macro should never be run directly, it's used to define
+# the command the macro runs but depending on whether DRYRUN is defined the
+# command may be printed or run.
+#
+# You can redefine <command>-cmd to have the targets in this makefile use a
+# different implementation.
+###############################################################################
+
+crane-cp-cmd      = $(shell echo crane cp $(1) $(2))
+git-push-cmd      = $(shell echo git push $(1) $(2))
+docker-push-cmd   = $(shell echo docker push $(1))
+manifest-tool-cmd = $(shell echo docker run -t --entrypoint /bin/sh -v $(DOCKER_CONFIG):/root/.docker/config.json $(CALICO_BUILD) -c \
+					  "\\\"/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(1)) --template \
+					  $(2):$(3)-ARCHVARIANT --target $(2):$(3)\\\"")
+
 ifdef DRYRUN
-crane-cp 	= $(shell echo echo [DRY RUN] crane cp $(1) $(2))
-git-push 	= $(shell echo echo [DRY RUN] git push $(1) $(2))
-docker-push = $(shell echo echo [DRY RUN] docker push $1)
+crane-cp      = $(shell echo echo [DRY RUN] $(call crane-cp-cmd,$(1),$(2)))
+git-push      = $(shell echo echo [DRY RUN] $(call git-push-cmd,$(1),$(2)))
+docker-push   = $(shell echo echo [DRY RUN] $(call docker-push-cmd,$(1)))
+manifest-tool = $(shell echo echo [DRY RUN] $(call manifest-tool-cmd,$(1),$(2),$(3)))
 else
-crane-cp 	= $(shell echo $(DOCKER_GO_BUILD) crane cp $(1) $(2))
-git-push 	= $(shell echo git push $(1) $(2))
-docker-push = $(shell echo docker push $1)
+crane-cp      = $(shell echo $(call crane-cp-cmd,$(1),$(2)))
+git-push      = $(shell echo $(call git-push-cmd,$(1),$(2)))
+docker-push   = $(shell echo $(call docker-push-cmd,$(1)))
+manifest-tool = $(shell echo $(call manifest-tool-cmd,$(1),$(2),$(3)))
 endif
 
 commit-and-push-pr:
@@ -690,78 +712,71 @@ docker-compress:
 escapefs = $(subst :,---,$(subst /,___,$(1)))
 unescapefs = $(subst ---,:,$(subst ___,/,$(1)))
 
-imagetag:
-ifndef IMAGETAG
-	$(error IMAGETAG is undefined - run using make <target> IMAGETAG=X.Y.Z)
+# retag-build-images-with-registries retags the build / arch images specified by BUILD_IMAGES and VALIDARCHES with
+# the registries specified by DEV_REGISTRIES. The end tagged images are of the format
+# $(REGISTRY)/$(BUILD_IMAGES):<tag>-$(ARCH).
+retag-build-images-with-registries: $(addprefix retag-build-images-with-registry-,$(call escapefs,$(DEV_REGISTRIES)))
+
+# retag-build-images-with-registry-% retags the build / arch images specified by BUILD_IMAGES and VALIDARCHES with
+# the registry specified by $*.
+retag-build-images-with-registry-%:
+	$(MAKE) $(addprefix retag-build-image-with-registry-,$(call escapefs,$(BUILD_IMAGES))) REGISTRY=$(call unescapefs,$*)
+
+# retag-build-image-with-registry-% retags the build arch images specified by $* and VALIDARCHES with the
+# registry specified by REGISTRY.
+retag-build-image-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGES
+	$(MAKE) $(addprefix retag-build-image-arch-with-registry-,$(VALIDARCHES)) BUILD_IMAGE=$(call unescapefs,$*)
+
+# retag-build-image-arch-with-registry-% retags the build / arch image specified by $* and BUILD_IMAGE with the
+# registry specified by REGISTRY.
+retag-build-image-arch-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGE-IMAGETAG
+ifeq ($(filter $(NONMANIFEST_REGISTRIES),$(REGISTRY)),)
+	docker tag $(BUILD_IMAGE):latest-$* $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG)-$*
+else
+	$(if $(filter $*,amd64),\
+		docker tag $(BUILD_IMAGE):latest-$(ARCH) $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
+		$(NOECHO) $(NOOP)\
+	)
 endif
 
-sub-single-tag-images-arch-%: var-require-one-of-BUILD_IMAGES-BUILD_IMAGE
-ifdef BUILD_IMAGES
-	$(foreach build_image,$(BUILD_IMAGES),$(shell docker tag $(build_image):latest-$(ARCH) $(call unescapefs,$*:$(IMAGETAG)-$(ARCH))))
+# push-images-to-registries pushes the build / arch images specified by BUILD_IMAGES and VALIDARCHES to the registries
+# specified by DEV_REGISTRY.
+push-images-to-registries: $(addprefix push-images-to-registry-,$(call escapefs,$(DEV_REGISTRIES)))
+
+# push-images-to-registry-% pushes the build / arch images specified by BUILD_IMAGES and VALIDARCHES to the registry
+# specified by %*.
+push-images-to-registry-%:
+	$(MAKE) $(addprefix push-image-to-registry-,$(call escapefs,$(BUILD_IMAGES))) REGISTRY=$(call unescapefs,$*)
+
+# push-image-to-registry-% pushes the build / arch images specified by $* and VALIDARCHES to the registry
+# specified by REGISTRY.
+push-image-to-registry-%:
+	$(MAKE) $(addprefix push-image-arch-to-registry-,$(VALIDARCHES)) BUILD_IMAGE=$(call unescapefs,$*)
+
+# push-image-arch-to-registry-% pushes the build / arch image specified by $* and BUILD_IMAGE to the registry
+# specified by REGISTRY.
+push-image-arch-to-registry-%:
+ifeq ($(filter $(NONMANIFEST_REGISTRIES),$(REGISTRY)),)
+	$(call docker-push, $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG)-$*)
 else
-	docker tag $(BUILD_IMAGE):latest-$(ARCH) $(call unescapefs,$*:$(IMAGETAG)-$(ARCH))
-endif
-
-# because some still do not support multi-arch manifest
-sub-single-tag-images-non-manifest-%: var-require-one-of-BUILD_IMAGES-BUILD_IMAGE
-ifeq ($(ARCH),amd64)
-ifdef BUILD_IMAGES
-	$(foreach build_image,$(BUILD_IMAGES),$(shell docker tag $(build_image):latest-$(ARCH) $(call unescapefs,$*:$(IMAGETAG))))
-else
-	docker tag $(BUILD_IMAGE):latest-$(ARCH) $(call unescapefs,$*:$(IMAGETAG))
-endif
-else
-	$(NOECHO) $(NOOP)
-endif
-
-tag-images: imagetag $(addprefix sub-single-tag-images-arch-,$(call escapefs,$(PUSH_IMAGES))) $(addprefix sub-single-tag-images-non-manifest-,$(call escapefs,$(PUSH_NONMANIFEST_IMAGES)))
-
-tag-images-all: imagetag $(addprefix sub-tag-images-,$(VALIDARCHES))
-sub-tag-images-%:
-	$(MAKE) tag-images ARCH=$* IMAGETAG=$(IMAGETAG)
-
-push: imagetag $(addprefix sub-single-push-,$(call escapefs,$(PUSH_IMAGES)))
-
-sub-single-push-%:
-	$(call docker-push, $(call unescapefs,$*:$(IMAGETAG)-$(ARCH)))
-
-push-all: imagetag $(addprefix sub-push-,$(VALIDARCHES))
-sub-push-%:
-	$(MAKE) push ARCH=$* IMAGETAG=$(IMAGETAG)
-
-## push default amd64 arch where multi-arch manifest is not supported
-push-non-manifests: imagetag $(addprefix sub-non-manifest-,$(call escapefs,$(PUSH_NONMANIFEST_IMAGES)))
-sub-non-manifest-%:
-ifeq ($(ARCH),amd64)
-	$(call docker-push, $(call unescapefs,$*:$(IMAGETAG)))
-else
-	$(NOECHO) $(NOOP)
+	$(if $(filter $*,amd64),\
+		$(call docker-push, $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG)),\
+		$(NOECHO) $(NOOP)\
+	)
 endif
 
 ## push multi-arch manifest where supported
-push-manifests: imagetag  $(addprefix sub-manifest-,$(call escapefs,$(PUSH_MANIFEST_IMAGES)))
+push-manifests: var-require-all-IMAGETAG  $(addprefix sub-manifest-,$(call escapefs,$(PUSH_MANIFEST_IMAGES)))
 sub-manifest-%:
 	# Docker login to hub.docker.com required before running this target as we are using $(DOCKER_CONFIG) holds the docker login credentials
 	# path to credentials based on manifest-tool's requirements here https://github.com/estesp/manifest-tool#sample-usage
-	docker run -t --entrypoint /bin/sh -v $(DOCKER_CONFIG):/root/.docker/config.json $(CALICO_BUILD) -c "/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(VALIDARCHES)) --template $(call unescapefs,$*:$(IMAGETAG))-ARCHVARIANT --target $(call unescapefs,$*:$(IMAGETAG))"
-
-# require-branch-name requires that the BRANCH_NAME env variable is set.
-require-branch-name:
-ifndef BRANCH_NAME
-	$(error BRANCH_NAME is undefined - run using make <target> BRANCH_NAME=var or set an environment variable)
-endif
-
-# require-confirm requires that the CONFIRM env variable is set.
-require-confirm:
-ifndef CONFIRM
-	$(error CONFIRM is undefined - run using make <target> CONFIRM=true)
-endif
+	$(call manifest-tool,$(VALIDARCHES),$(call unescapefs,$*),$(IMAGETAG))
 
 # cd-common tags and pushes images with the branch name and git version. This target uses PUSH_IMAGES, BUILD_IMAGE,
 # and BRANCH_NAME env variables to figure out what to tag and where to push it to.
 cd-common: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) tag-images-all push-all push-manifests push-non-manifests IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
-	$(MAKE) tag-images-all push-all push-manifests push-non-manifests IMAGETAG=$(shell git describe --tags --dirty --long --always --abbrev=12) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(shell git describe --tags --dirty --long --always --abbrev=12) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 ###############################################################################
 # Release targets and helpers
@@ -921,22 +936,44 @@ push-next-release-dev-tag: var-require-one-of-CONFIRM-DRYRUN var-require-all-NEX
 # release-dev-images releases the dev images by calling the release-tag-dev-image-% and publish-dev-image-% on each
 # value in BUILD_IMAGES. This results in retagging all the dev images with the release tag and copying the dev images
 # over to the release registries.
-release-dev-images: var-require-one-of-CONFIRM-DRYRUN var-require-all-BUILD_IMAGES $(addprefix release-retag-dev-image-,$(call escapefs, $(BUILD_IMAGES))) $(addprefix release-dev-image-,$(call escapefs, $(BUILD_IMAGES)))
+ifndef SKIP_DEV_IMAGE_RETAG
+RELEASE_DEV_IMAGES_RETAG_TARGETS ?= $(addprefix release-retag-dev-images-in-registry-,$(call escapefs, $(DEV_REGISTRIES)))
+endif
 
-# release-retag-dev-image-% retags the image specified by % in the dev registries specified by DEV_REGISTRIES with the
-# tag in RELEASE_TAG.
-release-retag-dev-image-%: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_REGISTRIES-DEV_TAG-RELEASE_TAG
-	$(foreach dev_registry,$(DEV_REGISTRIES),\
-		$(if $(filter $(RELEASE_REGISTRIES),$(dev_registry)),,\
-			 $(call crane-cp,$(dev_registry)/$(call unescapefs,$*):$(DEV_TAG),\
-			 $(dev_registry)/$(call unescapefs,$*):$(RELEASE_TAG))))
+RELEASE_DEV_IMAGES_TARGETS ?= $(addprefix release-dev-images-to-registry-,$(call escapefs, $(RELEASE_REGISTRIES)))
+release-dev-images: var-require-one-of-CONFIRM-DRYRUN var-require-all-BUILD_IMAGES $(RELEASE_DEV_IMAGES_RETAG_TARGETS) $(RELEASE_DEV_IMAGES_TARGETS)
 
-# release-dev-image-% copies and retags the image specified by % from the dev registry specified by DEV_REGISTRY to the
-# release registries specified by RELEASE_REGISTRIES using the tag in RELEASE_TAG.
-release-dev-image-%: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_REGISTRY-RELEASE_REGISTRIES-DEV_TAG-RELEASE_TAG
-	$(foreach release_registry,$(RELEASE_REGISTRIES),\
-		$(call crane-cp,$(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG),\
-		$(release_registry)/$(call unescapefs,$*):$(RELEASE_TAG)))
+# release-retag-dev-images-in-registry-% retags all the build / arch images specified by BUILD_IMAGES and VALIDARCHES in
+# the registry specified by $* with the release tag specified by RELEASE_TAG.
+release-retag-dev-images-in-registry-%:
+	$(MAKE) $(addprefix release-retag-dev-image-in-registry-,$(call escapefs, $(BUILD_IMAGES))) DEV_REGISTRY=$(call unescapefs,$*)
+
+# release-retag-dev-image-in-registry-% retags the build image specified by $* in the dev registry specified by
+# DEV_REGISTRY with the release tag specified by RELEASE_TAG. If DEV_REGISTRY is in the list of registries specified by
+# RELEASE_REGISTRIES then the retag is not done
+release-retag-dev-image-in-registry-%:
+	$(if $(filter-out $(RELEASE_REGISTRIES),$(DEV_REGISTRY)),\
+			 $(call crane-cp,$(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG),\
+			 $(DEV_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG)))
+
+# release-dev-images-to-registry-% copies and retags all the build / arch images specified by BUILD_IMAGES and
+# VALIDARCHES from the registry specified by DEV_REGISTRY to the registry specified by RELEASE_REGISTRY using the tag
+# specified by DEV_TAG and RELEASE_TAG.
+release-dev-images-to-registry-%:
+	$(MAKE) $(addprefix release-dev-image-to-registry-,$(call escapefs, $(BUILD_IMAGES))) RELEASE_REGISTRY=$(call unescapefs,$*)
+
+# release-dev-image-to-registry-% copies the build image and build arch images specified by $* and VALIDARCHES from
+# the dev repo specified by DEV_TAG and RELEASE.
+release-dev-image-to-registry-%:
+	$(if $(SKIP_MANIFEST_RELEASE),,\
+		$(call crane-cp,$(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG),$(RELEASE_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG)))
+	$(if $(SKIP_ARCH_RELEASE),,\
+		$(MAKE) $(addprefix release-dev-image-arch-to-registry-,$(VALIDARCHES)) BUILD_IMAGE=$(call unescapefs,$*))
+
+# release-dev-image-to-registry-% copies the build arch image specified by BUILD_IMAGE and ARCH from the dev repo
+# specified by DEV_TAG and RELEASE.
+release-dev-image-arch-to-registry-%:
+	$(call crane-cp,$(DEV_REGISTRY)/$(BUILD_IMAGE):$(DEV_TAG)-$*,$(RELEASE_REGISTRY)/$(BUILD_IMAGE):$(RELEASE_TAG)-$*)
 
 # create-release-branch creates a release branch based off of the dev tag for the current commit on master. After the
 # release branch is created and pushed, git-create-next-dev-tag is called to create a new empty commit on master and

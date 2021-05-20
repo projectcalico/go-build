@@ -10,8 +10,6 @@ all: build
 ## Run the tests for the current platform/architecture
 test: ut fv st
 
-double_quote := $(shell echo '"')
-
 ###############################################################################
 # Both native and cross architecture builds are supported.
 # The target architecture is select by setting the ARCH variable.
@@ -74,6 +72,7 @@ endif
 space :=
 space +=
 comma := ,
+double_quote := $(shell echo '"')
 prefix_linux = $(addprefix linux/,$(strip $(subst armv,arm/v,$1)))
 join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 
@@ -96,6 +95,11 @@ ifeq ($(RELEASE),true)
 PUSH_IMAGES+=$(RELEASE_IMAGES)
 endif
 
+DOCKERHUB_REGISTRY ?=registry.hub.docker.com
+# filter-registry filters out registries we don't want to include when tagging / pushing docker images. For instance,
+# we don't include the registry name when pushing to docker hub because that registry is the default.
+filter-registry ?= $(if $(filter-out $(1),$(DOCKERHUB_REGISTRY)),$(1)/)
+
 # Convenience function to get the first dev image repo in the list.
 DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
 
@@ -103,7 +107,7 @@ DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
 NONMANIFEST_REGISTRIES      ?= quay.io
 MANIFEST_REGISTRIES         ?= $(DEV_REGISTRIES:$(NONMANIFEST_REGISTRIES)%=)
 
-PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(registry)/$(image)))
+PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(call filter-registry,$(REGISTRY))$(image)))
 
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json
@@ -726,7 +730,7 @@ retag-build-image-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGES
 retag-build-image-arch-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGE-IMAGETAG
 # If the registry we want to push to doesn't not support manifests don't push the ARCH image.
 ifeq ($(filter $(NONMANIFEST_REGISTRIES),$(REGISTRY)),)
-	docker tag $(BUILD_IMAGE):latest-$* $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG)-$*
+	docker tag $(BUILD_IMAGE):latest-$* $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
 else
 	$(if $(filter $*,amd64),\
 		docker tag $(BUILD_IMAGE):latest-$(ARCH) $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
@@ -753,7 +757,7 @@ push-image-to-registry-%:
 push-image-arch-to-registry-%:
 # If the registry we want to push to doesn't not support manifests don't push the ARCH image.
 ifeq ($(filter $(NONMANIFEST_REGISTRIES),$(REGISTRY)),)
-	$(DOCKER) push $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG)-$*
+	$(DOCKER) push $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
 else
 	$(if $(filter $*,amd64),\
 		$(DOCKER) push $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\

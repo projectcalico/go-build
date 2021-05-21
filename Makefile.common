@@ -107,7 +107,7 @@ DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
 NONMANIFEST_REGISTRIES      ?= quay.io
 MANIFEST_REGISTRIES         ?= $(DEV_REGISTRIES:$(NONMANIFEST_REGISTRIES)%=)
 
-PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(call filter-registry,$(REGISTRY))$(image)))
+PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(call filter-registry,$(registry))$(image)))
 
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json

@@ -116,9 +116,12 @@ DOCKER_CONFIG ?= $(HOME)/.docker/config.json
 # If that's not the case and we're running in CI, set -mod=readonly to prevent builds
 # from being flagged as dirty due to updates in go.mod or go.sum _except_ for:
 # - for local builds, which _require_ a change to go.mod.
-# - the target 'golangci-lint' which require
+# - the targets 'commit-pin-updates' and  'golangci-lint' which require
 #   updating go.mod and/or go.sum
 SKIP_GOMOD_READONLY_FLAG =
+ifeq ($(MAKECMDGOALS),commit-pin-updates)
+	SKIP_GOMOD_READONLY_FLAG = yes
+endif
 ifeq ($(MAKECMDGOALS),golangci-lint)
 	SKIP_GOMOD_READONLY_FLAG = yes
 endif
@@ -454,6 +457,12 @@ endif
 #   Targets updating the pins
 ###############################################################################
 GITHUB_API_EXIT_ON_FAILURE?=1
+
+## Update dependency pins to their latest changeset, committing and pushing it.
+## DEPRECATED This will be removed along with associated helper functions in future releases. Use the trigger-auto-pin-update-process
+## to create PR with the pin updates.
+.PHONY: commit-pin-updates
+commit-pin-updates: update-pins git-status git-config git-commit ci git-push
 
 # Creates and checks out the branch defined by GIT_PR_BRANCH_HEAD. It attempts to delete the branch from the local and
 # remote repositories. Requires CONFIRM to be set, otherwise it fails with an error.

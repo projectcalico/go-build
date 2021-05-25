@@ -836,6 +836,10 @@ git-commit-for-remote-tag = $(shell git ls-remote -q --tags $(GIT_REMOTE) $1 | a
 # current-branch gets the name of the branch for the current commit.
 current-branch = $(shell git rev-parse --abbrev-ref HEAD)
 
+# RELEASE_BRANCH_BASE is used when creating a release branch to confirm the correct base is being used. It's
+# configurable so that a dry run can be done from a PR branch.
+RELEASE_BRANCH_BASE ?=master
+
 # var-set-% checks if there is a non empty variable for the value describe by %. If FAIL_NOT_SET is set, then var-set-%
 # fails with an error message. If FAIL_NOT_SET is not set, then var-set-% appends a 1 to VARSET if the variable isn't
 # set.
@@ -892,9 +896,9 @@ maybe-tag-release: var-require-all-RELEASE_TAG
 		@echo "Current commit already tagged with $(RELEASE_TAG)")
 
 # tag-release tags the current commit with an annotated tag with the value in RELEASE_TAG. This target throws an error
-# if the current branch is master.
+# if the current branch is not master.
 tag-release: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_TAG_SUFFIX-RELEASE_TAG
-	$(if $(filter-out master,$(call current-branch)),,$(error tag-release cannot be called on master))
+	$(if $(filter-out $(RELEASE_BRANCH_BASE),$(call current-branch)),,$(error tag-release cannot be called on $(RELEASE_BRANCH_BASE)))
 	git tag -a $(RELEASE_TAG) -m "Release $(RELEASE_TAG)"
 
 # maybe-push-release-tag calls the push-release-tag target only if the tag in RELEASE_TAG is not already pushed to
@@ -922,7 +926,7 @@ maybe-dev-tag-next-release: var-require-all-NEXT_RELEASE_VERSION-DEV_TAG_SUFFIX
 # NEXT_RELEASE_VERSION-DEV_TAG_SUFFIX.
 dev-tag-next-release: var-require-one-of-CONFIRM-DRYRUN var-require-all-NEXT_RELEASE_VERSION-DEV_TAG_SUFFIX-BRANCH
 	git checkout $(BRANCH)
-	git pull $(GIT_REMOTE) $(BRANCH)
+	$(GIT) pull $(GIT_REMOTE) $(BRANCH)
 	git commit --allow-empty -m "Begin development on $(NEXT_RELEASE_VERSION)"
 	git tag $(NEXT_RELEASE_VERSION)-$(DEV_TAG_SUFFIX)
 
@@ -987,10 +991,10 @@ release-dev-image-arch-to-registry-%:
 # release branch is created and pushed, git-create-next-dev-tag is called to create a new empty commit on master and
 # tag that empty commit with an incremented minor version of the previous dev tag for the next release.
 create-release-branch: var-require-one-of-CONFIRM-DRYRUN var-require-all-DEV_TAG_SUFFIX-RELEASE_BRANCH_PREFIX fetch-all
-	$(if $(filter-out master,$(call current-branch)),$(error create-release-branch must be called on master),)
+	$(if $(filter-out $(RELEASE_BRANCH_BASE),$(call current-branch)),$(error create-release-branch must be called on $(RELEASE_BRANCH_BASE)),)
 	$(eval NEXT_RELEASE_VERSION := $(shell echo "$(call git-release-tag-from-dev-tag)" | awk -F  "." '{print $$1"."$$2+1"."0}'))
 	$(eval RELEASE_BRANCH_VERSION := $(shell echo "$(call git-release-tag-from-dev-tag)" | awk -F  "." '{print $$1"."$$2}'))
-	git checkout -B $(RELEASE_BRANCH_PREFIX)-$(RELEASE_BRANCH_VERSION) $(GIT_REMOTE)/master
+	git checkout -B $(RELEASE_BRANCH_PREFIX)-$(RELEASE_BRANCH_VERSION) $(GIT_REMOTE)/$(RELEASE_BRANCH_BASE)
 	$(GIT) push $(GIT_REMOTE) $(RELEASE_BRANCH_PREFIX)-$(RELEASE_BRANCH_VERSION)
 	$(MAKE) dev-tag-next-release push-next-release-dev-tag\
  		BRANCH=$(call current-branch) NEXT_RELEASE_VERSION=$(NEXT_RELEASE_VERSION) DEV_TAG_SUFFIX=$(DEV_TAG_SUFFIX)

@@ -774,14 +774,20 @@ else
 	)
 endif
 
-## push multi-arch manifest where supported
+manifest-tool-generate-spec: var-require-all-BUILD_IMAGE-IMAGETAG-MANIFEST_TOOL_SPEC_TEMPLATE-OUTPUT_FILE
+	BUILD_IMAGE=$(BUILD_IMAGE) IMAGETAG=$(IMAGETAG) OUTPUT_FILE=$(OUTPUT_FILE) bash $(MANIFEST_TOOL_SPEC_TEMPLATE)
+
+## push multi-arch manifest where supported. If the MANIFEST_TOOL_SPEC_TEMPLATE variable is specified this will include
+## the `from-spec` version of the tool.
 push-manifests: var-require-all-IMAGETAG  $(addprefix sub-manifest-,$(call escapefs,$(PUSH_MANIFEST_IMAGES)))
+ifdef MANIFEST_TOOL_SPEC_TEMPLATE
+sub-manifest-%: var-require-all-OUTPUT_DIR
+	$(MAKE) manifest-tool-generate-spec BUILD_IMAGE=$(call unescapefs,$*) OUTPUT_FILE=$(OUTPUT_DIR)/$*.yaml
+	$(MANIFEST_TOOL) push from-spec /tmp/$*.yaml$(double_quote)
+else
 sub-manifest-%:
-	# Docker login to hub.docker.com required before running this target as we are using $(DOCKER_CONFIG) holds the docker login credentials
-	# path to credentials based on manifest-tool's requirements here https://github.com/estesp/manifest-tool#sample-usage
-	$(if $(MANIFEST_TOOL_SPEC),\
-		$(MANIFEST_TOOL) push from-spec $(MANIFEST_TOOL_SPEC)$(double_quote),\
-		$(MANIFEST_TOOL) push from-args --platforms $(call join_platforms,$(VALIDARCHES)) --template $(call unescapefs,$*):$(IMAGETAG)-ARCHVARIANT --target $(call unescapefs,$*):$(IMAGETAG)$(double_quote))
+	$(MANIFEST_TOOL) push from-args --platforms $(call join_platforms,$(VALIDARCHES)) --template $(call unescapefs,$*):$(IMAGETAG)-ARCHVARIANT --target $(call unescapefs,$*):$(IMAGETAG)$(double_quote)
+endif
 
 # cd-common tags and pushes images with the branch name and git version. This target uses PUSH_IMAGES, BUILD_IMAGE,
 # and BRANCH_NAME env variables to figure out what to tag and where to push it to.

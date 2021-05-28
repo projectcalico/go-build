@@ -775,7 +775,7 @@ else
 endif
 
 manifest-tool-generate-spec: var-require-all-BUILD_IMAGE-IMAGETAG-MANIFEST_TOOL_SPEC_TEMPLATE-OUTPUT_FILE
-	BUILD_IMAGE=$(BUILD_IMAGE) IMAGETAG=$(IMAGETAG) OUTPUT_FILE=$(OUTPUT_FILE) bash $(MANIFEST_TOOL_SPEC_TEMPLATE)
+	bash $(MANIFEST_TOOL_SPEC_TEMPLATE) $(OUTPUT_FILE) $(BUILD_IMAGE) $(IMAGETAG)
 
 ## push multi-arch manifest where supported. If the MANIFEST_TOOL_SPEC_TEMPLATE variable is specified this will include
 ## the `from-spec` version of the tool.

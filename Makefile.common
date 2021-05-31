@@ -68,6 +68,8 @@ ifeq ($(word 1,$(subst v, ,$(ARCH))),arm)
 ARM_VERSION := $(word 2,$(subst v, ,$(ARCH)))
 endif
 
+LATEST_IMAGE_TAG?=latest
+
 # these macros create a list of valid architectures for pushing manifests
 space :=
 space +=
@@ -741,10 +743,10 @@ retag-build-image-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGES
 retag-build-image-arch-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGE-IMAGETAG
 # If the registry we want to push to doesn't not support manifests don't push the ARCH image.
 ifeq ($(filter $(NONMANIFEST_REGISTRIES),$(REGISTRY)),)
-	docker tag $(BUILD_IMAGE):latest-$* $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
+	docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$* $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
 else
 	$(if $(filter $*,amd64),\
-		docker tag $(BUILD_IMAGE):latest-$(ARCH) $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
+		docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$(ARCH) $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
 		$(NOECHO) $(NOOP)\
 	)
 endif
@@ -794,8 +796,8 @@ endif
 # cd-common tags and pushes images with the branch name and git version. This target uses PUSH_IMAGES, BUILD_IMAGE,
 # and BRANCH_NAME env variables to figure out what to tag and where to push it to.
 cd-common: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
-	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(shell git describe --tags --dirty --long --always --abbrev=12) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),-$(IMAGETAG_PREFIX))$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),-$(IMAGETAG_PREFIX))$(shell git describe --tags --dirty --long --always --abbrev=12) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 ###############################################################################
 # Release targets and helpers

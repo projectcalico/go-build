@@ -391,9 +391,9 @@ MANIFEST_TOOL = echo [DRY RUN] $(MANIFEST_TOOL_CMD)
 endif
 
 commit-and-push-pr:
-	git add $(GIT_COMMIT_FILES)
-	git commit -m $(GIT_COMMIT_MESSAGE)
-	git push $(GIT_REMOTE) $(GIT_PR_BRANCH_HEAD)
+	$(GIT) add $(GIT_COMMIT_FILES)
+	$(GIT) commit -m $(GIT_COMMIT_MESSAGE)
+	$(GIT) push $(GIT_REMOTE) $(GIT_PR_BRANCH_HEAD)
 
 ###############################################################################
 # Github API helpers
@@ -466,17 +466,13 @@ commit-pin-updates: update-pins git-status git-config git-commit ci git-push
 
 # Creates and checks out the branch defined by GIT_PR_BRANCH_HEAD. It attempts to delete the branch from the local and
 # remote repositories. Requires CONFIRM to be set, otherwise it fails with an error.
-create-pin-update-head:
-ifndef CONFIRM
-	@echo "Setting up the pull request branches is destructive, you must confirm to run this operation (CONFIRM=true)."
-	exit 1
-endif
+create-pin-update-head: var-require-one-of-CONFIM-DRYRUN
 ifeq ($(shell git rev-parse --abbrev-ref HEAD),$(GIT_PR_BRANCH_HEAD))
 	@echo "Current branch is pull request head, cannot set it up."
 	exit 1
 endif
 	-git branch -D $(GIT_PR_BRANCH_HEAD)
-	-git push $(GIT_REMOTE) --delete $(GIT_PR_BRANCH_HEAD)
+	-$(GIT) push $(GIT_REMOTE) --delete $(GIT_PR_BRANCH_HEAD)
 	git checkout -b $(GIT_PR_BRANCH_HEAD)
 
 create-pin-update-pr:
@@ -493,6 +489,12 @@ set-merge-when-ready-on-pin-update-pr:
 trigger-pin-updates:
 	PIN_BRANCH=$(GIT_PR_BRANCH_BASE) $(MAKE) update-pins
 
+# POST_PIN_UPDATE_TARGETS is used to specify targets that should be run after the pins have been updated to run targets
+# that modify files that are tied to the dependencies. An example would be generated files that would changed based on
+# a dependency update. This target would likely need to be used in tandem with GIT_PIN_UPDATE_COMMIT_EXTRA_FILES so the
+# update files are committed with the pin update.
+POST_PIN_UPDATE_TARGETS ?=
+
 # Trigger the auto pin update process. This involves updating the pins, committing and pushing them to github, creating
 # a pull request, and add the "/merge-when-ready" comment command. If there is already a pin update PR for the base
 # branch the pin update is not done and the target will exit.
@@ -500,7 +502,7 @@ trigger-auto-pin-update-process: check-if-pin-update-pr-exists
 	$(if $(filter $(PR_EXISTS),0),echo "A pull request for head '$(GIT_PR_BRANCH_HEAD)' and base '$(GIT_PR_BRANCH_BASE)' already exists.",\
 		$(MAKE) trigger-auto-pin-update-process-wrapped)
 
-trigger-auto-pin-update-process-wrapped: create-pin-update-head trigger-pin-updates
+trigger-auto-pin-update-process-wrapped: create-pin-update-head trigger-pin-updates $(POST_PIN_UPDATE_TARGETS)
 	$(if $(shell git diff --quiet HEAD $(GIT_COMMIT_FILES) || echo "true"),\
 		$(MAKE) commit-and-push-pr create-pin-update-pr set-merge-when-ready-on-pin-update-pr,echo "Pins are up to date")
 

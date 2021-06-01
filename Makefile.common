@@ -32,8 +32,14 @@ VALIDARCHES = $(filter-out $(EXCLUDEARCH),$(ARCHES))
 # BUILDARCH is the host architecture
 # ARCH is the target architecture
 # we need to keep track of them separately
+# Note: OS is always set on Windows
+ifeq ($(OS),Windows_NT)
+BUILDARCH = x86_64
+BUILDOS = x86_64
+else
 BUILDARCH ?= $(shell uname -m)
 BUILDOS ?= $(shell uname -s | tr A-Z a-z)
+endif
 
 # canonicalized names for host architecture
 ifeq ($(BUILDARCH),aarch64)
@@ -176,13 +182,17 @@ BUILD_ID:=$(shell git rev-parse HEAD || uuidgen | sed 's/-//g')
 GIT_DESCRIPTION=$(shell git describe --tags --dirty --always --abbrev=12 || echo '<unknown>')
 
 # Calculate a timestamp for any build artefacts.
+ifneq ($(OS),Windows_NT)
 DATE:=$(shell date -u +'%FT%T%z')
+endif
 
 # Figure out the users UID/GID.  These are needed to run docker containers
 # as the current user and ensure that files built inside containers are
 # owned by the current user.
+ifneq ($(OS),Windows_NT)
 LOCAL_USER_ID:=$(shell id -u)
 LOCAL_GROUP_ID:=$(shell id -g)
+endif
 
 ifeq ("$(LOCAL_USER_ID)", "0")
 # The build needs to run as root.

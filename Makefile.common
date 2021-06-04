@@ -796,8 +796,8 @@ manifest-tool-generate-spec: var-require-all-BUILD_IMAGE-IMAGETAG-MANIFEST_TOOL_
 push-manifests: var-require-all-IMAGETAG  $(addprefix sub-manifest-,$(call escapefs,$(PUSH_MANIFEST_IMAGES)))
 ifdef MANIFEST_TOOL_SPEC_TEMPLATE
 sub-manifest-%: var-require-all-OUTPUT_DIR
-	$(MAKE) manifest-tool-generate-spec BUILD_IMAGE=$(call unescapefs,$*) OUTPUT_FILE=$(OUTPUT_DIR)/$*.yaml
-	$(MANIFEST_TOOL) push from-spec /tmp/$*.yaml$(double_quote)
+	$(MAKE) manifest-tool-generate-spec BUILD_IMAGE=$(call unescapefs,$*) OUTPUT_FILE=$(OUTPUT_DIR)$*.yaml
+	$(MANIFEST_TOOL) push from-spec $(OUTPUT_DIR)$*.yaml$(double_quote)
 else
 sub-manifest-%:
 	$(MANIFEST_TOOL) push from-args --platforms $(call join_platforms,$(VALIDARCHES)) --template $(call unescapefs,$*):$(IMAGETAG)-ARCHVARIANT --target $(call unescapefs,$*):$(IMAGETAG)$(double_quote)

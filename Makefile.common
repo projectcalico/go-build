@@ -386,8 +386,10 @@ git-commit:
 CRANE_CMD         = crane
 GIT_CMD           = git
 DOCKER_CMD        = docker
+
+MANIFEST_TOOL_EXTRA_DOCKER_ARGS ?=
 # note that when using the MANIFEST_TOOL command you need to close the command with $(double_quote).
-MANIFEST_TOOL_CMD = docker run -t --entrypoint /bin/sh -v $(DOCKER_CONFIG):/root/.docker/config.json $(CALICO_BUILD) -c \
+MANIFEST_TOOL_CMD = docker run -t --entrypoint /bin/sh -v $(DOCKER_CONFIG):/root/.docker/config.json $(MANIFEST_TOOL_EXTRA_DOCKER_ARGS) $(CALICO_BUILD) -c \
 					  $(double_quote)/usr/bin/manifest-tool
 
 ifdef CONFIRM

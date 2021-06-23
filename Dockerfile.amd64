@@ -33,7 +33,7 @@ RUN echo 'APT::Default-Release "stable";' > /etc/apt/apt.conf.d/99defaultrelease
         libbpf-dev linux-headers-amd64  && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
-        llvm clang binutils file iproute2 \
+        llvm-11 clang-11 binutils file iproute2 \
         ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev && \
     rm -rf /var/lib/apt/lists/*
 

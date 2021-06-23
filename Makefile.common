@@ -311,6 +311,8 @@ define update_replace_pin
 endef
 
 GIT_REMOTE?=origin
+API_BRANCH?=$(PIN_BRANCH)
+API_REPO?=github.com/projectcalico/api
 APISERVER_BRANCH?=$(PIN_BRANCH)
 APISERVER_REPO?=github.com/projectcalico/apiserver
 TYPHA_BRANCH?=$(PIN_BRANCH)
@@ -323,6 +325,12 @@ FELIX_BRANCH?=$(PIN_BRANCH)
 FELIX_REPO?=github.com/projectcalico/felix
 CNI_BRANCH?=$(PIN_BRANCH)
 CNI_REPO?=github.com/projectcalico/cni-plugin
+
+update-api-pin:
+	$(call update_pin,github.com/projectcalico/api,$(API_REPO),$(API_BRANCH))
+
+replace-api-pin:
+	$(call update_replace_pin,github.com/projectcalico/api,$(API_REPO),$(API_BRANCH))
 
 update-apiserver-pin:
 	$(call update_pin,github.com/projectcalico/apiserver,$(APISERVER_REPO),$(APISERVER_BRANCH))

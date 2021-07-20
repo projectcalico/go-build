@@ -564,17 +564,16 @@ install-git-hooks:
 foss-checks:
 	$(DOCKER_RUN) -e FOSSA_API_KEY=$(FOSSA_API_KEY) $(CALICO_BUILD) /usr/local/bin/fossa
 
-IMPORT_TIGERA_API = $(shell go list -m github.com/tigera/api > /dev/null 2>&1 && echo yes || echo no)
-IMPORT_PROJECTCALICO_API = $(shell go list -m github.com/projectcalico/api > /dev/null 2>&1 && echo yes || echo no)
-
 .PHONY: check-module-path-tigera-api
 check-module-path-tigera-api:
 	@echo "Checking the repo importing tigera/api and not importing projectcalico/api"
-	if [ "$(IMPORT_TIGERA_API)" != "yes" ]; then \
+	@IMPORT_TIGERA_API=$$(go list -m github.com/tigera/api > /dev/null 2>&1 && echo yes || echo no); \
+	if [ "$$IMPORT_TIGERA_API" != "yes" ]; then \
 	     echo "Error: This repo should import tigera/api module."; \
 	     false; \
 	fi
-	if [ "$(IMPORT_PROJECTCALICO_API)" != "no" ]; then \
+	@IMPORT_PROJECTCALICO_API=$$(go list -m github.com/projectcalico/api > /dev/null 2>&1 && echo yes || echo no); \
+	if [ "$$IMPORT_PROJECTCALICO_API" != "no" ]; then \
 	     echo "Error: This repo should NOT import projectcalico/api module."; \
 	     false; \
 	fi
@@ -582,15 +581,16 @@ check-module-path-tigera-api:
 .PHONY: check-module-path-projectcalico-api
 check-module-path-projectcalico-api:
 	@echo "Checking the repo importing projectcalico/api and not importing tigera/api"
-	if [ "$(IMPORT_PROJECTCALICO_API)" != "yes" ]; then \
+	@IMPORT_PROJECTCALICO_API=$$(go list -m github.com/projectcalico/api > /dev/null 2>&1 && echo yes || echo no); \
+	if [ "$$IMPORT_PROJECTCALICO_API" != "yes" ]; then \
 	     echo "Error: This repo should import projectcalico/api module."; \
 	     false; \
 	fi
-	if [ "$(IMPORT_TIGERA_API)" != "no" ]; then \
+	@IMPORT_TIGERA_API=$$(go list -m github.com/tigera/api > /dev/null 2>&1 && echo yes || echo no); \
+	if [ "$$IMPORT_TIGERA_API" != "no" ]; then \
 	     echo "Error: This repo should NOT import tigera/api module."; \
 	     false; \
 	fi
-
 
 ###############################################################################
 # go mod helpers

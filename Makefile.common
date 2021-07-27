@@ -313,39 +313,51 @@ endef
 GIT_REMOTE?=origin
 API_BRANCH?=$(PIN_BRANCH)
 API_REPO?=github.com/projectcalico/api
+BASE_API_REPO?=$(API_REPO)
+
 APISERVER_BRANCH?=$(PIN_BRANCH)
 APISERVER_REPO?=github.com/projectcalico/apiserver
+BASE_APISERVER_REPO?=$(APISERVER_REPO)
+
 TYPHA_BRANCH?=$(PIN_BRANCH)
 TYPHA_REPO?=github.com/projectcalico/typha
+BASE_TYPHA_REPO?=$(TYPHA_REPO)
+
 LIBCALICO_BRANCH?=$(PIN_BRANCH)
 LIBCALICO_REPO?=github.com/projectcalico/libcalico-go
+BASE_LIBCALICO_REPO?=$(LIBCALICO_REPO)
+
 CONFD_BRANCH?=$(PIN_BRANCH)
 CONFD_REPO?=github.com/projectcalico/confd
+
 FELIX_BRANCH?=$(PIN_BRANCH)
 FELIX_REPO?=github.com/projectcalico/felix
+BASE_FELIX_REPO?=$(FELIX_REPO)
+
 CNI_BRANCH?=$(PIN_BRANCH)
 CNI_REPO?=github.com/projectcalico/cni-plugin
+BASE_CNI_REPO?=$(CNI_REPO)
 
 update-api-pin:
-	$(call update_pin,github.com/projectcalico/api,$(API_REPO),$(API_BRANCH))
+	$(call update_pin,$(BASE_API_REPO),$(API_REPO),$(API_BRANCH))
 
 replace-api-pin:
 	$(call update_replace_pin,github.com/projectcalico/api,$(API_REPO),$(API_BRANCH))
 
 update-apiserver-pin:
-	$(call update_pin,github.com/projectcalico/apiserver,$(APISERVER_REPO),$(APISERVER_BRANCH))
+	$(call update_pin,$(BASE_APISERVER_REPO),$(APISERVER_REPO),$(APISERVER_BRANCH))
 
 replace-apiserver-pin:
 	$(call update_replace_pin,github.com/projectcalico/apiserver,$(APISERVER_REPO),$(APISERVER_BRANCH))
 
 update-typha-pin:
-	$(call update_pin,github.com/projectcalico/typha,$(TYPHA_REPO),$(TYPHA_BRANCH))
+	$(call update_pin,$(BASE_TYPHA_REPO),$(TYPHA_REPO),$(TYPHA_BRANCH))
 
 replace-typha-pin:
 	$(call update_replace_pin,github.com/projectcalico/typha,$(TYPHA_REPO),$(TYPHA_BRANCH))
 
 update-libcalico-pin:
-	$(call update_pin,github.com/projectcalico/libcalico-go,$(LIBCALICO_REPO),$(LIBCALICO_BRANCH))
+	$(call update_pin,$(BASE_LIBCALICO_REPO),$(LIBCALICO_REPO),$(LIBCALICO_BRANCH))
 
 replace-libcalico-pin:
 	$(call update_replace_pin,github.com/projectcalico/libcalico-go,$(LIBCALICO_REPO),$(LIBCALICO_BRANCH))
@@ -354,13 +366,13 @@ update-confd-pin:
 	$(call update_replace_pin,github.com/kelseyhightower/confd,$(CONFD_REPO),$(CONFD_BRANCH))
 
 update-felix-pin:
-	$(call update_pin,github.com/projectcalico/felix,$(FELIX_REPO),$(FELIX_BRANCH))
+	$(call update_pin,$(BASE_FELIX_REPO),$(FELIX_REPO),$(FELIX_BRANCH))
 
 replace-felix-pin:
 	$(call update_replace_pin,github.com/projectcalico/felix,$(FELIX_REPO),$(FELIX_BRANCH))
 
 update-cni-plugin-pin:
-	$(call update_pin,github.com/projectcalico/cni-plugin,$(CNI_REPO),$(CNI_BRANCH))
+	$(call update_pin,$(BASE_CNI_REPO),$(CNI_REPO),$(CNI_BRANCH))
 
 replace-cni-pin:
 	$(call update_replace_pin,github.com/projectcalico/cni-plugin,$(CNI_REPO),$(CNI_BRANCH))

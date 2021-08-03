@@ -327,7 +327,7 @@ CNI_BRANCH?=$(PIN_BRANCH)
 CNI_REPO?=github.com/projectcalico/cni-plugin
 
 update-api-pin:
-	$(call update_pin,github.com/projectcalico/api,$(API_REPO),$(API_BRANCH))
+	$(call update_pin,$(API_REPO),$(API_REPO),$(API_BRANCH))
 
 replace-api-pin:
 	$(call update_replace_pin,github.com/projectcalico/api,$(API_REPO),$(API_BRANCH))

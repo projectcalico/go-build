@@ -581,6 +581,7 @@ mod-tidy:
 # us a single place to define these values, then projects can reference the readable ENV variable when they need a semaphore
 # project ID.
 SEMAPHORE_API_PROJECT_ID=9625623e-bfc5-435f-9c22-74f9cd8622fc
+SEMAPHORE_API_TIGERA_PROJECT_ID=48d23719-405f-4827-b58a-7de0598a6bf5
 SEMAPHORE_ANOMALY_DETECTION_JOBS_PROJECT_ID=e506a098-3e89-4802-8165-c59b2a95f8ae
 SEMAPHORE_API_SERVER_PROJECT_ID=6e4eb5b2-0150-4624-968d-f96a1cd9c37d
 SEMAPHORE_API_SERVER_OSS_PROJECT_ID=10f6c7c1-7eaa-4e75-a9d1-83e5426158b1

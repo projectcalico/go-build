@@ -103,10 +103,9 @@ ifeq ($(RELEASE),true)
 PUSH_IMAGES+=$(RELEASE_IMAGES)
 endif
 
-DOCKERHUB_REGISTRY ?=registry.hub.docker.com
-# filter-registry filters out registries we don't want to include when tagging / pushing docker images. For instance,
-# we don't include the registry name when pushing to docker hub because that registry is the default.
-filter-registry ?= $(if $(filter-out $(1),$(DOCKERHUB_REGISTRY)),$(1)/)
+# push-image-name calculates what the image name should be for the registry we're pushing to. Right now it just checks
+# if the registry is already included in the image name.
+push-image-name = $(if $(filter $(firstword $(subst /, ,$(2))),$(1)),$(2),$(1)/$(2))
 
 # Convenience function to get the first dev image repo in the list.
 DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
@@ -115,7 +114,7 @@ DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
 NONMANIFEST_REGISTRIES      ?= quay.io
 MANIFEST_REGISTRIES         ?= $(DEV_REGISTRIES:$(NONMANIFEST_REGISTRIES)%=)
 
-PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(call filter-registry,$(registry))$(image)))
+PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(call push-image-name,$(registry),$(image)))
 
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json
@@ -799,9 +798,9 @@ retag-build-image-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGES
 # retag-build-image-arch-with-registry-% retags the build / arch image specified by $* and BUILD_IMAGE with the
 # registry specified by REGISTRY.
 retag-build-image-arch-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGE-IMAGETAG
-	docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$* $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
+	docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$* $(call push-image-name,$(REGISTRY),$(BUILD_IMAGE)):$(IMAGETAG)-$*
 	$(if $(filter $*,amd64),\
-		docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$(ARCH) $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
+		docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$(ARCH) $(call push-image-name,$(REGISTRY),$(BUILD_IMAGE)):$(IMAGETAG),\
 		$(NOECHO) $(NOOP)\
 	)
 
@@ -823,9 +822,9 @@ push-image-to-registry-%:
 # specified by REGISTRY.
 push-image-arch-to-registry-%:
 # If the registry we want to push to doesn't not support manifests don't push the ARCH image.
-	$(DOCKER) push $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
+	$(DOCKER) push $(call push-image-name,$(REGISTRY),$(BUILD_IMAGE)):$(IMAGETAG)-$*
 	$(if $(filter $*,amd64),\
-		$(DOCKER) push $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
+		$(DOCKER) push $(call push-image-name,$(REGISTRY),$(BUILD_IMAGE)):$(IMAGETAG),\
 		$(NOECHO) $(NOOP)\
 	)
 

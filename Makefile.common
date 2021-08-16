@@ -103,10 +103,10 @@ ifeq ($(RELEASE),true)
 PUSH_IMAGES+=$(RELEASE_IMAGES)
 endif
 
-DOCKERHUB_REGISTRY ?=registry.hub.docker.com
+DEFAULT_REGISTRY_KEY ?=default
 # filter-registry filters out registries we don't want to include when tagging / pushing docker images. For instance,
 # we don't include the registry name when pushing to docker hub because that registry is the default.
-filter-registry ?= $(if $(filter-out $(1),$(DOCKERHUB_REGISTRY)),$(1)/)
+filter-registry ?= $(if $(filter-out $(1),$(DEFAULT_REGISTRY_KEY)),$(1)/)
 
 # Convenience function to get the first dev image repo in the list.
 DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
@@ -801,7 +801,7 @@ retag-build-image-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGES
 retag-build-image-arch-with-registry-%: var-require-all-REGISTRY-BUILD_IMAGE-IMAGETAG
 	docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$* $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
 	$(if $(filter $*,amd64),\
-		docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$(ARCH) $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
+		docker tag $(BUILD_IMAGE):$(LATEST_IMAGE_TAG)-$(ARCH) $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG),\
 		$(NOECHO) $(NOOP)\
 	)
 
@@ -825,7 +825,7 @@ push-image-arch-to-registry-%:
 # If the registry we want to push to doesn't not support manifests don't push the ARCH image.
 	$(DOCKER) push $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG)-$*
 	$(if $(filter $*,amd64),\
-		$(DOCKER) push $(REGISTRY)/$(BUILD_IMAGE):$(IMAGETAG),\
+		$(DOCKER) push $(call filter-registry,$(REGISTRY))$(BUILD_IMAGE):$(IMAGETAG),\
 		$(NOECHO) $(NOOP)\
 	)
 

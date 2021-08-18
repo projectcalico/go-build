@@ -74,7 +74,7 @@ To use `binfmt` in other projects:
 ```dockerfile
 FROM calico/go-build:v0.16 as qemu
 
-FROM arm64v8/alpine:3.10 as base
+FROM arm64v8/golang:1.15.2-buster as base
 
 # Enable non-native builds of this image on an amd64 hosts.
 # This must be the first RUN command in this file!

@@ -70,6 +70,10 @@ RUN rm -rf /go/src/*
 # Install vgo (should be removed once we take Go 1.11)
 RUN go get -u golang.org/x/vgo
 
+# Install generation tools.
+RUN  go get -u k8s.io/code-generator/cmd/openapi-gen
+RUN  go get -u k8s.io/code-generator/cmd/deepcopy-gen
+
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 

@@ -313,6 +313,7 @@ endef
 GIT_REMOTE?=origin
 API_BRANCH?=$(PIN_BRANCH)
 API_REPO?=github.com/projectcalico/api
+BASE_API_REPO?=github.com/projectcalico/api
 APISERVER_BRANCH?=$(PIN_BRANCH)
 APISERVER_REPO?=github.com/projectcalico/apiserver
 TYPHA_BRANCH?=$(PIN_BRANCH)
@@ -330,7 +331,7 @@ update-api-pin:
 	$(call update_pin,$(API_REPO),$(API_REPO),$(API_BRANCH))
 
 replace-api-pin:
-	$(call update_replace_pin,github.com/projectcalico/api,$(API_REPO),$(API_BRANCH))
+	$(call update_replace_pin,$(BASE_API_REPO),$(API_REPO),$(API_BRANCH))
 
 update-apiserver-pin:
 	$(call update_pin,github.com/projectcalico/apiserver,$(APISERVER_REPO),$(APISERVER_BRANCH))

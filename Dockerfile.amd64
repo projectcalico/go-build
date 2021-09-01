@@ -89,6 +89,11 @@ RUN go get github.com/Masterminds/glide && \
   go get -u golang.org/x/tools/cmd/stringer && \
   go get -u k8s.io/code-generator/cmd/openapi-gen && \
   go get -u k8s.io/code-generator/cmd/deepcopy-gen && \
+  go get -u k8s.io/code-generator/cmd/client-gen && \
+  go get -u k8s.io/code-generator/cmd/lister-gen && \
+  go get -u k8s.io/code-generator/cmd/informer-gen && \
+  go get -u k8s.io/code-generator/cmd/defaulter-gen && \
+  go get -u k8s.io/code-generator/cmd/conversion-gen && \
   rm -rf /go/src/* /root/.cache
 
 # Used for generating CRD files.

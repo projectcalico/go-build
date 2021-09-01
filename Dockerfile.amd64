@@ -100,7 +100,7 @@ RUN go get github.com/Masterminds/glide && \
 # Download a version of controller-gen that has been hacked to support additional types (e.g., float).
 # We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen
 # tooling. Example: float, all the types in the numorstring package, etc.
-RUN wget -O ${GOPATH}/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/calico/controller-gen && chmod +x ${GOPATH}/bin/controller-gen
+RUN wget -O ${GOPATH}/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/calico-0.1/controller-gen && chmod +x ${GOPATH}/bin/controller-gen
 
 # Enable non-native runs on amd64 architecture hosts
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done

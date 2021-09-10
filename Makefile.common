@@ -954,15 +954,26 @@ cut-release-wrapped: var-require-one-of-CONFIRM-DRYRUN
 	$(eval DEV_TAG = $(call git-dev-tag))
 	$(eval RELEASE_TAG = $(call git-release-tag-from-dev-tag))
 	$(eval RELEASE_BRANCH = $(call release-branch-for-tag,$(DEV_TAG)))
+ifdef EXPECTED_RELEASE_TAG
+	$(if $(filter-out $(RELEASE_TAG),$(EXPECTED_RELEASE_TAG)),\
+		@echo "Failed to verify release tag$(comma) expected release version is $(EXPECTED_RELEASE_TAG)$(comma) actual is $(RELEASE_TAG)."\
+		&& exit 1)
+endif
 	$(eval NEXT_RELEASE_VERSION = $(shell echo "$(call git-release-tag-from-dev-tag)" | awk -F  "." '{print $$1"."$$2"."$$3+1}'))
+ifndef IMAGE_ONLY
 	$(MAKE) maybe-tag-release maybe-push-release-tag\
 		RELEASE_TAG=$(RELEASE_TAG) BRANCH=$(RELEASE_BRANCH) DEV_TAG=$(DEV_TAG)
-ifdef BUILD_IMAGES
-	$(MAKE) release-dev-images\
-		RELEASE_TAG=$(RELEASE_TAG) BRANCH=$(RELEASE_BRANCH) DEV_TAG=$(DEV_TAG)
 endif
+ifdef BUILD_IMAGES
+	$(eval IMAGE_DEV_TAG = $(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(DEV_TAG))
+	$(eval IMAGE_RELEASE_TAG = $(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(RELEASE_TAG))
+	$(MAKE) release-dev-images\
+		RELEASE_TAG=$(IMAGE_RELEASE_TAG) BRANCH=$(RELEASE_BRANCH) DEV_TAG=$(IMAGE_DEV_TAG)
+endif
+ifndef IMAGE_ONLY
 	$(MAKE) maybe-dev-tag-next-release maybe-push-next-release-dev-tag\
 		NEXT_RELEASE_VERSION=$(NEXT_RELEASE_VERSION) BRANCH=$(RELEASE_BRANCH) DEV_TAG=$(DEV_TAG)
+endif
 
 # maybe-tag-release calls the tag-release target only if the current commit is not tagged with the tag in RELEASE_TAG.
 # If the current commit is already tagged with the value in RELEASE_TAG then this is a NOOP.

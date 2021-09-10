@@ -948,6 +948,9 @@ sem-cut-release: var-require-one-of-CONFIRM-DRYRUN var-require-one-of-USE_CURREN
 #	by RELEASE_REGISTRIES) and retags those images with the release tag
 # - tags an empty commit at the head of the release branch with the next patch release dev tag and pushed that to github
 cut-release: var-require-one-of-CONFIRM-DRYRUN
+	$(MAKE) cut-release-wrapped RELEASE=true
+
+cut-release-wrapped: var-require-one-of-CONFIRM-DRYRUN
 	$(eval DEV_TAG = $(call git-dev-tag))
 	$(eval RELEASE_TAG = $(call git-release-tag-from-dev-tag))
 	$(eval RELEASE_BRANCH = $(call release-branch-for-tag,$(DEV_TAG)))

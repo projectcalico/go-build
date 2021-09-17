@@ -933,10 +933,32 @@ var-require-all-%:
 var-require-one-of-%:
 	$(MAKE) var-require REQUIRED_VARS=$*
 
-sem-cut-release: var-require-one-of-CONFIRM-DRYRUN var-require-one-of-USE_CURRENT_DEV_TAG-USE_CURRENT_DEV_TAG
-	$(if $(USE_CURRENT_DEV_TAG),$(eval TAG = $(call git-dev-tag)))
-	@echo "Cutting release from commit tagged with $(TAG)"
-	SEMAPHORE_WORKFLOW_BRANCH=$(call release-branch-for-tag,$(TAG)) SEMAPHORE_COMMIT_SHA=$(call commit-for-tag,$(TAG)) SEMAPHORE_WORKFLOW_FILE=cut-release.yml $(MAKE) semaphore-run-workflow
+# sem-cut-release triggers the cut-release pipeline (or test-cut-release if CONFIRM is not specified) in semaphore to
+# cut the release. The pipeline is triggered for the current commit, and the branch it's triggered on is calculated
+# from the RELEASE_VERSION, CNX, and OS variables given.
+#
+# Before the pipeline is triggered, this target validates that the expected release will be cut using the
+# RELEASE_TAG (optional and defaults to the current tag) and RELEASE_VERSION (required) variables. The RELEASE_TAG
+# should be the dev tag that the release is cut from, and RELEASE_VERSION should be the version expected to be released.
+# This target verifies that the current commit is tagged with the RELEASE_TAG and that cutting this commit will result
+# in RELEASE_VERSION being cut.
+sem-cut-release: var-require-one-of-CONFIRM-DRYRUN var-require-all-RELEASE_VERSION var-require-one-of-CNX-OS
+ifndef RELEASE_TAG
+	$(eval RELEASE_TAG = $(call git-dev-tag))
+else
+	$(eval RELEASE_TAG_COMMIT = $(call commit-for-tag,$(RELEASE_TAG)))
+	$(if $(filter-out $(RELEASE_TAG_COMMIT),$(GIT_COMMIT)),\
+		echo Current commit is not tagged with $(RELEASE_TAG) && exit 1)
+endif
+	$(eval CURRENT_RELEASE_VERSION = $(call git-release-tag-from-dev-tag))
+	$(if $(filter-out $(CURRENT_RELEASE_VERSION),$(RELEASE_VERSION)),\
+		echo Given release version $(RELEASE_VERSION) does not match current commit release version $(CURRENT_RELEASE_VERSION). && exit 1)
+
+	$(eval RELEASE_BRANCH = release-$(if $CNX,calient-,)$(shell echo "$(RELEASE_VERSION)" | awk -F  "." '{print $$1"."$$2}'))
+	$(eval WORKFLOW_FILE = $(if $(CONFIRM),cut-release.yml,test-cut-release.yml))
+
+	@echo Cutting release for $(RELEASE_VERSION) from dev tag $(RELEASE_TAG) \(commit $(GIT_COMMIT)\)
+	SEMAPHORE_WORKFLOW_BRANCH=$(RELEASE_BRANCH) SEMAPHORE_COMMIT_SHA=$(GIT_COMMIT) SEMAPHORE_WORKFLOW_FILE=$(WORKFLOW_FILE) $(MAKE) semaphore-run-workflow
 
 # cut-release uses the dev tags on the current commit to cut the release, more specifically cut-release does the
 # following:

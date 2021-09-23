@@ -12,7 +12,7 @@ RUN apt update && apt install -y curl
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
-FROM arm64v8/golang:1.15.2-buster
+FROM arm64v8/golang:1.16.7-buster
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 
@@ -21,14 +21,14 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 
 # Install bash for the entry script (and because it's generally useful)
-# Install curl to download glide
+# Install curl
 # Install git for fetching Go dependencies
 # Install ssh for fetching Go dependencies
 # Install mercurial for fetching go dependencies
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
-# Install grep, sed, zip, and jq for use in some Makefiles (e.g. pulling versions out of glide.yaml)
+# Install grep, sed, zip, and jq for use in some Makefiles
 # Install gcc for cgo.
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
@@ -82,16 +82,13 @@ RUN cp -a $GOROOT $GOCGO && \
   rm -rf /go/src/* /root/.cache
 
 # Install go programs that we rely on
-ENV GLIDE_HOME /home/user/.glide
-RUN go get github.com/Masterminds/glide && \
-  go get github.com/onsi/ginkgo/ginkgo && \
+RUN go get github.com/onsi/ginkgo/ginkgo && \
   go get golang.org/x/tools/cmd/goimports && \
   wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.27.0 && \
   golangci-lint --version && \
   go get github.com/pmezard/licenses && \
   go get github.com/wadey/gocovmerge && \
   GO111MODULE=on go get github.com/mikefarah/yq/v3 && \
-  go get -u golang.org/x/vgo && \
   go get -u github.com/jstemmer/go-junit-report && \
   go get -u golang.org/x/tools/cmd/stringer && \
   go get -u k8s.io/code-generator/cmd/openapi-gen && \

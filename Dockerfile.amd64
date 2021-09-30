@@ -93,6 +93,11 @@ RUN go get github.com/onsi/ginkgo/ginkgo && \
   GO111MODULE=on go get k8s.io/code-generator/cmd/conversion-gen@v0.22.0 && \
   rm -rf /go/src/* /root/.cache
 
+# Install necessary Kubernetes binaries used in tests.
+RUN wget https://dl.k8s.io/v1.22.2/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/v1.22.2/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/v1.22.2/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+
 # Used for generating CRD files.
 # Download a version of controller-gen that has been hacked to support additional types (e.g., float).
 # We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen

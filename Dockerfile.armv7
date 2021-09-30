@@ -62,6 +62,11 @@ RUN rm -rf /go/src/*
 RUN  go get -u k8s.io/code-generator/cmd/openapi-gen
 RUN  go get -u k8s.io/code-generator/cmd/deepcopy-gen
 
+# Install necessary Kubernetes binaries used in tests.
+RUN wget https://dl.k8s.io/v1.22.2/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/v1.22.2/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/v1.22.2/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 

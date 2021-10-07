@@ -1,6 +1,6 @@
 FROM calico/bpftool:v5.3-amd64 as bpftool
 
-FROM amd64/golang:1.16.7-buster
+FROM goboring/golang:1.16.7b7
 MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
 ARG QEMU_VERSION=4.2.0-6

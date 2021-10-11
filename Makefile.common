@@ -262,7 +262,15 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		-v $(CURDIR)/.go-pkg-cache:/go-cache:rw \
 		-w /go/src/$(PACKAGE_NAME)
 
-DOCKER_GO_BUILD := $(DOCKER_RUN) $(CALICO_BUILD)
+# We need CGO to leverage BoringCrypto.  However, the cross-compile doesn't support CGO yet.
+# Currently CGO can be enbaled in ARM64 and AMD64 builds.
+ifeq ($(ARCH), $(filter $(ARCH),amd64 arm64))
+CGO_ENABLED=1
+else
+CGO_ENABLED=0
+endif
+
+DOCKER_GO_BUILD=$(DOCKER_RUN) -e CGO_ENABLED=$(CGO_ENABLED) $(CALICO_BUILD)
 
 ###############################################################################
 # Updating pins

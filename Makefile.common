@@ -229,6 +229,17 @@ ifdef ARM_VERSION
 GOARCH_FLAGS :=-e GOARCH=arm -e GOARM=$(ARM_VERSION)
 endif
 
+# We need CGO to leverage Boring SSL.  However, the cross-compile doesn't support CGO yet.
+# Currently CGO can be enbaled in ARM64 and AMD64 builds.
+ifeq ($(ARCH), $(filter $(ARCH),amd64 arm64))
+CGO_ENABLED=1
+CGO_LDFLAGS=""
+CGO_CFLAGS=""
+else
+CGO_ENABLED=0
+CGO_LDFLAGS=""
+CGO_CFLAGS=""
+endif
 
 DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
@@ -263,6 +274,9 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		-w /go/src/$(PACKAGE_NAME)
 
 DOCKER_GO_BUILD := $(DOCKER_RUN) $(CALICO_BUILD)
+DOCKER_GO_BUILD_CGO := $(DOCKER_RUN) -e CGO_ENABLED=$(CGO_ENABLED) -e CGO_LDFLAGS=$(CGO_LDFLAGS) -e CGO_CFLAGS=$(CGO_CFLAGS) $(CALICO_BUILD)
+DOCKER_GO_BUILD_CGO_WINDOWS := $(DOCKER_RUN) -e CGO_ENABLED=$(CGO_ENABLED) $(CALICO_BUILD)
+
 
 ###############################################################################
 # Updating pins

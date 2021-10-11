@@ -229,6 +229,13 @@ ifdef ARM_VERSION
 GOARCH_FLAGS :=-e GOARCH=arm -e GOARM=$(ARM_VERSION)
 endif
 
+# We need CGO to leverage Boring SSL.  However, the cross-compile doesn't support CGO yet.
+# Currently CGO can be enbaled in ARM64 and AMD64 builds.
+ifeq ($(ARCH), $(filter $(ARCH),amd64 arm64))
+CGO_ENABLED=1
+else
+CGO_ENABLED=0
+endif
 
 DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 	docker run --rm \
@@ -238,6 +245,7 @@ DOCKER_RUN := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
 		$(GOARCH_FLAGS) \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \
@@ -254,6 +262,7 @@ DOCKER_RUN_RO := mkdir -p .go-pkg-cache bin $(GOMOD_CACHE) && \
 		-e LOCAL_USER_ID=$(LOCAL_USER_ID) \
 		-e GOCACHE=/go-cache \
 		$(GOARCH_FLAGS) \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-e GOPATH=/go \
 		-e OS=$(BUILDOS) \
 		-e GOOS=$(BUILDOS) \

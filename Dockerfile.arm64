@@ -36,13 +36,13 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
     apt-get -y update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \
-        libbpf-dev linux-headers-5.10.0-0.bpo.8-arm64 && \
+        libbpf-dev linux-headers-5.10.0-0.bpo.9-arm64 && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
         llvm-11 clang-11 binutils file iproute2 \
-        ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev && \ 
+        ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev && \
     rm -rf /var/lib/apt/lists/*
-    
+
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.

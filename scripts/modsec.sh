@@ -9,3 +9,5 @@ git submodule update --init
 ./configure
 make
 make install
+cd ..
+rm -rf /tmp/ModSecurity

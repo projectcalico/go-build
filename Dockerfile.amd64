@@ -25,6 +25,7 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install grep, sed, zip, and jq for use in some Makefiles
 # Install gcc for cgo.
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
+# Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
     apt-get -y update &&  \
@@ -34,7 +35,11 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
         llvm-11 clang-11 binutils file iproute2 \
-        ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev && \
+        ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
+        apt-utils autoconf automake build-essential \
+        libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
+        libpcre++-dev libtool libxml2-dev libyajl-dev \
+        pkgconf zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
@@ -59,15 +64,6 @@ RUN chmod +x /usr/local/bin/mockery
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
-
-# ModSecurity dependencies.
-RUN apt-get -y update &&  \
-    apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y \
-        apt-utils autoconf automake build-essential \
-        libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
-        libpcre++-dev libtool libxml2-dev libyajl-dev \
-        pkgconf zlib1g-dev
 
 # We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
 # results in parts of the stdlib getting rebuilt (which fails due to the container's read-only

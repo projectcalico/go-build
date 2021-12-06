@@ -3,6 +3,8 @@ FROM calico/bpftool:v5.3-amd64 as bpftool
 FROM goboring/golang:1.16.7b7
 MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
+# Override the go boring version in the image with the latest patch.
+ARG GO_BORING_VERSION=1.16.10b7
 ARG QEMU_VERSION=4.2.0-6
 
 # we need these two distinct lists. The first one is the names used by the qemu distributions
@@ -41,6 +43,10 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
         libpcre++-dev libtool libxml2-dev libyajl-dev \
         pkgconf zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
+
+RUN wget https://storage.googleapis.com/go-boringcrypto/go${GO_BORING_VERSION}.linux-amd64.tar.gz
+RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_BORING_VERSION}.linux-amd64.tar.gz
+RUN rm go${GO_BORING_VERSION}.linux-amd64.tar.gz
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.

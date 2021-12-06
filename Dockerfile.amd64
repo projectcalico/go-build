@@ -27,6 +27,7 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install grep, sed, zip, and jq for use in some Makefiles
 # Install gcc for cgo.
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
+# Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
     apt-get -y update &&  \
@@ -36,7 +37,11 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
         llvm-11 clang-11 binutils file iproute2 \
-        ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev && \
+        ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
+        apt-utils autoconf automake build-essential \
+        libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
+        libpcre++-dev libtool libxml2-dev libyajl-dev \
+        pkgconf zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
 RUN wget https://storage.googleapis.com/go-boringcrypto/go${GO_BORING_VERSION}.linux-amd64.tar.gz
@@ -133,6 +138,10 @@ RUN wget https://github.com/google/go-containerregistry/releases/download/v0.4.1
 
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin
+
+# Build ModSecurity for Dikastes.
+COPY scripts/modsec.sh /usr/local/bin/scripts/modsec.sh
+RUN /usr/local/bin/scripts/modsec.sh
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

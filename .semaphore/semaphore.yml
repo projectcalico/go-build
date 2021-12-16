@@ -23,7 +23,7 @@ blocks:
 # Run the full set of tests. Each job can potentially be run in parallel,
 # provided Semaphore has enough boxes available.
 - name: "Tests"
-  dependencies: []
+  dependencies: ["Build images"]
 # TODO re enable this when semaphore has provided an explanation as to why it's timing out.
 #  run:
 #    when: "change_in('/Makefile.common') or change_in('/.semaphore/')"
@@ -31,13 +31,13 @@ blocks:
     jobs:
     - name: "Build downstream projects with our Makefile.common"
       commands:
-      - git clone git@github.com:projectcalico/$REPO.git $REPO
-      - cd $REPO
-      - make Makefile.common
-      - cp ../Makefile.common ./
+      - git clone git@github.com:projectcalico/calico.git calico
+      - cd calico
+      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
+      - cd $PROJECT
       - make ut
       matrix:
-      - env_var: REPO
+      - env_var: PROJECT
         values: ["felix", "calicoctl", "libcalico-go"]
 
 - name: "Build images"

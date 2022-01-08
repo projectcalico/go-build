@@ -613,6 +613,7 @@ mod-tidy:
 # This semaphore project IDs are defined here because you cannot easily look them up in the semaphore API. This gives
 # us a single place to define these values, then projects can reference the readable ENV variable when they need a semaphore
 # project ID.
+SEMAPHORE_ALERTMANAGER_DOCKER_PROJECT_ID=30a83379-34b4-4956-aa60-b9dd3c720ba7
 SEMAPHORE_API_PROJECT_ID=9625623e-bfc5-435f-9c22-74f9cd8622fc
 SEMAPHORE_API_TIGERA_PROJECT_ID=48d23719-405f-4827-b58a-7de0598a6bf5
 SEMAPHORE_ANOMALY_DETECTION_JOBS_PROJECT_ID=e506a098-3e89-4802-8165-c59b2a95f8ae

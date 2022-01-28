@@ -314,7 +314,7 @@ endef
 # replacing repo. It would take parameted $(3) as the version used by go mod edit. Used for updating pins for
 # repos with a path. as git cannot resolve a version given a repo path deeper than the top repo folder.
 define update_replace_pin_with_path
-	$(eval replace_repo_branch := $(if $(3),$(3),master)
+	$(eval replace_repo_branch := $(if $(3),$(3),master))
 	$(eval original_repo := $(if $(4),$(1)/$(4),$(1)))
 	$(eval replace_repo := $(if $(4),$(2)/$(4),$(2)))
 

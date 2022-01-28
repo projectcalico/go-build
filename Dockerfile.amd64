@@ -96,19 +96,19 @@ RUN go get github.com/onsi/ginkgo/ginkgo && \
   GO111MODULE=on go get github.com/mikefarah/yq/v3 && \
   go get -u github.com/jstemmer/go-junit-report && \
   go get -u golang.org/x/tools/cmd/stringer && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/openapi-gen@v0.21.0 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/deepcopy-gen@v0.21.0 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/client-gen@v0.21.0 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/lister-gen@v0.21.0 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/informer-gen@v0.21.0 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/defaulter-gen@v0.21.0 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/conversion-gen@v0.21.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/openapi-gen@v0.23.2 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/deepcopy-gen@v0.23.2 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/client-gen@v0.23.2 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/lister-gen@v0.23.2 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/informer-gen@v0.23.2 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/defaulter-gen@v0.23.2 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/conversion-gen@v0.23.2 && \
   rm -rf /go/src/* /root/.cache
 
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/v1.22.2/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/v1.22.2/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/v1.22.2/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/v1.23.2/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/v1.23.2/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/v1.23.2/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 # Used for generating CRD files.
 # Download a version of controller-gen that has been hacked to support additional types (e.g., float).

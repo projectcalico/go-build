@@ -310,10 +310,12 @@ define update_replace_pin
 		fi'
 endef
 
-# update_replace_pin_with_path is used similarly as update_replace_pin without retrieving the git version of the 
-# replacing repo. It would take parameted $(3) as the version used by go mod edit. Used for updating pins for
-# repos with a path. as git cannot resolve a version given a repo path deeper than the top repo folder.
-define update_replace_pin_with_path
+# update_replace_submodule_pin is used similarly as update_replace_pin without retrieving the git commit SHA of the 
+# replacing repo. It would take parameter $(3) as the version used by go mod edit. Used for updating pins for
+# modules or directory within a repository. as git cannot resolve a version given a repo path deeper than the top repo folder. 
+# $(1) should be the name of the package, $(2) and $(3) the repository and branch from which to update it. If $(4) is
+# specified it's treated as the module version and use in the go mod edit -replace command.
+define update_replace_submodule_pin
 	$(eval replace_repo_branch := $(if $(3),$(3),master))
 	$(eval original_repo := $(if $(4),$(1)/$(4),$(1)))
 	$(eval replace_repo := $(if $(4),$(2)/$(4),$(2)))

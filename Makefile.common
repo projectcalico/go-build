@@ -324,6 +324,7 @@ define update_replace_pin_with_path
 			go mod edit -replace $(original_repo)=$(replace_repo)@$(replace_repo_branch); \
 			go mod tidy; \
 		fi'
+endef
 
 GIT_REMOTE?=origin
 API_BRANCH?=$(PIN_BRANCH)

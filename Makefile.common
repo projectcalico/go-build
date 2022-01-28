@@ -310,6 +310,21 @@ define update_replace_pin
 		fi'
 endef
 
+# update_replace_pin_with_path is used similarly as update_replace_pin without retrieving the git version of the 
+# replacing repo. It would take parameted $(3) as the version used by go mod edit. Used for updating pins for
+# repos with a path. as git cannot resolve a version given a repo path deeper than the top repo folder.
+define update_replace_pin_with_path
+	$(eval replace_repo_branch := $(if $(3),$(3),master)
+	$(eval original_repo := $(if $(4),$(1)/$(4),$(1)))
+	$(eval replace_repo := $(if $(4),$(2)/$(4),$(2)))
+
+	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
+		if [ ! -z "$(replace_repo_branch)" ]; then \
+			$(GIT_CONFIG_SSH) \
+			go mod edit -replace $(original_repo)=$(replace_repo)@$(replace_repo_branch); \
+			go mod tidy; \
+		fi'
+
 GIT_REMOTE?=origin
 API_BRANCH?=$(PIN_BRANCH)
 API_REPO?=github.com/projectcalico/api

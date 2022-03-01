@@ -761,36 +761,36 @@ mockery-run:
 docker-compress:
 	$(eval JSONOBJ := "$(shell docker inspect $(IMAGE_NAME) | jq '.[0].Config' | jq -R '.' | sed -e 's/#/\\\#/g' ) ")
 #	Re add the entry point.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Entrypoint\") and .Entrypoint != \"\" then \" --change 'ENTRYPOINT \(.Entrypoint)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the command.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Cmd\") and .Cmd != \"\" then \" --change 'CMD \(.Cmd)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the working directory.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"WorkingDir\") and .WorkingDir != \"\" then \" --change 'WORKDIR \(.WorkingDir)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the user.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"User\") and .User != \"\" then \" --change 'USER \(.User)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the environment variables. .Env is an array of strings so add a "--change 'ENV <value>'" for each value in
 #	the array.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Env\") and (.Env | length) > 0 then .Env | map(\" --change 'ENV \(.)'\") | join(\"\") else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the labels. .Labels is a map of label names to label values, so add a "--change 'LABEL <key> <value>'" for
 #	each map entry.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Labels\") and (.Labels | length) > 0 then .Labels | to_entries | map(\" --change 'LABEL \(.key) \(.value)'\") | join(\"\") else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the exposed ports. .ExposedPorts is a map, but we're only interested in the keys of the map so for each key
 #	add "--change EXPOSE <key>".
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"ExposedPorts\") and (.ExposedPorts | length) > 0 then .ExposedPorts | keys | map(\" --change 'EXPOSE \(.)'\") | join(\"\") else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 	$(eval CONTAINER_ID := $(shell docker run -d -it --entrypoint /bin/true $(IMAGE_NAME) /bin/true))
 	docker export $(CONTAINER_ID) | docker import $(CHANGE) - $(IMAGE_NAME)
 

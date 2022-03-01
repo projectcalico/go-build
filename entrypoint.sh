@@ -33,7 +33,7 @@ if [ -n "$EXTRA_GROUP_ID"  ]; then
   fi
 fi
 
-if [ $CGO_ENABLED = "1" ]; then
+if [ "$CGO_ENABLED" = "1" ]; then
   echo "CGO enabled, switching GOROOT to $GOCGO."
   export GOROOT=$GOCGO
   export PATH=$GOCGO/bin:$PATH

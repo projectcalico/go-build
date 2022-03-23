@@ -74,7 +74,11 @@ image: calico/go-build
 calico/go-build: register
 	# Make sure we re-pull the base image to pick up security fixes.
 	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
+ifeq ($(BUILDARCH),s390x)
+	docker build $(DOCKER_BUILD_ARGS) -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+else
 	docker build $(DOCKER_BUILD_ARGS) --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+endif
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:

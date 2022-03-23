@@ -5,7 +5,7 @@ MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
 # Override the go boring version in the image with the latest release. There is currently no 1.17 container image,
 # so starting with 1.16 and then overwriting with 1.17.
-ARG GO_BORING_VERSION=1.17.7b7
+ARG GO_BORING_VERSION=1.17.8b7
 ARG QEMU_VERSION=4.2.0-6
 
 # we need these two distinct lists. The first one is the names used by the qemu distributions

@@ -130,8 +130,8 @@ cd:
 ifndef CONFIRM
 	$(error CONFIRM is undefined - run using make <target> CONFIRM=true)
 endif
-ifndef BRANCH_NAME
-	$(error BRANCH_NAME is undefined - run using make <target> BRANCH_NAME=var or set an environment variable)
+ifndef IMAGE_TAG
+	$(error IMAGE_TAG is undefined - run using make <target> IMAGE_TAG=var or set an environment variable)
 endif
-	$(MAKE) push-all VERSION=${BRANCH_NAME}
-	$(MAKE) push-manifest VERSION=${BRANCH_NAME}
+	$(MAKE) push-all VERSION=${IMAGE_TAG}
+	$(MAKE) push-manifest VERSION=${IMAGE_TAG}

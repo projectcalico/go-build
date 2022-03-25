@@ -59,9 +59,9 @@ blocks:
       - env_var: ARCH
         values: ["amd64", "arm64","armv7", "ppc64le"]
 
-- name: "Push manifest"
+- name: "Push manifest (branch)"
   skip:
-    # Only run on branches, not PRs.
+    # Only run on branches, not PRs or tags.
     when: "branch !~ '.+'"
   dependencies: ["Build images"]
   task:
@@ -73,7 +73,25 @@ blocks:
       commands:
       - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
       - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
-      - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
-      - export VERSION=$BRANCH_NAME
+      - export IMAGE_TAG=$SEMAPHORE_GIT_BRANCH
+      - export VERSION=$IMAGE_TAG
       - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-manifest CONFIRM=true; fi
 
+
+- name: "Push manifest (tags)"
+  skip:
+    # Only run on tags, not PRs or branches.
+    when: "tag !~ '.+'"
+  dependencies: ["Build images"]
+  task:
+    secrets:
+    - name: quay-robot-calico-and-semaphoreci
+    - name: docker
+    jobs:
+    - name: Push multi-arch manifest
+      commands:
+      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
+      - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
+      - export IMAGE_TAG=$SEMAPHORE_GIT_TAG_NAME
+      - export VERSION=$IMAGE_TAG
+      - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-manifest CONFIRM=true; fi

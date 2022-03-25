@@ -310,6 +310,24 @@ define update_replace_pin
 		fi'
 endef
 
+# update_replace_submodule_pin is used similarly as update_replace_pin without retrieving the git commit SHA of the 
+# replacing repo. It would take parameter $(3) as the version used by go mod edit. Used for updating pins for
+# modules or directory within a repository. as git cannot resolve a version given a repo path deeper than the top repo folder. 
+# $(1) should be the name of the package, $(2) and $(3) the repository and branch from which to update it. If $(4) is
+# specified it's treated as the module version and use in the go mod edit -replace command.
+define update_replace_submodule_pin
+	$(eval replace_repo_branch := $(if $(3),$(3),master))
+	$(eval original_repo := $(if $(4),$(1)/$(4),$(1)))
+	$(eval replace_repo := $(if $(4),$(2)/$(4),$(2)))
+
+	$(DOCKER_RUN) -i $(CALICO_BUILD) sh -c '\
+		if [ ! -z "$(replace_repo_branch)" ]; then \
+			$(GIT_CONFIG_SSH) \
+			go mod edit -replace $(original_repo)=$(replace_repo)@$(replace_repo_branch); \
+			go mod tidy; \
+		fi'
+endef
+
 GIT_REMOTE?=origin
 API_BRANCH?=$(PIN_BRANCH)
 API_REPO?=github.com/projectcalico/api
@@ -326,6 +344,8 @@ FELIX_BRANCH?=$(PIN_BRANCH)
 FELIX_REPO?=github.com/projectcalico/felix
 CNI_BRANCH?=$(PIN_BRANCH)
 CNI_REPO?=github.com/projectcalico/cni-plugin
+CALICO_BRANCH?=$(PIN_BRANCH)
+CALICO_REPO?=github.com/projectcalico/calico
 
 update-api-pin:
 	$(call update_pin,$(API_REPO),$(API_REPO),$(API_BRANCH))
@@ -365,6 +385,12 @@ update-cni-plugin-pin:
 
 replace-cni-pin:
 	$(call update_replace_pin,github.com/projectcalico/cni-plugin,$(CNI_REPO),$(CNI_BRANCH))
+
+update-calico-pin:
+	$(call update_pin,github.com/projectcalico/calico,$(CALICO_REPO),$(CALICO_BRANCH))
+
+replace-calico-pin:
+	$(call update_replace_pin,github.com/projectcalico/calico,$(CALICO_REPO),$(CALICO_BRANCH))
 
 git-status:
 	git status --porcelain
@@ -743,36 +769,36 @@ mockery-run:
 docker-compress:
 	$(eval JSONOBJ := "$(shell docker inspect $(IMAGE_NAME) | jq '.[0].Config' | jq -R '.' | sed -e 's/#/\\\#/g' ) ")
 #	Re add the entry point.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Entrypoint\") and .Entrypoint != \"\" then \" --change 'ENTRYPOINT \(.Entrypoint)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the command.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Cmd\") and .Cmd != \"\" then \" --change 'CMD \(.Cmd)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the working directory.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"WorkingDir\") and .WorkingDir != \"\" then \" --change 'WORKDIR \(.WorkingDir)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the user.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"User\") and .User != \"\" then \" --change 'USER \(.User)'\" else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the environment variables. .Env is an array of strings so add a "--change 'ENV <value>'" for each value in
 #	the array.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Env\") and (.Env | length) > 0 then .Env | map(\" --change 'ENV \(.)'\") | join(\"\") else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the labels. .Labels is a map of label names to label values, so add a "--change 'LABEL <key> <value>'" for
 #	each map entry.
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"Labels\") and (.Labels | length) > 0 then .Labels | to_entries | map(\" --change 'LABEL \(.key) \(.value)'\") | join(\"\") else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 #	Re add the exposed ports. .ExposedPorts is a map, but we're only interested in the keys of the map so for each key
 #	add "--change EXPOSE <key>".
-	$(eval CHANGE := $(CHANGE)$(shell echo $(JSONOBJ) | jq -r \
+	$(eval CHANGE := $(shell echo $(CHANGE) | sed -e 's/#/\\\#/g')$(shell echo $(JSONOBJ) | jq -r \
 		"if has(\"ExposedPorts\") and (.ExposedPorts | length) > 0 then .ExposedPorts | keys | map(\" --change 'EXPOSE \(.)'\") | join(\"\") else \"\" end"\
-	))
+	| sed -e 's/#/\\\#/g'))
 	$(eval CONTAINER_ID := $(shell docker run -d -it --entrypoint /bin/true $(IMAGE_NAME) /bin/true))
 	docker export $(CONTAINER_ID) | docker import $(CHANGE) - $(IMAGE_NAME)
 

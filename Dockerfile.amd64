@@ -91,7 +91,8 @@ RUN cp -a $GOROOT $GOCGO && \
   rm -rf /go/src/* /root/.cache
 
 # Install go programs that we rely on
-RUN go get github.com/onsi/ginkgo/v2 && \
+RUN go get github.com/onsi/ginkgo/ginkgo && \
+  go get github.com/onsi/ginkgo/v2 && \
   go get golang.org/x/tools/cmd/goimports && \
   wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.27.0 && \
   golangci-lint --version && \
@@ -108,6 +109,12 @@ RUN go get github.com/onsi/ginkgo/v2 && \
   GO111MODULE=on go get k8s.io/code-generator/cmd/defaulter-gen@v0.23.2 && \
   GO111MODULE=on go get k8s.io/code-generator/cmd/conversion-gen@v0.23.2 && \
   rm -rf /go/src/* /root/.cache
+
+# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
+RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
+  go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3 && \
+  mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+  mv /go/bin/ginkgo1 /go/bin/ginkgo
 
 # Install necessary Kubernetes binaries used in tests.
 RUN wget https://dl.k8s.io/v1.23.2/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \

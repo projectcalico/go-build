@@ -30,6 +30,7 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install util-linux for column command (used for output formatting).
 # Install grep, sed, zip, and jq for use in some Makefiles
 # Install gcc for cgo.
+# Install lsb-release software-properties-common for llvm upgrade script
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
@@ -39,9 +40,15 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
         libbpf-dev linux-headers-5.10.0-0.bpo.9-arm64 && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
-        llvm-11 clang-11 binutils file iproute2 \
-        ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev && \
-    rm -rf /var/lib/apt/lists/*
+        lsb-release software-properties-common binutils file iproute2 \
+        ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev
+
+
+RUN wget https://apt.llvm.org/llvm.sh
+RUN bash ./llvm.sh 12
+RUN apt install clang-12
+
+RUN    rm -rf /var/lib/apt/lists/*
 
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.

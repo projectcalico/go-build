@@ -66,6 +66,12 @@ RUN rm -rf /go/src/*
 RUN  go get -u k8s.io/code-generator/cmd/openapi-gen
 RUN  go get -u k8s.io/code-generator/cmd/deepcopy-gen
 
+# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
+RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
+  go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3 && \
+  mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+  mv /go/bin/ginkgo1 /go/bin/ginkgo
+
 # Install necessary Kubernetes binaries used in tests.
 RUN wget https://dl.k8s.io/v1.23.2/bin/linux/s390x/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
 	wget https://dl.k8s.io/release/v1.23.2/bin/linux/s390x/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \

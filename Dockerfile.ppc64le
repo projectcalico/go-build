@@ -69,9 +69,9 @@ RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
   mv /go/bin/ginkgo1 /go/bin/ginkgo
 
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/v1.23.2/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/v1.23.2/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/v1.23.2/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/v1.24.0/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/v1.24.0/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/v1.24.0/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

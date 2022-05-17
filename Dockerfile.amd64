@@ -31,7 +31,7 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
-    apt-get -y update &&  \
+    apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \
         libbpf-dev linux-headers-5.10.0-0.bpo.9-amd64  && \
@@ -44,6 +44,8 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
         libpcre++-dev libtool libxml2-dev libyajl-dev \
         pkgconf zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
+
+RUN rm /etc/apt/sources.list.d/buster-backports.list
 
 RUN wget https://storage.googleapis.com/go-boringcrypto/go${GO_BORING_VERSION}.linux-amd64.tar.gz
 RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_BORING_VERSION}.linux-amd64.tar.gz

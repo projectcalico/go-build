@@ -33,7 +33,7 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
-    apt-get -y update &&  \
+    apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \
         libbpf-dev linux-headers-5.10.0-0.bpo.9-arm64 && \
@@ -43,6 +43,7 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
         ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev && \
     rm -rf /var/lib/apt/lists/*
 
+RUN rm /etc/apt/sources.list.d/buster-backports.list
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.

@@ -1097,7 +1097,7 @@ release-retag-dev-images-in-registry-%:
 # RELEASE_REGISTRIES then the retag is not done
 release-retag-dev-image-in-registry-%:
 	$(if $(filter-out $(RELEASE_REGISTRIES),$(DEV_REGISTRY)),\
-		$(CRANE) cp $(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG) $(DEV_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG))$(double_quote)
+		$(CRANE) cp $(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG) $(DEV_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG)$(double_quote))
 
 # release-dev-images-to-registry-% copies and retags all the build / arch images specified by BUILD_IMAGES and
 # VALIDARCHES from the registry specified by DEV_REGISTRY to the registry specified by RELEASE_REGISTRY using the tag

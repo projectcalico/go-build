@@ -742,13 +742,18 @@ semaphore-run-auto-pin-update-workflows:
 gen-mocks:
 	$(DOCKER_RUN) $(CALICO_BUILD) sh -c '$(MAKE) mockery-run'
 
+# MOCKERY_IN_PACKAGE flags if the mocks should be generated in the package that defines the interface or under a mocks
+# subfolder in the package that defines the interface. This defaults to true since most packages have this in package
+# already.
+# We should eventually pick one way of doing this for all projects and remove the option.
+MOCKERY_IN_PACKAGE=true
 # Run mockery for each path in MOCKERY_FILE_PATHS. The the generated mocks are
 # created in package and in test files. Look here for more information https://github.com/vektra/mockery
 mockery-run:
 	for FILE_PATH in $(MOCKERY_FILE_PATHS); do\
 		DIR=$$(dirname $$FILE_PATH); \
 		INTERFACE_NAME=$$(basename $$FILE_PATH); \
-		mockery --dir $$DIR --name $$INTERFACE_NAME --inpackage; \
+		mockery --dir $$DIR --name $$INTERFACE_NAME $(if $(filter $(MOCKERY_IN_PACKAGE),true),--inpackage,--output $$DIR/mocks); \
 	done
 
 ###############################################################################

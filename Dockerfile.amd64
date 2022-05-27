@@ -27,6 +27,7 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install util-linux for column command (used for output formatting).
 # Install grep, sed, zip, and jq for use in some Makefiles
 # Install gcc for cgo.
+# Install lsb-release software-properties-common for llvm upgrade script
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
 # Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
@@ -37,7 +38,7 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
         libbpf-dev linux-headers-5.10.0-0.bpo.9-amd64  && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
-        llvm-11 clang-11 binutils file iproute2 \
+        lsb-release software-properties-common binutils file iproute2 \
         ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
         apt-utils autoconf automake build-essential \
         libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
@@ -48,6 +49,9 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
 RUN wget https://storage.googleapis.com/go-boringcrypto/go${GO_BORING_VERSION}.linux-amd64.tar.gz
 RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_BORING_VERSION}.linux-amd64.tar.gz
 RUN rm go${GO_BORING_VERSION}.linux-amd64.tar.gz
+RUN wget https://apt.llvm.org/llvm.sh
+RUN bash ./llvm.sh 12
+RUN apt install clang-12
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.

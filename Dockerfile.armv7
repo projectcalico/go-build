@@ -9,7 +9,7 @@ RUN apk --update add curl
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
-FROM arm32v7/golang:1.17.8-alpine3.14
+FROM arm32v7/golang:1.17.9-alpine3.14
 MAINTAINER Marc Crebassa <aalaesar@gmail.com>
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
@@ -62,10 +62,16 @@ RUN rm -rf /go/src/*
 RUN  go get -u k8s.io/code-generator/cmd/openapi-gen
 RUN  go get -u k8s.io/code-generator/cmd/deepcopy-gen
 
+# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
+RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
+  go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3 && \
+  mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+  mv /go/bin/ginkgo1 /go/bin/ginkgo
+
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/v1.23.2/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/v1.23.2/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/v1.23.2/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/v1.24.0/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/v1.24.0/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/v1.24.0/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

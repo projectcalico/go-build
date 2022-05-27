@@ -5,7 +5,7 @@ MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
 # Override the go boring version in the image with the latest release. There is currently no 1.17 container image,
 # so starting with 1.16 and then overwriting with 1.17.
-ARG GO_BORING_VERSION=1.17.8b7
+ARG GO_BORING_VERSION=1.17.9b7
 ARG QEMU_VERSION=4.2.0-6
 
 # we need these two distinct lists. The first one is the names used by the qemu distributions
@@ -32,7 +32,7 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
-    apt-get -y update &&  \
+    apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \
         libbpf-dev linux-headers-5.10.0-0.bpo.9-amd64  && \
@@ -45,6 +45,8 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
         libpcre++-dev libtool libxml2-dev libyajl-dev \
         pkgconf zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
+
+RUN rm /etc/apt/sources.list.d/buster-backports.list
 
 RUN wget https://storage.googleapis.com/go-boringcrypto/go${GO_BORING_VERSION}.linux-amd64.tar.gz
 RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_BORING_VERSION}.linux-amd64.tar.gz
@@ -90,29 +92,37 @@ RUN cp -a $GOROOT $GOCGO && \
   go install -v std && \
   rm -rf /go/src/* /root/.cache
 
+ENV GO_LINT_VERSION=v1.27.0
+
 # Install go programs that we rely on
 RUN go get github.com/onsi/ginkgo/ginkgo && \
   go get golang.org/x/tools/cmd/goimports && \
-  wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.27.0 && \
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION && \
   golangci-lint --version && \
   go get github.com/pmezard/licenses && \
   go get github.com/wadey/gocovmerge && \
   GO111MODULE=on go get github.com/mikefarah/yq/v3 && \
   go get -u github.com/jstemmer/go-junit-report && \
   go get -u golang.org/x/tools/cmd/stringer && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/openapi-gen@v0.23.2 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/deepcopy-gen@v0.23.2 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/client-gen@v0.23.2 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/lister-gen@v0.23.2 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/informer-gen@v0.23.2 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/defaulter-gen@v0.23.2 && \
-  GO111MODULE=on go get k8s.io/code-generator/cmd/conversion-gen@v0.23.2 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/openapi-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/deepcopy-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/client-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/lister-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/informer-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/defaulter-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/conversion-gen@v0.24.0 && \
   rm -rf /go/src/* /root/.cache
 
+# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
+RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
+  go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3 && \
+  mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+  mv /go/bin/ginkgo1 /go/bin/ginkgo
+
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/v1.23.2/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/v1.23.2/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/v1.23.2/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/v1.24.0/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/v1.24.0/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 # Used for generating CRD files.
 # Download a version of controller-gen that has been hacked to support additional types (e.g., float).

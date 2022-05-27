@@ -15,23 +15,46 @@ FROM s390x/golang:1.17.9-buster
 MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
-ARG GO111MODULE=on
+ARG GO111MODULE=auto
 
-COPY --from=qemu /usr/bin/qemu-s390x-static /usr/bin/
+# Enable non-native builds of this image on an amd64 hosts.
+# This must be the first RUN command in this file!
+COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 
+# Install su-exec for use in the entrypoint.sh (so processes run as the right user)
+# Install bash for the entry script (and because it's generally useful)
+# Install curl
+# Install git for fetching Go dependencies
+# Install ssh for fetching Go dependencies
+# Install mercurial for fetching go dependencies
+# Install wget since it's useful for fetching
+# Install make for building things
+# Install util-linux for column command (used for output formatting).
+# Install grep, sed, zip, and jq for use in some Makefiles
 # Install gcc for cgo.
+# Install lsb-release software-properties-common for llvm upgrade script
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
+# Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
-    apt-get -y update &&  \
+    apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \
-        libbpf-dev linux-headers-5.10.0-0.bpo.9-s390x && \
+        libbpf-dev linux-headers-5.10.0-0.bpo.9-s390x  && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
-        llvm-11 clang-11 binutils file iproute2 autoconf automake build-essential \
-        ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev && \
+        lsb-release software-properties-common binutils file iproute2 \
+        ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
+        apt-utils autoconf automake build-essential \
+        libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
+        libpcre++-dev libtool libxml2-dev libyajl-dev \
+        pkgconf zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
+
+RUN wget https://apt.llvm.org/llvm.sh
+RUN sed -i 's/apt-get update/apt-get -o Acquire::Check-Valid-Until=false update/g' llvm.sh
+RUN bash ./llvm.sh 12
+RUN apt install clang-12
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.
@@ -43,6 +66,14 @@ RUN  set -ex; \
      chmod 0755 /sbin/su-exec; \
      rm /sbin/su-exec.c
 
+# Install fossa for foss license checks
+ARG FOSSA_VER=1.0.1
+RUN git clone -b v1.0.1 https://github.com/fossas/fossa-cli.git $GOPATH/src/github.com/fossas/fossa-cli; \
+    cd $GOPATH/src/github.com/fossas/fossa-cli; \
+    make; \
+    cp $GOPATH/bin/fossa /usr/local/bin; \
+    chmod +x /usr/local/bin/fossa
+
 ARG MOCKERY_VER=2.3.0
 RUN git clone -b v2.3.0 https://github.com/vektra/mockery.git $GOPATH/src/github.com/vektra/mockery.git; \
     cd $GOPATH/src/github.com/vektra/mockery.git; \
@@ -50,41 +81,46 @@ RUN git clone -b v2.3.0 https://github.com/vektra/mockery.git $GOPATH/src/github
     cp $GOPATH/bin/mockery /usr/local/bin/mockery; \
     chmod +x /usr/local/bin/mockery
 
-
-
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
-# Disable cgo so that binaries we build will be fully static.
+# We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
+# results in parts of the stdlib getting rebuilt (which fails due to the container's read-only
+# filesystem).  As a workaround: take a copy of the go root for cgo builds and have the
+# entrypoint script swap it into the path if it detects CGO_ENABLED=1.
+ENV GOROOT=/usr/local/go
+ENV GOCGO=/usr/local/go-cgo
+
+# Disable cgo by default so that binaries we build will be fully static by default.
 ENV CGO_ENABLED=0
 
-# Recompile the standard library with cgo disabled.  This prevents the standard library from being
-# marked stale, causing full rebuilds every time.
-RUN go install -v std
+RUN cp -a $GOROOT $GOCGO && \
+  go install -v std && \
+  rm -rf /go/src/* /root/.cache
 
-# Install ginkgo CLI tool for running tests
-RUN go get github.com/onsi/ginkgo/ginkgo
+# golint
+RUN wget https://github.com/golangci/golangci-lint/releases/download/v1.46.2/golangci-lint-1.46.2-linux-s390x.tar.gz && \
+  tar -xvf golangci-lint-1.46.2-linux-s390x.tar.gz && mv golangci-lint-1.46.2-linux-s390x/golangci-lint /usr/local/bin/ && \
+  rm golangci-lint-1.46.2-linux-s390x.tar.gz && rm -rf golangci-lint-1.46.2-linux-s390x && \
+  golangci-lint --version
 
-# Install linting tools.
-RUN wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.20.0
-RUN golangci-lint --version
-
-# Install license checking tool.
-RUN go get github.com/pmezard/licenses
-
-# Install tool to merge coverage reports.
-RUN go get github.com/wadey/gocovmerge
-
-# Install CLI tool for working with yaml files
-RUN GO111MODULE=on go get github.com/mikefarah/yq/v3
-
-# Delete all the Go sources that were downloaded, we only rely on the binaries
-RUN rm -rf /go/src/*
-
-# Install generation tools.
-RUN  go get -u k8s.io/code-generator/cmd/openapi-gen
-RUN  go get -u k8s.io/code-generator/cmd/deepcopy-gen
+# Install go programs that we rely on
+RUN go get github.com/onsi/ginkgo/ginkgo && \
+  go get golang.org/x/tools/cmd/goimports && \
+  go get github.com/pmezard/licenses && \
+  go get github.com/wadey/gocovmerge && \
+  GO111MODULE=on go get github.com/mikefarah/yq/v3 && \
+  go get -u github.com/jstemmer/go-junit-report && \
+  go get -u golang.org/x/tools/cmd/stringer && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/openapi-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/deepcopy-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/client-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/lister-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/informer-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/defaulter-gen@v0.24.0 && \
+  GO111MODULE=on go get k8s.io/code-generator/cmd/conversion-gen@v0.24.0 && \
+  rm -rf /go/src/* /root/.cache
 
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
 RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
@@ -96,6 +132,12 @@ RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
 RUN wget https://dl.k8s.io/v1.24.0/bin/linux/s390x/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
 	wget https://dl.k8s.io/release/v1.24.0/bin/linux/s390x/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
 	wget https://dl.k8s.io/v1.24.0/bin/linux/s390x/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+
+# Used for generating CRD files.
+# Download a version of controller-gen that has been hacked to support additional types (e.g., float).
+# We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen
+# tooling. Example: float, all the types in the numorstring package, etc.
+RUN wget -O ${GOPATH}/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/calico-0.1/controller-gen && chmod +x ${GOPATH}/bin/controller-gen
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
@@ -113,7 +155,9 @@ RUN wget https://github.com/google/go-containerregistry/releases/download/v0.7.0
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin
 
-RUN cp -rf /usr/lib/llvm-11/lib/clang/11.0.1 /usr/lib/llvm-11/lib/clang/11.1.0
+# Build ModSecurity for Dikastes.
+COPY scripts/modsec.sh /usr/local/bin/scripts/modsec.sh
+RUN /usr/local/bin/scripts/modsec.sh
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

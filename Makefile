@@ -8,7 +8,7 @@ all: image-all
 # The target architecture is select by setting the ARCH variable.
 # When ARCH is undefined it is set to the detected host architecture.
 # When ARCH differs from the host architecture a crossbuild will be performed.
-ARCHES = amd64 armv7 arm64 ppc64le
+ARCHES = amd64 armv7 arm64 ppc64le s390x
 
 # BUILDARCH is the host architecture
 # ARCH is the target architecture
@@ -74,11 +74,7 @@ image: calico/go-build
 calico/go-build: register
 	# Make sure we re-pull the base image to pick up security fixes.
 	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
-ifeq ($(BUILDARCH),s390x)
-	docker build $(DOCKER_BUILD_ARGS) -t $(ARCHIMAGE) -f $(DOCKERFILE) .
-else
 	docker build $(DOCKER_BUILD_ARGS) --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
-endif
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:

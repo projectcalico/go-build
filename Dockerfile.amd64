@@ -95,7 +95,8 @@ RUN cp -a $GOROOT $GOCGO && \
 ENV GO_LINT_VERSION=v1.46.2
 
 # Install go programs that we rely on
-RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
+RUN \
+  go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
   go install golang.org/x/tools/cmd/goimports@v0.1.10 && \
   curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION && \
   golangci-lint --version && \

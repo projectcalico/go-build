@@ -92,7 +92,7 @@ RUN cp -a $GOROOT $GOCGO && \
   go install -v std && \
   rm -rf /go/src/* /root/.cache
 
-ENV GO_LINT_VERSION=v1.27.0
+ENV GO_LINT_VERSION=v1.46.2
 
 # Install go programs that we rely on
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \

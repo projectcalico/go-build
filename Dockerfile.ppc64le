@@ -46,6 +46,12 @@ RUN go install -v std
 # Install ginkgo CLI tool for running tests
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5
 
+# Install linting tools
+ENV GO_LINT_VERSION=v1.46.2
+RUN \
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION && \
+  golangci-lint --version
+
 # Install license checking tool.
 RUN go install github.com/pmezard/licenses@master
 

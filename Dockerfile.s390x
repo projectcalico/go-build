@@ -65,13 +65,13 @@ RUN  set -ex; \
      chmod 0755 /sbin/su-exec; \
      rm /sbin/su-exec.c
 
-# Install fossa for foss license checks
-ARG FOSSA_VER=1.0.1
-RUN git clone -b v1.0.1 https://github.com/fossas/fossa-cli.git $GOPATH/src/github.com/fossas/fossa-cli; \
-    cd $GOPATH/src/github.com/fossas/fossa-cli; \
-    make; \
-    cp $GOPATH/bin/fossa /usr/local/bin; \
-    chmod +x /usr/local/bin/fossa
+### Install fossa for foss license checks
+##ARG FOSSA_VER=1.0.1
+##RUN git clone -b v1.0.1 https://github.com/fossas/fossa-cli.git $GOPATH/src/github.com/fossas/fossa-cli; \
+##    cd $GOPATH/src/github.com/fossas/fossa-cli; \
+##    make; \
+##    cp $GOPATH/bin/fossa /usr/local/bin; \
+##    chmod +x /usr/local/bin/fossa
 
 ARG MOCKERY_VER=2.3.0
 RUN git clone -b v2.3.0 https://github.com/vektra/mockery.git $GOPATH/src/github.com/vektra/mockery.git; \

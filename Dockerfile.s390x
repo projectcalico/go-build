@@ -36,10 +36,10 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
 RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
     echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
-    apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
+    apt-get -y update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \
-        libbpf-dev linux-headers-5.10.0-0.bpo.9-s390x  && \
+        libbpf-dev linux-headers-5.10.0-0.bpo.12-s390x  && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
         lsb-release software-properties-common binutils file iproute2 \

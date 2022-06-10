@@ -11,11 +11,10 @@ RUN curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${Q
 
 FROM calico/bpftool:v5.3-s390x as bpftool
 
-FROM s390x/golang:1.17.9-buster
+FROM s390x/golang:1.17.11-buster
 MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
-ARG GO111MODULE=auto
 
 # Enable non-native builds of this image on an amd64 hosts.
 # This must be the first RUN command in this file!

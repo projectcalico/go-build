@@ -67,7 +67,7 @@ ARG FOSSA_VER=1.1.3
 RUN curl -L https://github.com/fossas/fossa-cli/releases/download/v${FOSSA_VER}/fossa-cli_${FOSSA_VER}_linux_arm64.tar.gz | tar zxvf - -C /usr/local/bin --extract fossa
 RUN chmod +x /usr/local/bin/fossa
 
-ARG MOCKERY_VER=2.3.0
+ARG MOCKERY_VER=2.14.0
 RUN curl -L https://github.com/vektra/mockery/releases/download/v${MOCKERY_VER}/mockery_${MOCKERY_VER}_Linux_x86_64.tar.gz | tar zxvf - -C /usr/local/bin --extract mockery
 RUN chmod +x /usr/local/bin/mockery
 

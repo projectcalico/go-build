@@ -9,7 +9,7 @@ RUN apk --update add curl
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
-FROM arm32v7/golang:1.18.3-alpine3.15
+FROM arm32v7/golang:1.18.6-alpine3.16
 MAINTAINER Marc Crebassa <aalaesar@gmail.com>
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2

@@ -33,7 +33,7 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
     apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
     apt-get -y upgrade && \
     apt-get install --no-install-recommends -y -t buster-backports \
-        libbpf-dev linux-headers-5.10.0-0.bpo.15-amd64  && \
+        libbpf-dev linux-headers-5.10.0-0.deb10.16-amd64  && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
         lsb-release software-properties-common binutils file iproute2 \

@@ -1,9 +1,9 @@
 FROM calico/bpftool:v5.3-amd64 as bpftool
 
-FROM us-docker.pkg.dev/google.com/api-project-999119582588/go-boringcrypto/golang:1.18.6b7
+FROM us-docker.pkg.dev/google.com/api-project-999119582588/go-boringcrypto/golang:1.18.7b7
 MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
-ARG GO_BORING_VERSION=1.18.6b7
+ARG GO_BORING_VERSION=1.18.7b7
 ARG QEMU_VERSION=4.2.0-6
 
 # we need these two distinct lists. The first one is the names used by the qemu distributions

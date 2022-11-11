@@ -47,7 +47,7 @@ RUN go install -v std
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5
 
 # Install linting tools
-ENV GO_LINT_VERSION=v1.46.2
+ENV GO_LINT_VERSION=v1.50.1
 RUN \
   curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION && \
   golangci-lint --version

@@ -110,7 +110,7 @@ RUN \
   go install k8s.io/code-generator/cmd/informer-gen@v0.24.0 && \
   go install k8s.io/code-generator/cmd/defaulter-gen@v0.24.0 && \
   go install k8s.io/code-generator/cmd/conversion-gen@v0.24.0 && \
-  go install github.com/swaggo/swag/cmd/swag@v1.8.7 \
+  go install github.com/swaggo/swag/cmd/swag@v1.8.7 && \
   rm -rf /go/src/* /root/.cache
 
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo

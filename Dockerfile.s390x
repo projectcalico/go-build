@@ -1,6 +1,6 @@
 FROM alpine:3.16 as qemu
 
-ARG QEMU_VERSION=4.2.0-6
+ARG QEMU_VERSION=6.1.0-8
 ARG QEMU_ARCHS="s390x"
 
 RUN apk --update add curl

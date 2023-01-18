@@ -62,7 +62,7 @@ blocks:
       - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$ARCH CONFIRM=true; fi
       matrix:
       - env_var: ARCH
-        values: ["amd64", "arm64","armv7", "ppc64le"]
+        values: ["amd64", "arm64","armv7", "ppc64le", "s390x"]
 
 - name: "Push manifest"
   skip:

@@ -3,7 +3,7 @@ FROM calico/bpftool:v5.3-amd64 as bpftool
 FROM us-docker.pkg.dev/google.com/api-project-999119582588/go-boringcrypto/golang:1.18.9b7
 MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
-ARG GO_BORING_VERSION=1.18.9b7
+ARG GO_VERSION=1.19.5
 ARG QEMU_VERSION=4.2.0-6
 
 # we need these two distinct lists. The first one is the names used by the qemu distributions
@@ -46,9 +46,9 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
 
 RUN rm /etc/apt/sources.list.d/buster-backports.list
 
-RUN wget https://storage.googleapis.com/go-boringcrypto/go${GO_BORING_VERSION}.linux-amd64.tar.gz
-RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_BORING_VERSION}.linux-amd64.tar.gz
-RUN rm go${GO_BORING_VERSION}.linux-amd64.tar.gz
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+RUN rm go${GO_VERSION}.linux-amd64.tar.gz
 RUN wget https://apt.llvm.org/llvm.sh
 RUN bash ./llvm.sh 12
 RUN apt install clang-12
@@ -121,9 +121,8 @@ RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
 
 # Install necessary Kubernetes binaries used in tests.
 RUN wget https://dl.k8s.io/v1.24.0/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/v1.24.0/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
-
+    wget https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+    wget https://dl.k8s.io/v1.24.0/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 # Used for generating CRD files.
 # Download a version of controller-gen that has been hacked to support additional types (e.g., float).
 # We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen

@@ -1,4 +1,4 @@
-FROM alpine:3.16 as qemu
+FROM alpine:3.17 as qemu
 
 ARG QEMU_VERSION=6.1.0-8
 ARG QEMU_ARCHS="s390x"
@@ -9,7 +9,7 @@ RUN apk --update add curl
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
-FROM s390x/golang:1.18.9-alpine3.17
+FROM s390x/golang:1.19.5-alpine3.17
 MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2

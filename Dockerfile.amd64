@@ -1,6 +1,6 @@
 FROM calico/bpftool:v5.3-amd64 as bpftool
 
-FROM us-docker.pkg.dev/google.com/api-project-999119582588/go-boringcrypto/golang:1.18.9b7
+FROM us-docker.pkg.dev/google.com/api-project-999119582588/go-boringcrypto/golang:1.18.10b7
 MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
 ARG GO_VERSION=1.19.6

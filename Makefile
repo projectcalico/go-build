@@ -63,8 +63,11 @@ DOCKER_BUILD_ARGS?=
 ifeq ($(DOCKER_EXPERIMENTAL),true)
 DOCKER_BUILD_ARGS+=--squash
 endif
-ifneq ($(ARCH),amd64)
+ifneq ($(ARCH),amd64)\
+#This script will get the latest patch version in (latest-1) minor version
+GO_VERSION=$(curl -s https://go.dev/dl/?mode=json | jq -r '.[1].version')
 DOCKER_BUILD_ARGS+=--cpuset-cpus 0
+DOCKER_BUILD_ARGS+=$(GO_VERSION)
 endif
 
 ###############################################################################

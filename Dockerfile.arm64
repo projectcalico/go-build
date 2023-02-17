@@ -12,7 +12,7 @@ RUN apt update && apt install -y curl
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
-FROM arm64v8/golang:1.19.6-buster
+FROM arm64v8/golang:1.19-buster
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 

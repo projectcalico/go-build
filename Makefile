@@ -60,14 +60,14 @@ join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
 # Check if the docker daemon is running in experimental mode (to get the --squash flag)
 DOCKER_EXPERIMENTAL=$(shell docker version -f '{{ .Server.Experimental }}')
 DOCKER_BUILD_ARGS?=
+# This script will get the latest patch version in (latest-1) minor version
+GO_VERSION:=$(shell curl -s https://go.dev/dl/?mode=json | jq -r '.[1].version')
+DOCKER_BUILD_ARGS+=--build-arg GO_VERSION=$(GO_VERSION)
 ifeq ($(DOCKER_EXPERIMENTAL),true)
 DOCKER_BUILD_ARGS+=--squash
 endif
-ifneq ($(ARCH),amd64)\
-#This script will get the latest patch version in (latest-1) minor version
-GO_VERSION=$(curl -s https://go.dev/dl/?mode=json | jq -r '.[1].version')
+ifneq ($(ARCH),amd64)
 DOCKER_BUILD_ARGS+=--cpuset-cpus 0
-DOCKER_BUILD_ARGS+=$(GO_VERSION)
 endif
 
 ###############################################################################

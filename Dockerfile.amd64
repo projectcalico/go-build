@@ -1,9 +1,8 @@
 FROM calico/bpftool:v5.3-amd64 as bpftool
 
-FROM us-docker.pkg.dev/google.com/api-project-999119582588/go-boringcrypto/golang:1.18.9b7
+FROM golang:1.20.2-buster
 MAINTAINER Shaun Crampton <shaun@projectcalico.org>
 
-ARG GO_VERSION=1.20.2
 ARG QEMU_VERSION=4.2.0-6
 
 # we need these two distinct lists. The first one is the names used by the qemu distributions
@@ -46,9 +45,6 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
 
 RUN rm /etc/apt/sources.list.d/buster-backports.list
 
-RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
-RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-RUN rm go${GO_VERSION}.linux-amd64.tar.gz
 RUN wget https://apt.llvm.org/llvm.sh
 RUN bash ./llvm.sh 12
 RUN apt install clang-12

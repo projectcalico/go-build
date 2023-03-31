@@ -86,7 +86,7 @@ RUN cp -a $GOROOT $GOCGO && \
   go install -v std && \
   rm -rf /go/src/* /root/.cache
 
-ENV GO_LINT_VERSION=v1.50.1
+ENV GO_LINT_VERSION=v1.52.2
 
 # Install go programs that we rely on
 RUN \

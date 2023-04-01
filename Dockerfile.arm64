@@ -1,7 +1,8 @@
 FROM calico/bpftool:v5.0-arm64 as bpftool
 
 FROM debian:buster as qemu
-MAINTAINER Reza Ramezanpour <reza@projectcalico.org>
+
+LABEL maintainer="Reza Ramezanpour <reza@projectcalico.org>"
 
 ARG GO_LINT_VERSION=v1.52.2
 ARG K8S_VERSION=v1.25.8

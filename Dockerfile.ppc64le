@@ -1,17 +1,19 @@
 FROM alpine:3.17 as qemu
 
-ARG QEMU_VERSION=4.2.0-6
 ARG QEMU_ARCHS="ppc64le"
+ARG QEMU_VERSION=4.2.0-6
 
 RUN apk --update add curl
 
 # Enable non-native runs on amd64 architecture hosts
-RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
+RUN for i in ${QEMU_ARCHS}; do curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar xz -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
 FROM ppc64le/golang:1.20.2-alpine3.17
 MAINTAINER David Wilder <wilder@ibm.com>
 
+ARG GO_LINT_VERSION=v1.52.2
+ARG K8S_VERSION=v1.25.8
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 
 # Enable non-native builds of this image on an amd64 hosts.
@@ -36,13 +38,13 @@ RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
 # Install ginkgo CLI tool for running tests
-RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5
+# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.2 && \
+    mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+  go install github.com/onsi/ginkgo/ginkgo@v1.16.5
 
 # Install linting tools
-ENV GO_LINT_VERSION=v1.52.2
-RUN \
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION && \
-  golangci-lint --version
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION
 
 # Install license checking tool.
 RUN go install github.com/pmezard/licenses@master
@@ -60,26 +62,19 @@ RUN rm -rf /go/src/*
 RUN  go install k8s.io/code-generator/cmd/openapi-gen@master
 RUN  go install k8s.io/code-generator/cmd/deepcopy-gen@master
 
-# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
-  go install github.com/onsi/ginkgo/v2/ginkgo@v2.3.0 && \
-  mv /go/bin/ginkgo /go/bin/ginkgo2 && \
-  mv /go/bin/ginkgo1 /go/bin/ginkgo
-
 # Install Swaggo
 RUN go install github.com/swaggo/swag/cmd/swag@v1.8.7
 
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/v1.25.8/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/v1.25.8/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/v1.25.8/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 
-RUN curl -sSL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-ppc64le > manifest-tool && \
-    chmod +x manifest-tool && \
-    mv manifest-tool /usr/bin/
+RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-ppc64le -o /usr/bin/manifest-tool && \
+    chmod +x /usr/bin/manifest-tool
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

@@ -23,25 +23,17 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install curl
 # Install git for fetching Go dependencies
 # Install ssh for fetching Go dependencies
-# Install mercurial for fetching go dependencies
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
 # Install grep, sed, zip, and jq for use in some Makefiles
 # Install shadow for useradd (it allows to use big UID)
-RUN apk update && apk add --no-cache su-exec curl bash git openssh mercurial make wget util-linux tini file grep sed jq zip shadow libpcap-dev clang clang-dev linux-headers libbpf-dev musl-dev llvm
+RUN apk update && apk add --no-cache su-exec curl bash git openssh make wget util-linux tini file grep sed jq zip shadow libpcap-dev clang clang-dev linux-headers libbpf-dev musl-dev llvm
 RUN apk upgrade --no-cache
 
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
-
-# Disable cgo so that binaries we build will be fully static.
-ENV CGO_ENABLED=0
-
-# Recompile the standard library with cgo disabled.  This prevents the standard library from being
-# marked stale, causing full rebuilds every time.
-RUN go install -v std
 
 # Install ginkgo CLI tool for running tests
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5
@@ -78,9 +70,9 @@ RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
 RUN go install github.com/swaggo/swag/cmd/swag@v1.8.7
 
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/v1.24.0/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/v1.24.0/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/v1.24.0/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/v1.25.8/bin/linux/ppc64le/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+	wget https://dl.k8s.io/release/v1.25.8/bin/linux/ppc64le/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+	wget https://dl.k8s.io/v1.25.8/bin/linux/ppc64le/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

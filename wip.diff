@@ -1,0 +1,199 @@
+diff --git a/Dockerfile b/Dockerfile
+deleted file mode 120000
+index 0fc2233..0000000
+--- a/Dockerfile
++++ /dev/null
+@@ -1 +0,0 @@
+-Dockerfile.amd64
+\ No newline at end of file
+diff --git a/Dockerfile.amd64 b/Dockerfile.amd64
+index 0f7a170..2d03498 100644
+--- a/Dockerfile.amd64
++++ b/Dockerfile.amd64
+@@ -14,7 +14,6 @@ ARG CROSS_ARCHS="arm arm64 ppc64le s390x"
+ ARG MANIFEST_TOOL_VERSION=v1.0.2
+ 
+ # Install su-exec for use in the entrypoint.sh (so processes run as the right user)
+-# Install bash for the entry script (and because it's generally useful)
+ # Install curl
+ # Install git for fetching Go dependencies
+ # Install ssh for fetching Go dependencies
+@@ -23,7 +22,6 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
+ # Install make for building things
+ # Install util-linux for column command (used for output formatting).
+ # Install grep, sed, zip, and jq for use in some Makefiles
+-# Install gcc for cgo.
+ # Install lsb-release software-properties-common for llvm upgrade script
+ # Install clang, libbpf and newer kernel headers for building BPF binaries.
+ # Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
+@@ -32,16 +30,35 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
+     apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
+     apt-get -y upgrade && \
+     apt-get install --no-install-recommends -y -t buster-backports \
+-        libbpf-dev linux-headers-amd64  && \
++      libbpf-dev linux-headers-amd64 && \
+     apt-get install --no-install-recommends -y \
+-        curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
+-        lsb-release software-properties-common binutils file iproute2 \
+-        ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
+-        apt-utils autoconf automake build-essential \
+-        libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
+-        libpcre++-dev libtool libxml2-dev libyajl-dev \
+-        pkgconf zlib1g-dev && \
+-    rm -rf /var/lib/apt/lists/*
++      autoconf \
++      automake \
++      build-essential \
++      curl \
++      file \
++      git \
++      iproute2 \
++      jq \
++      libcurl4-openssl-dev \
++      libgeoip-dev \
++      liblmdb-dev \
++      libpcap-dev \
++      libpcre++-dev \
++      libtool \
++      libxml2-dev \
++      libyajl-dev \
++      lsb-release \
++      openssh-client \
++      pkgconf \
++      sed \
++      software-properties-common \
++      strace \
++      util-linux \
++      wget \
++      zip \
++      zlib1g-dev && \
++    apt-get autoremove && apt-get autoclean && apt-get clean
+ 
+ RUN rm /etc/apt/sources.list.d/buster-backports.list
+ 
+@@ -59,11 +76,6 @@ RUN  set -ex; \
+      chmod 0755 /sbin/su-exec; \
+      rm /sbin/su-exec.c
+ 
+-# Install fossa for foss license checks
+-ARG FOSSA_VER=1.0.1
+-RUN curl -L https://github.com/fossas/fossa-cli/releases/download/v${FOSSA_VER}/fossa-cli_${FOSSA_VER}_linux_amd64.tar.gz | tar zxvf - -C /usr/local/bin --extract fossa
+-RUN chmod +x /usr/local/bin/fossa
+-
+ ARG MOCKERY_VER=2.14.0
+ RUN curl -L https://github.com/vektra/mockery/releases/download/v${MOCKERY_VER}/mockery_${MOCKERY_VER}_Linux_x86_64.tar.gz | tar zxvf - -C /usr/local/bin --extract mockery
+ RUN chmod +x /usr/local/bin/mockery
+@@ -72,19 +84,7 @@ RUN chmod +x /usr/local/bin/mockery
+ RUN echo 'Host *' >> /etc/ssh/ssh_config \
+   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
+ 
+-# We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
+-# results in parts of the stdlib getting rebuilt (which fails due to the container's read-only
+-# filesystem).  As a workaround: take a copy of the go root for cgo builds and have the
+-# entrypoint script swap it into the path if it detects CGO_ENABLED=1.
+ ENV GOROOT=/usr/local/go
+-ENV GOCGO=/usr/local/go-cgo
+-
+-# Disable cgo by default so that binaries we build will be fully static by default.
+-ENV CGO_ENABLED=0
+-
+-RUN cp -a $GOROOT $GOCGO && \
+-  go install -v std && \
+-  rm -rf /go/src/* /root/.cache
+ 
+ ENV GO_LINT_VERSION=v1.50.1
+ 
+diff --git a/Dockerfile.arm64 b/Dockerfile.arm64
+index 359ae1d..bb57bba 100644
+--- a/Dockerfile.arm64
++++ b/Dockerfile.arm64
+@@ -20,16 +20,13 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
+ # This must be the first RUN command in this file!
+ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
+ 
+-# Install bash for the entry script (and because it's generally useful)
+ # Install curl
+ # Install git for fetching Go dependencies
+ # Install ssh for fetching Go dependencies
+-# Install mercurial for fetching go dependencies
+ # Install wget since it's useful for fetching
+ # Install make for building things
+ # Install util-linux for column command (used for output formatting).
+ # Install grep, sed, zip, and jq for use in some Makefiles
+-# Install gcc for cgo.
+ # Install lsb-release software-properties-common for llvm upgrade script
+ # Install clang, libbpf and newer kernel headers for building BPF binaries.
+ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
+@@ -39,9 +36,22 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
+     apt-get install --no-install-recommends -y -t buster-backports \
+         libbpf-dev linux-headers-arm64 && \
+     apt-get install --no-install-recommends -y \
+-        curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
+-        lsb-release software-properties-common binutils file iproute2 \
+-        ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev
++        curl \
++        file \
++        git \
++        grep \
++        iproute2 \
++        jq \
++        libpcap-dev \
++        lsb-release \
++        make \
++        openssh-client \
++        sed \
++        software-properties-common \
++        strace \
++        util-linux \
++        wget \
++        zip
+ 
+ 
+ RUN wget https://apt.llvm.org/llvm.sh
+@@ -62,11 +72,6 @@ RUN  set -ex; \
+      chmod 0755 /sbin/su-exec; \
+      rm /sbin/su-exec.c
+ 
+-# Install fossa for foss license checks
+-ARG FOSSA_VER=1.1.3
+-RUN curl -L https://github.com/fossas/fossa-cli/releases/download/v${FOSSA_VER}/fossa-cli_${FOSSA_VER}_linux_arm64.tar.gz | tar zxvf - -C /usr/local/bin --extract fossa
+-RUN chmod +x /usr/local/bin/fossa
+-
+ ARG MOCKERY_VER=2.14.0
+ RUN curl -L https://github.com/vektra/mockery/releases/download/v${MOCKERY_VER}/mockery_${MOCKERY_VER}_Linux_x86_64.tar.gz | tar zxvf - -C /usr/local/bin --extract mockery
+ RUN chmod +x /usr/local/bin/mockery
+@@ -75,19 +80,7 @@ RUN chmod +x /usr/local/bin/mockery
+ RUN echo 'Host *' >> /etc/ssh/ssh_config \
+   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
+ 
+-# We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
+-# results in parts of the stdlib getting rebuilt (which fails due to the container's read-only
+-# filesystem).  As a workaround: take a copy of the go root for cgo builds and have the
+-# entrypoint script swap it into the path if it detects CGO_ENABLED=1.
+ ENV GOROOT=/usr/local/go
+-ENV GOCGO=/usr/local/go-cgo
+-
+-# Disable cgo by default so that binaries we build will be fully static by default.
+-ENV CGO_ENABLED=0
+-
+-RUN cp -a $GOROOT $GOCGO && \
+-  go install -v std && \
+-  rm -rf /go/src/* /root/.cache
+ 
+ ENV GO_LINT_VERSION=v1.50.1
+ 
+diff --git a/entrypoint.sh b/entrypoint.sh
+index 37ec470..1d67c1b 100755
+--- a/entrypoint.sh
++++ b/entrypoint.sh
+@@ -33,10 +33,4 @@ if [ -n "$EXTRA_GROUP_ID"  ]; then
+   fi
+ fi
+ 
+-if [ "$CGO_ENABLED" = "1" ]; then
+-  echo "CGO enabled, switching GOROOT to $GOCGO."
+-  export GOROOT=$GOCGO
+-  export PATH=$GOCGO/bin:$PATH
+-fi
+-
+ exec /sbin/su-exec user "$@"

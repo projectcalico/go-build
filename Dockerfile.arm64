@@ -1,7 +1,8 @@
 FROM calico/bpftool:v5.0-arm64 as bpftool
 
 FROM debian:buster as qemu
-MAINTAINER Reza Ramezanpour <reza@projectcalico.org>
+
+LABEL maintainer="Reza Ramezanpour <reza@projectcalico.org>"
 
 ARG QEMU_ARCHS="aarch64"
 ARG QEMU_VERSION=4.2.0-6

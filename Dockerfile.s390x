@@ -10,7 +10,8 @@ RUN for i in ${QEMU_ARCHS}; do curl -sfL https://github.com/multiarch/qemu-user-
 RUN chmod +x /usr/bin/qemu-*
 
 FROM s390x/golang:1.20.2-alpine3.17
-MAINTAINER LoZ Open Source Ecosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)
+
+LABEL maintainer="LoZ Open SourceEcosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)"
 
 ARG GO_LINT_VERSION=v1.52.2
 ARG K8S_VERSION=v1.25.8

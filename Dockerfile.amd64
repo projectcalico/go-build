@@ -18,7 +18,6 @@ ARG MANIFEST_TOOL_VERSION=v1.0.2
 # Install curl
 # Install git for fetching Go dependencies
 # Install ssh for fetching Go dependencies
-# Install mercurial for fetching go dependencies
 # Install wget since it's useful for fetching
 # Install make for building things
 # Install util-linux for column command (used for output formatting).
@@ -34,20 +33,19 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
     apt-get install --no-install-recommends -y -t buster-backports \
         libbpf-dev linux-headers-amd64  && \
     apt-get install --no-install-recommends -y \
-        curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
-        lsb-release software-properties-common binutils file iproute2 \
+        curl git openssh-client make wget util-linux file grep sed jq zip \
+        lsb-release software-properties-common binutils iproute2 \
         ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
         apt-utils autoconf automake build-essential \
         libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
         libpcre++-dev libtool libxml2-dev libyajl-dev \
-        pkgconf zlib1g-dev && \
-    rm -rf /var/lib/apt/lists/*
+        pkgconf zlib1g-dev
 
-RUN rm /etc/apt/sources.list.d/buster-backports.list
+RUN curl -sfL https://apt.llvm.org/llvm.sh | bash -s -- 12 && \
+    apt-get install clang-12
 
-RUN wget https://apt.llvm.org/llvm.sh
-RUN bash ./llvm.sh 12
-RUN apt install clang-12
+RUN apt-get autoclean && apt-get clean && \
+    rm /etc/apt/sources.list.d/buster-backports.list
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.
@@ -59,11 +57,6 @@ RUN  set -ex; \
      chmod 0755 /sbin/su-exec; \
      rm /sbin/su-exec.c
 
-# Install fossa for foss license checks
-ARG FOSSA_VER=1.0.1
-RUN curl -L https://github.com/fossas/fossa-cli/releases/download/v${FOSSA_VER}/fossa-cli_${FOSSA_VER}_linux_amd64.tar.gz | tar zxvf - -C /usr/local/bin --extract fossa
-RUN chmod +x /usr/local/bin/fossa
-
 ARG MOCKERY_VER=2.14.0
 RUN curl -L https://github.com/vektra/mockery/releases/download/v${MOCKERY_VER}/mockery_${MOCKERY_VER}_Linux_x86_64.tar.gz | tar zxvf - -C /usr/local/bin --extract mockery
 RUN chmod +x /usr/local/bin/mockery
@@ -72,19 +65,7 @@ RUN chmod +x /usr/local/bin/mockery
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
 
-# We want to be able to do both cgo and non-cgo builds.  That's awkward because toggling cgo
-# results in parts of the stdlib getting rebuilt (which fails due to the container's read-only
-# filesystem).  As a workaround: take a copy of the go root for cgo builds and have the
-# entrypoint script swap it into the path if it detects CGO_ENABLED=1.
 ENV GOROOT=/usr/local/go
-ENV GOCGO=/usr/local/go-cgo
-
-# Disable cgo by default so that binaries we build will be fully static by default.
-ENV CGO_ENABLED=0
-
-RUN cp -a $GOROOT $GOCGO && \
-  go install -v std && \
-  rm -rf /go/src/* /root/.cache
 
 ENV GO_LINT_VERSION=v1.52.2
 
@@ -117,9 +98,9 @@ RUN mv /go/bin/ginkgo /go/bin/ginkgo1 && \
   mv /go/bin/ginkgo1 /go/bin/ginkgo
 
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/v1.24.0/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-    wget https://dl.k8s.io/release/v1.24.0/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-    wget https://dl.k8s.io/v1.24.0/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/v1.25.8/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+    wget https://dl.k8s.io/release/v1.25.8/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+    wget https://dl.k8s.io/v1.25.8/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 # Used for generating CRD files.
 # Download a version of controller-gen that has been hacked to support additional types (e.g., float).
 # We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen
@@ -151,8 +132,11 @@ RUN wget https://github.com/google/go-containerregistry/releases/download/v0.4.1
 COPY --from=bpftool /bpftool /usr/bin
 
 # Build ModSecurity for Dikastes.
-COPY scripts/modsec.sh /usr/local/bin/scripts/modsec.sh
-RUN /usr/local/bin/scripts/modsec.sh
+ENV MODSEC_VERSION=v3.0.8
+RUN git clone -b ${MODSEC_VERSION} --depth 1 --recurse-submodules --shallow-submodules https://github.com/SpiderLabs/ModSecurity.git /build && \
+    cd /build && ./build.sh && ./configure && \
+    make && make install && \
+    rm -fr /build
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

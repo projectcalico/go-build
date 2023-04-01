@@ -10,7 +10,8 @@ RUN for i in ${QEMU_ARCHS}; do curl -sfL https://github.com/multiarch/qemu-user-
 RUN chmod +x /usr/bin/qemu-*
 
 FROM arm32v7/golang:1.20.2-alpine3.17
-MAINTAINER Marc Crebassa <aalaesar@gmail.com>
+
+LABEL maintainer="Marc Crebassa <aalaesar@gmail.com>"
 
 ARG GO_LINT_VERSION=v1.52.2
 ARG K8S_VERSION=v1.25.8

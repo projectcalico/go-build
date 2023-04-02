@@ -5,7 +5,7 @@ FROM debian:buster as qemu
 LABEL maintainer="Reza Ramezanpour <reza@projectcalico.org>"
 
 ARG QEMU_ARCHS="aarch64"
-ARG QEMU_VERSION=4.2.0-6
+ARG QEMU_VERSION=7.2.0-1
 
 RUN apt update && apt install -y curl
 

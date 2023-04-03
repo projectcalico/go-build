@@ -929,6 +929,12 @@ git-release-tag-from-dev-tag = $(shell echo $(call git-dev-tag) | grep -P -o "^v
 # git-release-tag-for-current-commit gets the release tag for the current commit if there is one.
 git-release-tag-for-current-commit = $(shell git describe --tags --exact-match --exclude "*dev*")
 
+# git-release-tag-mismatch-continue prints a warning if the RELEASE_VERSION specified doesn't match
+# what we expect
+git-release-tag-mismatch-continue = $(warning Given release version $(RELEASE_VERSION) does not match current commit release version $(CURRENT_RELEASE_VERSION), but continuing as requested.")
+# git-release-tag-mismatch-fail does as above, but treats it as a fatal error
+git-release-tag-mismatch-fail = $(error Given release version $(RELEASE_VERSION) does not match current commit release version $(CURRENT_RELEASE_VERSION).")
+
 # release-branch-for-tag finds the latest branch that corresponds to the given tag.
 release-branch-for-tag = $(firstword $(shell git --no-pager branch --format='%(refname:short)' --contains $1 | grep -P "^release"))
 # commit-for-tag finds the latest commit that corresponds to the given tag.
@@ -985,8 +991,11 @@ else
 		echo Current commit is not tagged with $(RELEASE_TAG) && exit 1)
 endif
 	$(eval CURRENT_RELEASE_VERSION = $(call git-release-tag-from-dev-tag))
-	$(if $(filter-out $(CURRENT_RELEASE_VERSION),$(RELEASE_VERSION)),\
-		echo Given release version $(RELEASE_VERSION) does not match current commit release version $(CURRENT_RELEASE_VERSION). && exit 1)
+	$(if \
+		$(filter-out $(CURRENT_RELEASE_VERSION),$(RELEASE_VERSION)),\
+			$(if $(FORCE_RELEASE_VERSION_OVERRIDE),\
+				$(call git-release-tag-mismatch-continue),\
+				$(call git-release-tag-mismatch-fail)))
 
 	$(eval RELEASE_BRANCH = release-$(if $CNX,calient-,)$(shell echo "$(RELEASE_VERSION)" | awk -F  "." '{print $$1"."$$2}'))
 	$(eval WORKFLOW_FILE = $(if $(CONFIRM),cut-release.yml,test-cut-release.yml))

@@ -58,7 +58,6 @@ RUN  set -ex; \
     rm /sbin/su-exec.c
 
 RUN curl -sfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VER}/mockery_${MOCKERY_VER}_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin --extract mockery
-RUN chmod +x /usr/local/bin/mockery
 
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
@@ -100,7 +99,6 @@ RUN wget -O ${GOPATH}/bin/controller-gen https://github.com/projectcalico/contro
 
 # Enable non-native runs on amd64 architecture hosts
 RUN for i in ${QEMU_ARCHS}; do curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar xz -C /usr/bin; done
-RUN chmod +x /usr/bin/qemu-*
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

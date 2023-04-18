@@ -12,7 +12,7 @@ FROM ppc64le/golang:1.20.3-alpine3.17
 LABEL maintainer="David Wilder <wilder@ibm.com>"
 
 ARG GO_LINT_VERSION=v1.52.2
-ARG K8S_VERSION=v1.25.8
+ARG K8S_VERSION=v1.26.3
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 
 # Enable non-native builds of this image on an amd64 hosts.

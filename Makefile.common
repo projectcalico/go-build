@@ -748,11 +748,12 @@ gen-mocks:
 MOCKERY_IN_PACKAGE=true
 # Run mockery for each path in MOCKERY_FILE_PATHS. The the generated mocks are
 # created in package and in test files. Look here for more information https://github.com/vektra/mockery
+
 mockery-run:
 	for FILE_PATH in $(MOCKERY_FILE_PATHS); do\
 		DIR=$$(dirname $$FILE_PATH); \
 		INTERFACE_NAME=$$(basename $$FILE_PATH); \
-		mockery --dir $$DIR --name $$INTERFACE_NAME $(if $(filter $(MOCKERY_IN_PACKAGE),true),--inpackage,--output $$DIR/mocks); \
+		mockery --dir $$DIR --name $$INTERFACE_NAME $(if $(filter $(MOCKERY_IN_PACKAGE),true),--inpackage,--output $$DIR/mocks) $(MOCKERY_EXTRA_ARGS); \
 	done
 
 ###############################################################################

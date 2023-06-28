@@ -1,6 +1,6 @@
 FROM calico/bpftool:v5.3-amd64 as bpftool
 
-FROM golang:1.20.5-buster
+FROM golang:1.20.5-bullseye
 
 LABEL maintainer="Shaun Crampton <shaun@projectcalico.org>"
 
@@ -26,18 +26,14 @@ ARG SU_EXEC_VER=212b75144bbc06722fbd7661f651390dc47a43d1
 # Install gcc for cgo.
 # Install lsb-release software-properties-common for llvm upgrade script
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
-# Install apt-utils, libpcre++-dev and libraries for ModSecurity dependencies.
-RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
-    echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
-    apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
-    apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y -t buster-backports \
-        libbpf-dev linux-headers-amd64  && \
+# Install libpcre++-dev and libraries for ModSecurity dependencies.
+RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y \
+        libbpf-dev linux-headers-amd64 \
         curl git openssh-client make wget util-linux file grep sed jq zip \
         lsb-release software-properties-common binutils iproute2 \
         ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
-        apt-utils autoconf automake build-essential \
+        autoconf automake build-essential \
         libcurl4-openssl-dev libgeoip-dev liblmdb-dev \
         libpcre++-dev libtool libxml2-dev libyajl-dev \
         pkgconf zlib1g-dev
@@ -45,8 +41,7 @@ RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease
 RUN curl -sfL https://apt.llvm.org/llvm.sh | bash -s -- ${LLVM_VERSION} && \
     apt-get install clang-${LLVM_VERSION}
 
-RUN apt-get autoclean && apt-get clean && \
-    rm /etc/apt/sources.list.d/buster-backports.list
+RUN apt-get autoclean && apt-get clean
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.
@@ -66,7 +61,7 @@ RUN echo 'Host *' >> /etc/ssh/ssh_config \
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
 RUN \
-    go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.2 && \
+    go install github.com/onsi/ginkgo/v2/ginkgo@v2.11.0 && \
         mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install golang.org/x/tools/cmd/goimports@v0.8.0 && \

@@ -1,6 +1,6 @@
 FROM calico/bpftool:v5.3-amd64 as bpftool
 
-FROM golang:1.20.5-buster
+FROM golang:1.20.6-buster
 
 LABEL maintainer="Shaun Crampton <shaun@projectcalico.org>"
 

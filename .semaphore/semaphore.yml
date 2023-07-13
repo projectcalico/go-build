@@ -56,7 +56,7 @@ blocks:
   skip:
     # Only run on branches, not PRs.
     when: "branch !~ '.+'"
-  dependencies: ["Build images"]
+  dependencies: ["Build images and run ut"]
   task:
     secrets:
     - name: quay-robot-calico-and-semaphoreci

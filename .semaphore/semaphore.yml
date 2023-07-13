@@ -20,37 +20,17 @@ global_job_config:
       - git fetch --unshallow
 
 blocks:
-# Run the full set of tests. Each job can potentially be run in parallel,
-# provided Semaphore has enough boxes available.
-- name: "Tests"
-  dependencies: ["Build images"]
-# TODO re enable this when semaphore has provided an explanation as to why it's timing out.
-#  run:
-#    when: "change_in('/Makefile.common') or change_in('/.semaphore/')"
-  task:
-    jobs:
-    - name: "Build downstream projects with our Makefile.common"
-      commands:
-      - git clone git@github.com:projectcalico/calico.git calico
-      - cd calico
-      - git checkout "${CALICO_BRANCH}"
-      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
-      - cd $PROJECT
-      - make ut
-      env_vars:
-        # The branch to test the current go-build against
-        - name: CALICO_BRANCH
-          value: master
-      matrix:
-      - env_var: PROJECT
-        values: ["felix", "calicoctl", "libcalico-go"]
 
-- name: "Build images"
+- name: "Build images and run ut"
   dependencies: []
   task:
     secrets:
     - name: quay-robot-calico-and-semaphoreci
     - name: docker
+    env_vars:
+      # The branch to test the current go-build against
+      - name: CALICO_BRANCH
+        value: master
     jobs:
     - name: Build and push image
       commands:
@@ -60,6 +40,14 @@ blocks:
       - export VERSION=$BRANCH_NAME
       - make image ARCH=$TARGET_ARCH
       - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
+      - git clone git@github.com:projectcalico/calico.git calico
+      - cd calico
+      - git checkout "${CALICO_BRANCH}"
+      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
+      - cd $PROJECT
+      - if [ "${TARGET_ARCH}" == "${SEMAPHORE_GIT_PR_NUMBER}" ]; then PROJECT=calicoctl make ut; fi
+      - if [ "${TARGET_ARCH}" == "${SEMAPHORE_GIT_PR_NUMBER}" ]; then PROJECT=libcalico-go make ut; fi
+      - if [ "${TARGET_ARCH}" == "${SEMAPHORE_GIT_PR_NUMBER}" ]; then PROJECT=felix make ut; fi
       matrix:
       - env_var: TARGET_ARCH
         values: ["amd64", "arm64","armv7", "ppc64le", "s390x"]

@@ -44,7 +44,6 @@ blocks:
       - cd calico
       - git checkout "${CALICO_BRANCH}"
       - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
-      - cd $PROJECT
       - if [ "${TARGET_ARCH}" == "${SEMAPHORE_GIT_PR_NUMBER}" ]; then cd calicoctl; make ut; fi
       - if [ "${TARGET_ARCH}" == "${SEMAPHORE_GIT_PR_NUMBER}" ]; then cd libcalico-go; make ut; fi
       - if [ "${TARGET_ARCH}" == "${SEMAPHORE_GIT_PR_NUMBER}" ]; then cd PROJECT=felix; make ut; fi

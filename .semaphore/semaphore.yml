@@ -36,7 +36,7 @@ blocks:
       - git checkout "${CALICO_BRANCH}"
       - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
       - cd $PROJECT
-      - make ut
+      - make image ut
       env_vars:
         # The branch to test the current go-build against
         - name: CALICO_BRANCH

@@ -43,10 +43,8 @@ blocks:
       - git clone git@github.com:projectcalico/calico.git calico
       - cd calico
       - git checkout "${CALICO_BRANCH}"
-      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
-      - if [ "${TARGET_ARCH}" == "amd64" ]; then cd calicoctl; make ut; fi
-      - if [ "${TARGET_ARCH}" == "amd64" ]; then cd libcalico-go; make ut; fi
-      - if [ "${TARGET_ARCH}" == "amd64" ]; then cd PROJECT=felix; make ut; fi
+      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}-${ARCH}"'/' metadata.mk
+      - if [ "${TARGET_ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
       matrix:
       - env_var: TARGET_ARCH
         values: ["amd64", "arm64","armv7", "ppc64le", "s390x"]

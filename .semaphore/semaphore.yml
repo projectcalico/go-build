@@ -58,10 +58,10 @@ blocks:
       - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
       - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
       - export VERSION=$BRANCH_NAME
-      - make image ARCH=$ARCH
-      - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$ARCH CONFIRM=true; fi
+      - make image ARCH=$TARGET_ARCH
+      - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
       matrix:
-      - env_var: ARCH
+      - env_var: TARGET_ARCH
         values: ["amd64", "arm64","armv7", "ppc64le", "s390x"]
 
 - name: "Push manifest"

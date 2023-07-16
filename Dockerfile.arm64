@@ -39,7 +39,7 @@ RUN apt-get update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y \
         libbpf-dev linux-headers-arm64 \
         curl git openssh-client make wget util-linux file grep sed jq zip \
-        lsb-release software-properties-common binutils iproute2 \
+        lsb-release software-properties-common binutils inetutils-ping iproute2 \
         ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev
 
 RUN curl -sfL https://apt.llvm.org/llvm.sh | bash -s -- ${LLVM_VERSION} && \

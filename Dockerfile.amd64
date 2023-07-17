@@ -31,7 +31,7 @@ RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y \
         libbpf-dev linux-headers-amd64 \
         curl git openssh-client make wget util-linux file grep sed jq zip \
-        lsb-release software-properties-common binutils iproute2 \
+        lsb-release software-properties-common binutils inetutils-ping iproute2 \
         ca-certificates gcc mingw-w64 libc-dev bsdmainutils strace libpcap-dev \
         autoconf automake build-essential \
         libcurl4-openssl-dev libgeoip-dev liblmdb-dev \

@@ -1,9 +1,9 @@
 FROM calico/bpftool:v5.0-arm64 as bpftool
 
-FROM debian:buster as qemu
+FROM debian:bullseye as qemu
 MAINTAINER Reza Ramezanpour <reza@projectcalico.org>
 
-ARG QEMU_VERSION=4.2.0-6
+ARG QEMU_VERSION=7.2.0-1
 ARG QEMU_ARCHS="aarch64"
 
 RUN apt update && apt install -y curl
@@ -12,7 +12,7 @@ RUN apt update && apt install -y curl
 RUN for i in ${QEMU_ARCHS}; do curl -L https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-${i}-static.tar.gz | tar zxvf - -C /usr/bin; done
 RUN chmod +x /usr/bin/qemu-*
 
-FROM arm64v8/golang:1.19.10-buster
+FROM arm64v8/golang:1.19.12-bullseye
 
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 
@@ -32,11 +32,11 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install gcc for cgo.
 # Install lsb-release software-properties-common for llvm upgrade script
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
-RUN echo 'APT::Default-Release "buster";' > /etc/apt/apt.conf.d/99defaultrelease && \
-    echo 'deb     http://ftp.am.debian.org/debian/    buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list && \
+RUN echo 'APT::Default-Release "bullseye";' > /etc/apt/apt.conf.d/99defaultrelease && \
+    echo 'deb     http://ftp.am.debian.org/debian/    bullseye-backports main contrib non-free' > /etc/apt/sources.list.d/bullseye-backports.list && \
     apt-get -y -o Acquire::Check-Valid-Until=false update &&  \
     apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y -t buster-backports \
+    apt-get install --no-install-recommends -y -t bullseye-backports \
         libbpf-dev linux-headers-arm64 && \
     apt-get install --no-install-recommends -y \
         curl bash git openssh-client mercurial make wget util-linux file grep sed jq zip \
@@ -50,7 +50,7 @@ RUN apt install clang-12
 
 RUN    rm -rf /var/lib/apt/lists/*
 
-RUN rm /etc/apt/sources.list.d/buster-backports.list
+RUN rm /etc/apt/sources.list.d/bullseye-backports.list
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
 # (sudo doesn't work easily in a container.)  The version was current master at the time of writing.

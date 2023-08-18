@@ -40,7 +40,7 @@ blocks:
       env_vars:
         # The branch to test the current go-build against
         - name: CALICO_BRANCH
-          value: master
+          value: release-v3.25
       matrix:
       - env_var: PROJECT
         values: ["felix", "calicoctl", "libcalico-go"]

@@ -9,7 +9,6 @@ ARG K8S_VERSION=v1.26.3
 ARG LLVM_VERSION=12
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 ARG MOCKERY_VER=2.27.1
-ARG MODSEC_VERSION=v3.0.8
 ARG QEMU_ARCHS="arm aarch64 ppc64le s390x"
 ARG QEMU_VERSION=7.2.0-1
 ARG SU_EXEC_VER=212b75144bbc06722fbd7661f651390dc47a43d1
@@ -106,12 +105,6 @@ RUN curl -sfL https://github.com/google/go-containerregistry/releases/download/v
 
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin
-
-# Build ModSecurity for Dikastes.
-RUN git clone -b ${MODSEC_VERSION} --depth 1 --recurse-submodules --shallow-submodules https://github.com/SpiderLabs/ModSecurity.git /build && \
-    cd /build && ./build.sh && ./configure && \
-    make && make install && \
-    rm -fr /build
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -11,7 +11,7 @@ RUN apt update && apt install -y curl
 # Enable non-native runs on amd64 architecture hosts
 RUN curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-aarch64-static.tar.gz | tar xz -C /usr/bin
 
-FROM arm64v8/golang:1.20.6-bullseye
+FROM arm64v8/golang:1.20.8-bullseye
 
 
 ARG GO_LINT_VERSION=v1.52.2

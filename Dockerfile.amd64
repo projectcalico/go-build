@@ -4,7 +4,7 @@ FROM golang:1.21.1-bullseye
 
 LABEL maintainer="Shaun Crampton <shaun@projectcalico.org>"
 
-ARG GO_LINT_VERSION=v1.52.2
+ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.26.3
 ARG LLVM_VERSION=12
 ARG MANIFEST_TOOL_VERSION=v1.0.2

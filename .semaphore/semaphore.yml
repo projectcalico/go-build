@@ -40,7 +40,7 @@ blocks:
       - export VERSION=$BRANCH_NAME
       - make image ARCH=$TARGET_ARCH
       - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
-      - git clone git@github.com:projectcalico/calico.git calico
+      - git clone -b release-v3.26 --depth 1 git@github.com:projectcalico/calico.git calico
       - cd calico
       - git checkout "${CALICO_BRANCH}"
       - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}-${TARGET_ARCH}"'/' metadata.mk

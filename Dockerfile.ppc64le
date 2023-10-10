@@ -7,7 +7,7 @@ RUN apk --update add curl
 # Enable non-native runs on amd64 architecture hosts
 RUN curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-ppc64le-static.tar.gz | tar xz -C /usr/bin
 
-FROM ppc64le/golang:1.20.9-alpine3.18
+FROM ppc64le/golang:1.20.10-alpine3.18
 
 LABEL maintainer="David Wilder <wilder@ibm.com>"
 

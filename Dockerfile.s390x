@@ -12,14 +12,13 @@ FROM s390x/golang:1.21.3-alpine3.18
 LABEL maintainer="LoZ Open SourceEcosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)"
 
 ARG GO_LINT_VERSION=v1.54.2
-ARG K8S_VERSION=v1.26.3
-ARG MANIFEST_TOOL_VERSION=v1.0.2
+ARG K8S_VERSION=v1.27.6
+ARG MANIFEST_TOOL_VERSION=v1.0.3
 
 # Enable non-native builds of this image on an amd64 hosts.
 # This must be the first RUN command in this file!
 COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 
-# Install su-exec for use in the entrypoint.sh (so processes run as the right user)
 # Install bash for the entry script (and because it's generally useful)
 # Install curl
 # Install git for fetching Go dependencies
@@ -29,51 +28,38 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install util-linux for column command (used for output formatting).
 # Install grep, sed, zip, and jq for use in some Makefiles
 # Install shadow for useradd (it allows to use big UID)
-RUN apk update && apk add --no-cache su-exec curl bash git openssh make wget util-linux tini file grep sed jq zip shadow libpcap-dev
+RUN apk update && apk add --no-cache curl bash git openssh make wget util-linux tini file grep sed jq zip shadow libpcap-dev
 RUN apk upgrade --no-cache
+
+# Install Go utilities
+
+# Install linting tools
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin $GO_LINT_VERSION
+
+# Install necessary Kubernetes binaries used in tests.
+RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/s390x/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+  wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/s390x/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+  wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/s390x/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+
+RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-s390x -o /usr/local/bin/manifest-tool && \
+  chmod +x /usr/local/bin/manifest-tool
+
+# Install ginkgo CLI tool for running tests
+# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+  go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
+  go install github.com/mikefarah/yq/v3@3.4.1 && \
+  go install github.com/pmezard/licenses@master && \
+  go install github.com/swaggo/swag/cmd/swag@v1.16.2 && \
+  go install github.com/wadey/gocovmerge@master && \
+  go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.6 && \
+  go install k8s.io/code-generator/cmd/openapi-gen@v0.27.6 && \
+  go clean -modcache && go clean -cache
+
+# Ensure that everything under the GOPATH is writable by everyone
+RUN chmod -R 777 $GOPATH
+ENV HOME $GOPATH
 
 # Disable ssh host key checking
 RUN echo 'Host *' >> /etc/ssh/ssh_config \
   && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
-
-# Install ginkgo CLI tool for running tests
-# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.2 && \
-    mv /go/bin/ginkgo /go/bin/ginkgo2 && \
-  go install github.com/onsi/ginkgo/ginkgo@v1.16.5
-
-# Install linting tools
-RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION
-
-# Install license checking tool.
-RUN go install github.com/pmezard/licenses@master
-
-# Install tool to merge coverage reports.
-RUN go install github.com/wadey/gocovmerge@master
-
-# Install CLI tool for working with yaml files
-RUN go install github.com/mikefarah/yq/v3@3.4.1
-
-# Delete all the Go sources that were downloaded, we only rely on the binaries
-RUN rm -rf /go/src/*
-
-# Install generation tools.
-RUN  go install k8s.io/code-generator/cmd/openapi-gen@master
-RUN  go install k8s.io/code-generator/cmd/deepcopy-gen@master
-
-# Install Swaggo
-RUN go install github.com/swaggo/swag/cmd/swag@v1.8.7
-
-# Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/s390x/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-	wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/s390x/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-	wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/s390x/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
-
-# Ensure that everything under the GOPATH is writable by everyone
-RUN chmod -R 777 $GOPATH
-
-RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-s390x -o /usr/bin/manifest-tool && \
-    chmod +x /usr/bin/manifest-tool
-
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

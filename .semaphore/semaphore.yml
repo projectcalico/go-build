@@ -30,7 +30,7 @@ blocks:
     env_vars:
       # The branch to test the current go-build against
       - name: CALICO_BRANCH
-        value: master
+        value: migrate-go-build-ubi
     jobs:
     - name: Build and push image
       commands:

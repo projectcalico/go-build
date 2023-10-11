@@ -2,8 +2,6 @@ FROM calico/bpftool:v5.0-arm64 as bpftool
 
 FROM debian:bullseye as qemu
 
-LABEL maintainer="Reza Ramezanpour <reza@projectcalico.org>"
-
 ARG QEMU_VERSION=7.2.0-1
 
 RUN apt update && apt install -y curl
@@ -13,12 +11,14 @@ RUN curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v$
 
 FROM arm64v8/golang:1.21.3-bullseye
 
+LABEL maintainer="Reza Ramezanpour <reza@projectcalico.org>"
+
+ARG CONTAINERREGISTRY_VERSION=v0.16.1
 ARG GO_LINT_VERSION=v1.54.2
-ARG K8S_VERSION=v1.26.3
+ARG K8S_VERSION=v1.27.6
 ARG LLVM_VERSION=15
-ARG MANIFEST_TOOL_VERSION=v1.0.2
-ARG MOCKERY_VER=2.14.0
-ARG SU_EXEC_VER=212b75144bbc06722fbd7661f651390dc47a43d1
+ARG MANIFEST_TOOL_VERSION=v1.0.3
+ARG MOCKERY_VERSION=2.35.3
 
 # Enable non-native builds of this image on an amd64 hosts.
 # This must be the first RUN command in this file!
@@ -37,66 +37,53 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 # Install clang, libbpf and newer kernel headers for building BPF binaries.
 RUN apt-get update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y \
-        libbpf-dev linux-headers-arm64 \
-        curl git openssh-client make wget util-linux file grep sed jq zip \
-        lsb-release software-properties-common binutils inetutils-ping iproute2 \
-        ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev
+    libbpf-dev linux-headers-arm64 \
+    curl git openssh-client make wget util-linux file grep sed jq zip \
+    lsb-release software-properties-common binutils inetutils-ping iproute2 \
+    ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev
 
 RUN curl -sfL https://apt.llvm.org/llvm.sh | bash -s -- ${LLVM_VERSION} && \
     apt-get install clang-${LLVM_VERSION}
 
 RUN apt-get autoclean && apt-get clean
 
-# su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
-# (sudo doesn't work easily in a container.)  The version was current master at the time of writing.
-RUN  set -ex; \
-    curl -o /sbin/su-exec.c https://raw.githubusercontent.com/ncopa/su-exec/${SU_EXEC_VER}/su-exec.c; \
-    gcc -Wall /sbin/su-exec.c -o/sbin/su-exec; \
-    chown root:root /sbin/su-exec; \
-    chmod 0755 /sbin/su-exec; \
-    rm /sbin/su-exec.c
-
-RUN curl -sfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VER}/mockery_${MOCKERY_VER}_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin --extract mockery
-
-# Disable ssh host key checking
-RUN echo 'Host *' >> /etc/ssh/ssh_config \
-  && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
-
-# Install go programs that we rely on
-# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN \
-    go install github.com/onsi/ginkgo/v2/ginkgo@v2.11.0 && \
-        mv /go/bin/ginkgo /go/bin/ginkgo2 && \
-    go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
-    go install golang.org/x/tools/cmd/goimports@v0.8.0 && \
-    curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin $GO_LINT_VERSION && \
-    go install github.com/pmezard/licenses@master && \
-    go install github.com/wadey/gocovmerge@master && \
-    go install github.com/mikefarah/yq/v3@3.4.1 && \
-    go install github.com/jstemmer/go-junit-report@v1.0.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.8.0 && \
-    go install k8s.io/code-generator/cmd/openapi-gen@v0.26.3 && \
-    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.26.3 && \
-    go install github.com/swaggo/swag/cmd/swag@v1.8.7 && \
-    go install gotest.tools/gotestsum@latest && \
-    go clean -modcache && go clean -cache
-
-# Ensure that everything under the GOPATH is writable by everyone
-RUN chmod -R 777 $GOPATH
-
-RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-arm64 -o /usr/bin/manifest-tool && \
-    chmod +x /usr/bin/manifest-tool
+# Install Go utilities
 
 # crane is needed for our release targets to copy images from the dev registries to the release registries.
-RUN curl -sfL https://github.com/google/go-containerregistry/releases/download/v0.4.1/go-containerregistry_Linux_arm64.tar.gz | tar xz -C /usr/bin crane
+RUN curl -sfL https://github.com/google/go-containerregistry/releases/download/${CONTAINERREGISTRY_VERSION}/go-containerregistry_Linux_arm64.tar.gz | tar xz -C /usr/local/bin crane
+
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin $GO_LINT_VERSION
 
 # Install necessary Kubernetes binaries used in tests.
 RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/arm64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
     wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/arm64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
     wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/arm64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
-# Add bpftool for Felix UT/FV.
-COPY --from=bpftool /bpftool /usr/bin
+RUN curl -sfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin --extract mockery
 
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-arm64 -o /usr/local/bin/manifest-tool && \
+    chmod +x /usr/local/bin/manifest-tool
+
+# Install go programs that we rely on
+# Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
+RUN \
+    go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+    go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
+    go install github.com/jstemmer/go-junit-report@v1.0.0 && \
+    go install github.com/mikefarah/yq/v3@3.4.1 && \
+    go install github.com/pmezard/licenses@master && \
+    go install github.com/swaggo/swag/cmd/swag@v1.16.2 && \
+    go install github.com/wadey/gocovmerge@master && \
+    go install golang.org/x/tools/cmd/goimports@v0.14.0 && \
+    go install golang.org/x/tools/cmd/stringer@v0.14.0 && \
+    go install gotest.tools/gotestsum@latest && \
+    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.6 && \
+    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.6 && \
+    go clean -modcache && go clean -cache
+
+# Disable ssh host key checking
+RUN echo 'Host *' >> /etc/ssh/ssh_config \
+    && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
+
+# Add bpftool for Felix UT/FV.
+COPY --from=bpftool /bpftool /usr/local/bin

@@ -63,18 +63,15 @@ DOCKER_BUILD_ARGS?=
 ifeq ($(DOCKER_EXPERIMENTAL),true)
 DOCKER_BUILD_ARGS+=--squash
 endif
-ifneq ($(ARCH),amd64)
-DOCKER_BUILD_ARGS+=--cpuset-cpus 0
-endif
 
 ###############################################################################
 # Building the image
 ###############################################################################
+.PHONY: image
 image: calico/go-build
 calico/go-build: register
 	# Make sure we re-pull the base image to pick up security fixes.
-	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
-	docker build $(DOCKER_BUILD_ARGS) --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	docker build $(DOCKER_BUILD_ARGS) --platform=linux/${ARCH} --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
@@ -85,6 +82,7 @@ sub-image-%:
 register:
 ifeq ($(BUILDARCH),amd64)
 	docker run --rm --privileged multiarch/qemu-user-static:register --reset
+	cp /usr/bin/qemu-{arm,aarch64,ppc64le,s390x}-static .
 endif
 
 push: image

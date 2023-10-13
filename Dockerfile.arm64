@@ -1,51 +1,83 @@
 FROM calico/bpftool:v5.3-arm64 as bpftool
 
-FROM debian:bullseye as qemu
+FROM registry.access.redhat.com/ubi8/ubi:latest
 
-ARG QEMU_VERSION=7.2.0-1
-
-RUN apt update && apt install -y curl
-
-# Enable non-native runs on amd64 architecture hosts
-RUN curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-aarch64-static.tar.gz | tar xz -C /usr/bin
-
-FROM arm64v8/golang:1.21.3-bullseye
-
-LABEL maintainer="Reza Ramezanpour <reza@projectcalico.org>"
+ARG GOLANG_VERSION=1.21.3
+ARG GOLANG_SHA256=fc90fa48ae97ba6368eecb914343590bbb61b388089510d0c56c2dde52987ef3
 
 ARG CONTAINERREGISTRY_VERSION=v0.16.1
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.27.6
-ARG LLVM_VERSION=15
 ARG MANIFEST_TOOL_VERSION=v1.0.3
 ARG MOCKERY_VERSION=2.35.3
+ARG MODSEC_VERSION=v3.0.10
+
+ENV PATH /usr/local/go/bin:$PATH
 
 # Enable non-native builds of this image on an amd64 hosts.
-# This must be the first RUN command in this file!
-COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
+COPY qemu-aarch64-static /usr/bin/
 
-# Install bash for the entry script (and because it's generally useful)
-# Install curl
-# Install git for fetching Go dependencies
-# Install ssh for fetching Go dependencies
-# Install wget since it's useful for fetching
-# Install make for building things
-# Install util-linux for column command (used for output formatting).
-# Install grep, sed, zip, and jq for use in some Makefiles
-# Install gcc for cgo.
-# Install lsb-release software-properties-common for llvm upgrade script
-# Install clang, libbpf and newer kernel headers for building BPF binaries.
-RUN apt-get update && apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y \
-    libbpf-dev linux-headers-arm64 \
-    curl git openssh-client make wget util-linux file grep sed jq zip \
-    lsb-release software-properties-common binutils inetutils-ping iproute2 \
-    ca-certificates gcc libc-dev bsdmainutils strace libpcap-dev
+# Install system dependencies
+RUN dnf upgrade -y && dnf install -y \
+    autoconf \
+    automake \
+    clang \
+    gcc \
+    gcc-c++ \
+    git \
+    glibc-static \
+    iputils \
+    jq \
+    libcurl-devel \
+    libpcap-devel \
+    libtool \
+    libxml2-devel \
+    llvm \
+    make \
+    openssh-clients \
+    pcre-devel \
+    pkg-config \
+    wget \
+    yajl \
+    zip
 
-RUN curl -sfL https://apt.llvm.org/llvm.sh | bash -s -- ${LLVM_VERSION} && \
-    apt-get install clang-${LLVM_VERSION}
+COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
+RUN dnf --enablerepo=baseos --enablerepo=powertools install -y \
+    elfutils-libelf-devel \
+    iproute-devel \
+    libbpf-devel \
+    lmdb-devel
 
-RUN apt-get autoclean && apt-get clean
+RUN dnf clean all
+
+# Install Go official release
+RUN set -eux; \
+    wget -O go.tgz.asc https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz.asc; \
+    wget -O go.tgz https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz --progress=dot:giga; \
+    echo "${GOLANG_SHA256} *go.tgz" | sha256sum -c -; \
+    \
+    # https://github.com/golang/go/issues/14739#issuecomment-324767697
+    GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
+    # https://www.google.com/linuxrepositories/
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 'EB4C 1BFD 4F04 2F6D DDCC  EC91 7721 F63B D38B 4796'; \
+    # let's also fetch the specific subkey of that key explicitly that we expect "go.tgz.asc" to be signed by, just to make sure we definitely have it
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys '2F52 8D36 D67B 69ED F998  D857 78BD 6547 3CB3 BD13'; \
+    gpg --batch --verify go.tgz.asc go.tgz; \
+    gpgconf --kill all; \
+    rm -rf "$GNUPGHOME" go.tgz.asc; \
+    \
+    tar -C /usr/local -xzf go.tgz; \
+    rm -f go.tgz*; \
+    \
+    go version
+
+# don't auto-upgrade the gotoolchain
+# https://github.com/docker-library/golang/issues/472
+ENV GOTOOLCHAIN=local
+
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:$PATH
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 1777 "$GOPATH"
 
 # Install Go utilities
 
@@ -66,8 +98,7 @@ RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFE
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN \
-    go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
@@ -77,7 +108,12 @@ RUN \
     go install golang.org/x/tools/cmd/goimports@v0.14.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.14.0 && \
     go install gotest.tools/gotestsum@latest && \
+    go install k8s.io/code-generator/cmd/client-gen@v0.27.6 && \
+    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.6 && \
     go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.6 && \
+    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.6 && \
+    go install k8s.io/code-generator/cmd/informer-gen@v0.27.6 && \
+    go install k8s.io/code-generator/cmd/lister-gen@v0.27.6 && \
     go install k8s.io/code-generator/cmd/openapi-gen@v0.27.6 && \
     go clean -modcache && go clean -cache
 
@@ -86,8 +122,15 @@ RUN chmod -R 777 $GOPATH
 ENV HOME $GOPATH
 
 # Disable ssh host key checking
-RUN echo 'Host *' >> /etc/ssh/ssh_config \
-    && echo '    StrictHostKeyChecking no' >> /etc/ssh/ssh_config
+RUN echo $'Host *\n    StrictHostKeyChecking no' >> /etc/ssh/ssh_config.d/10-stricthostkey.conf
 
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/local/bin
+
+# Build ModSecurity for Dikastes.
+RUN git clone -b ${MODSEC_VERSION} --depth 1 --recurse-submodules --shallow-submodules https://github.com/SpiderLabs/ModSecurity.git /build && \
+    cd /build && ./build.sh && ./configure && \
+    make && make install && \
+    rm -fr /build
+
+WORKDIR $GOPATH

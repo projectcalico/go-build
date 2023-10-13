@@ -63,18 +63,21 @@ DOCKER_BUILD_ARGS?=
 ifeq ($(DOCKER_EXPERIMENTAL),true)
 DOCKER_BUILD_ARGS+=--squash
 endif
-ifneq ($(ARCH),amd64)
-DOCKER_BUILD_ARGS+=--cpuset-cpus 0
-endif
 
 ###############################################################################
 # Building the image
 ###############################################################################
+QEMU_VERSION=v7.2.0-1
+
+.PHONY: download-qemu
+download-qemu:
+	curl --remote-name-all -sfL https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{arm,aarch64,ppc64le,s390x}-static
+
+.PHONY: image
 image: calico/go-build
-calico/go-build: register
+calico/go-build: register download-qemu
 	# Make sure we re-pull the base image to pick up security fixes.
-	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
-	docker build $(DOCKER_BUILD_ARGS) --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	docker build $(DOCKER_BUILD_ARGS) --platform=linux/${ARCH} --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:

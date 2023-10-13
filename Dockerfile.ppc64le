@@ -1,23 +1,11 @@
-FROM alpine:3.17 as qemu
-
-ARG QEMU_VERSION=7.2.0-1
-
-RUN apk --update add curl
-
-# Enable non-native runs on amd64 architecture hosts
-RUN curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-ppc64le-static.tar.gz | tar xz -C /usr/bin
-
 FROM ppc64le/golang:1.21.3-alpine3.18
-
-LABEL maintainer="David Wilder <wilder@ibm.com>"
 
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.27.6
 ARG MANIFEST_TOOL_VERSION=v1.0.3
 
 # Enable non-native builds of this image on an amd64 hosts.
-# This must be the first RUN command in this file!
-COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
+COPY qemu-ppc64le-static /usr/bin/
 
 # Install bash for the entry script (and because it's generally useful)
 # Install curl

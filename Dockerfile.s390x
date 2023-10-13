@@ -2,7 +2,6 @@ FROM s390x/golang:1.21.3-alpine3.18
 
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.27.6
-ARG MANIFEST_TOOL_VERSION=v1.0.3
 
 # Enable non-native builds of this image on an amd64 hosts.
 COPY qemu-s390x-static /usr/bin/
@@ -28,9 +27,6 @@ RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/in
 RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/s390x/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
   wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/s390x/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
   wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/s390x/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
-
-RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-s390x -o /usr/local/bin/manifest-tool && \
-  chmod +x /usr/local/bin/manifest-tool
 
 # Install ginkgo CLI tool for running tests
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo

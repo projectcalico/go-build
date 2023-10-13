@@ -47,16 +47,6 @@ DEFAULTIMAGE ?= calico/go-build:$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
 BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
 
-MANIFEST_TOOL_VERSION := v1.0.2
-MANIFEST_TOOL_DIR := $(shell mktemp -d)
-export PATH := $(MANIFEST_TOOL_DIR):$(PATH)
-
-space :=
-space +=
-comma := ,
-prefix_linux = $(addprefix linux/,$(strip $(subst armv,arm/v,$1)))
-join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
-
 # Check if the docker daemon is running in experimental mode (to get the --squash flag)
 DOCKER_EXPERIMENTAL=$(shell docker version -f '{{ .Server.Experimental }}')
 DOCKER_BUILD_ARGS?=
@@ -105,7 +95,13 @@ sub-push-%:
 
 push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
-	docker run -t --entrypoint /bin/sh -v $(HOME)/.docker/config.json:/go/.docker/config.json $(ARCHIMAGE) -c "manifest-tool push from-args --platforms $(call join_platforms,$(ARCHES)) --template $(DEFAULTIMAGE)-ARCHVARIANT --target $(DEFAULTIMAGE)"
+	docker manifest create $(DEFAULTIMAGE) \
+		--amend $(DEFAULTIMAGE)-amd64 \
+		--amend $(DEFAULTIMAGE)-amdv7 \
+		--amend $(DEFAULTIMAGE)-arm64 \
+		--amend $(DEFAULTIMAGE)-ppc64le \
+		--amend $(DEFAULTIMAGE)-s390x
+	docker manifest push $(DEFAULTIMAGE)
 
 ###############################################################################
 # UTs

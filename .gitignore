@@ -1,3 +1,4 @@
 .idea
 .vscode/
 hello-*
+qemu-*-static

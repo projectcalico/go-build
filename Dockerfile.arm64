@@ -7,7 +7,6 @@ ARG GOLANG_SHA256=fc90fa48ae97ba6368eecb914343590bbb61b388089510d0c56c2dde52987e
 
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.27.6
-ARG MANIFEST_TOOL_VERSION=v1.0.3
 ARG MOCKERY_VERSION=2.35.3
 ARG MODSEC_VERSION=v3.0.10
 
@@ -88,9 +87,6 @@ RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/arm64/kube-apiserver -O /usr
     wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/arm64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 RUN curl -sfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin --extract mockery
-
-RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-arm64 -o /usr/local/bin/manifest-tool && \
-    chmod +x /usr/local/bin/manifest-tool
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo

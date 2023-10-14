@@ -35,9 +35,9 @@ ifeq ($(ARCH),x86_64)
 endif
 
 ###############################################################################
-DOCKERFILE ?= Dockerfile.$(ARCH)
+GOBUILD_IMAGE ?= calico/go-build
 VERSION ?= latest
-DEFAULTIMAGE ?= calico/go-build:$(VERSION)
+DEFAULTIMAGE ?= $(GOBUILD_IMAGE):$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
 BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
 
@@ -51,18 +51,20 @@ endif
 ###############################################################################
 # Building the image
 ###############################################################################
+QEMU_DOWNLOADED=.qemu.downloaded
 QEMU_VERSION=v7.2.0-1
 
 .PHONY: download-qemu
-download-qemu:
-	curl --remote-name-all -sfL --retry 3 https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{aarch64,ppc64le,s390x}-static && \
+download-qemu: $(QEMU_DOWNLOADED)
+$(QEMU_DOWNLOADED):
+	curl --remote-name-all -sfL --retry 3 https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{aarch64,ppc64le,s390x}-static
 	chmod 755 qemu-*-static
+	touch $@
 
 .PHONY: image
 image: calico/go-build
 calico/go-build: register download-qemu
-	# Make sure we re-pull the base image to pick up security fixes.
-	docker buildx build $(DOCKER_BUILD_ARGS) --platform=linux/${ARCH} --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	docker buildx build --pull $(DOCKER_BUILD_ARGS) --platform=linux/$(ARCH) -t $(ARCHIMAGE) -f Dockerfile . --load
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
@@ -75,6 +77,7 @@ ifeq ($(BUILDARCH),amd64)
 	docker run --rm --privileged multiarch/qemu-user-static:register --reset
 endif
 
+.PHONY: push
 push: image
 	docker push $(ARCHIMAGE)
 	# to handle default case, because quay.io does not support manifest yet
@@ -87,6 +90,7 @@ push-all: $(addprefix sub-push-,$(ARCHES))
 sub-push-%:
 	$(MAKE) push ARCH=$*
 
+.PHONY: push-manifest
 push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
 	docker manifest create $(DEFAULTIMAGE) \
@@ -95,6 +99,12 @@ push-manifest:
 		--amend $(DEFAULTIMAGE)-ppc64le \
 		--amend $(DEFAULTIMAGE)-s390x
 	docker manifest push $(DEFAULTIMAGE)
+
+.PHONY: clean
+clean:
+	rm -f qemu-*-static
+	rm -f $(QEMU_DOWNLOADED)
+	-docker image rm -f $$(docker images $(GOBUILD_IMAGE) -a -q)
 
 ###############################################################################
 # UTs

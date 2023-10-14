@@ -55,7 +55,7 @@ QEMU_VERSION=v7.2.0-1
 
 .PHONY: download-qemu
 download-qemu:
-	curl --remote-name-all -sfL https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{aarch64,ppc64le,s390x}-static && \
+	curl --remote-name-all -sfL --retry 3 https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{aarch64,ppc64le,s390x}-static && \
 	chmod 755 qemu-*-static
 
 .PHONY: image

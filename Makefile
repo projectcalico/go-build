@@ -8,7 +8,7 @@ all: image-all
 # The target architecture is select by setting the ARCH variable.
 # When ARCH is undefined it is set to the detected host architecture.
 # When ARCH differs from the host architecture a crossbuild will be performed.
-ARCHES = amd64 armv7 arm64 ppc64le s390x
+ARCHES = amd64 arm64 ppc64le s390x
 
 # BUILDARCH is the host architecture
 # ARCH is the target architecture
@@ -22,9 +22,6 @@ endif
 ifeq ($(BUILDARCH),x86_64)
         BUILDARCH=amd64
 endif
-ifeq ($(BUILDARCH),armv7l)
-        BUILDARCH=armv7
-endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
 ARCH ?= $(BUILDARCH)
@@ -32,9 +29,6 @@ ARCH ?= $(BUILDARCH)
 # canonicalized names for target architecture
 ifeq ($(ARCH),aarch64)
         override ARCH=arm64
-endif
-ifeq ($(ARCH),armv7l)
-        override ARCH=armv7
 endif
 ifeq ($(ARCH),x86_64)
         override ARCH=amd64
@@ -61,14 +55,14 @@ QEMU_VERSION=v7.2.0-1
 
 .PHONY: download-qemu
 download-qemu:
-	curl --remote-name-all -sfL https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{arm,aarch64,ppc64le,s390x}-static && \
+	curl --remote-name-all -sfL https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{aarch64,ppc64le,s390x}-static && \
 	chmod 755 qemu-*-static
 
 .PHONY: image
 image: calico/go-build
 calico/go-build: register download-qemu
 	# Make sure we re-pull the base image to pick up security fixes.
-	docker build $(DOCKER_BUILD_ARGS) --platform=linux/${ARCH} --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	docker buildx build $(DOCKER_BUILD_ARGS) --platform=linux/${ARCH} --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
@@ -97,7 +91,6 @@ push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
 	docker manifest create $(DEFAULTIMAGE) \
 		--amend $(DEFAULTIMAGE)-amd64 \
-		--amend $(DEFAULTIMAGE)-armv7 \
 		--amend $(DEFAULTIMAGE)-arm64 \
 		--amend $(DEFAULTIMAGE)-ppc64le \
 		--amend $(DEFAULTIMAGE)-s390x

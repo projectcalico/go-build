@@ -46,7 +46,7 @@ blocks:
       - if [ "${TARGET_ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
       matrix:
       - env_var: TARGET_ARCH
-        values: ["amd64", "arm64","armv7", "ppc64le", "s390x"]
+        values: ["amd64", "arm64", "ppc64le", "s390x"]
 
 - name: "Push manifest"
   skip:

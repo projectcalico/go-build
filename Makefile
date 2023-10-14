@@ -105,6 +105,7 @@ clean:
 	rm -f qemu-*-static
 	rm -f $(QEMU_DOWNLOADED)
 	-docker image rm -f $$(docker images $(GOBUILD_IMAGE) -a -q)
+	-docker manifest rm $(DEFAULTIMAGE)
 
 ###############################################################################
 # UTs

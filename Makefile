@@ -8,7 +8,7 @@ all: image-all
 # The target architecture is select by setting the ARCH variable.
 # When ARCH is undefined it is set to the detected host architecture.
 # When ARCH differs from the host architecture a crossbuild will be performed.
-ARCHES = amd64 armv7 arm64 ppc64le s390x
+ARCHES = amd64 arm64 ppc64le s390x
 
 # BUILDARCH is the host architecture
 # ARCH is the target architecture
@@ -22,9 +22,6 @@ endif
 ifeq ($(BUILDARCH),x86_64)
         BUILDARCH=amd64
 endif
-ifeq ($(BUILDARCH),armv7l)
-        BUILDARCH=armv7
-endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
 ARCH ?= $(BUILDARCH)
@@ -32,9 +29,6 @@ ARCH ?= $(BUILDARCH)
 # canonicalized names for target architecture
 ifeq ($(ARCH),aarch64)
         override ARCH=arm64
-endif
-ifeq ($(ARCH),armv7l)
-        override ARCH=armv7
 endif
 ifeq ($(ARCH),x86_64)
         override ARCH=amd64
@@ -47,34 +41,28 @@ DEFAULTIMAGE ?= calico/go-build:$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
 BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
 
-MANIFEST_TOOL_VERSION := v1.0.2
-MANIFEST_TOOL_DIR := $(shell mktemp -d)
-export PATH := $(MANIFEST_TOOL_DIR):$(PATH)
-
-space :=
-space +=
-comma := ,
-prefix_linux = $(addprefix linux/,$(strip $(subst armv,arm/v,$1)))
-join_platforms = $(subst $(space),$(comma),$(call prefix_linux,$(strip $1)))
-
 # Check if the docker daemon is running in experimental mode (to get the --squash flag)
 DOCKER_EXPERIMENTAL=$(shell docker version -f '{{ .Server.Experimental }}')
 DOCKER_BUILD_ARGS?=
 ifeq ($(DOCKER_EXPERIMENTAL),true)
 DOCKER_BUILD_ARGS+=--squash
 endif
-ifneq ($(ARCH),amd64)
-DOCKER_BUILD_ARGS+=--cpuset-cpus 0
-endif
 
 ###############################################################################
 # Building the image
 ###############################################################################
+QEMU_VERSION=v7.2.0-1
+
+.PHONY: download-qemu
+download-qemu:
+	curl --remote-name-all -sfL https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{aarch64,ppc64le,s390x}-static && \
+	chmod 755 qemu-*-static
+
+.PHONY: image
 image: calico/go-build
-calico/go-build: register
+calico/go-build: register download-qemu
 	# Make sure we re-pull the base image to pick up security fixes.
-	# Limit the build to use only one CPU, This helps to work around qemu bugs such as https://bugs.launchpad.net/qemu/+bug/1098729
-	docker build $(DOCKER_BUILD_ARGS) --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
+	docker buildx build $(DOCKER_BUILD_ARGS) --platform=linux/${ARCH} --pull -t $(ARCHIMAGE) -f $(DOCKERFILE) .
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
@@ -101,7 +89,12 @@ sub-push-%:
 
 push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
-	docker run -t --entrypoint /bin/sh -v $(HOME)/.docker/config.json:/root/.docker/config.json $(ARCHIMAGE) -c "/usr/bin/manifest-tool push from-args --platforms $(call join_platforms,$(ARCHES)) --template $(DEFAULTIMAGE)-ARCHVARIANT --target $(DEFAULTIMAGE)"
+	docker manifest create $(DEFAULTIMAGE) \
+		--amend $(DEFAULTIMAGE)-amd64 \
+		--amend $(DEFAULTIMAGE)-arm64 \
+		--amend $(DEFAULTIMAGE)-ppc64le \
+		--amend $(DEFAULTIMAGE)-s390x
+	docker manifest push $(DEFAULTIMAGE)
 
 ###############################################################################
 # UTs
@@ -110,7 +103,7 @@ test: register
 	for arch in $(ARCHES) ; do ARCH=$$arch $(MAKE) testcompile; done
 
 testcompile:
-	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(ARCH) hello.go
+	docker run --rm --user=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(ARCH) hello.go
 	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(ARCH) | grep -q "hello world"
 	@echo "success"
 

@@ -1,11 +1,12 @@
-FROM calico/bpftool:v5.3-amd64 as bpftool
+ARG TARGETARCH=${TARGETARCH}
+FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
 
 FROM registry.access.redhat.com/ubi8/ubi:latest
 
-ARG GOLANG_VERSION=1.21.3
-ARG GOLANG_SHA256=1241381b2843fae5a9707eec1f8fb2ef94d827990582c7c7c32f5bdfbfd420c8
+ARG TARGETARCH
 
 ARG CONTAINERREGISTRY_VERSION=v0.16.1
+ARG GOLANG_VERSION=1.21.3
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.27.6
 ARG MOCKERY_VERSION=2.35.3
@@ -41,21 +42,50 @@ RUN dnf upgrade -y && dnf install -y \
     yajl \
     zip
 
+# Install system dependencies that are not in UBI repos
 COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
-RUN dnf --enablerepo=baseos --enablerepo=powertools install -y \
-    elfutils-libelf-devel \
-    iproute-devel \
-    libbpf-devel \
-    lmdb-devel \
-    mingw64-gcc
+
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
+        dnf --enablerepo=baseos --enablerepo=powertools install -y \
+            elfutils-libelf-devel \
+            iproute-devel \
+            libbpf-devel \
+            lmdb-devel; \
+    fi; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        dnf --enablerepo=powertools install -y \
+            mingw64-gcc; \
+    fi
 
 RUN dnf clean all
 
 # Install Go official release
 RUN set -eux; \
-    wget -O go.tgz.asc https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz.asc; \
-    wget -O go.tgz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz --progress=dot:giga; \
-    echo "${GOLANG_SHA256} *go.tgz" | sha256sum -c -; \
+    url=; \
+    case "${TARGETARCH}" in \
+    'amd64') \
+        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz"; \
+        sha256='1241381b2843fae5a9707eec1f8fb2ef94d827990582c7c7c32f5bdfbfd420c8'; \
+        ;; \
+    'arm64') \
+        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz"; \
+        sha256='fc90fa48ae97ba6368eecb914343590bbb61b388089510d0c56c2dde52987ef3'; \
+        ;; \
+    'ppc64le') \
+        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-ppc64le.tar.gz"; \
+        sha256='3b0e10a3704f164a6e85e0377728ec5fd21524fabe4c925610e34076586d5826'; \
+        ;; \
+    's390x') \
+        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-s390x.tar.gz"; \
+        sha256='4c78e2e6f4c684a3d5a9bdc97202729053f44eb7be188206f0627ef3e18716b6'; \
+        ;; \
+    *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
+    esac; \
+    \
+    wget -O go.tgz.asc "$url.asc"; \
+    wget -O go.tgz "$url" --progress=dot:giga; \
+    echo "$sha256 *go.tgz" | sha256sum -c -; \
     \
     # https://github.com/golang/go/issues/14739#issuecomment-324767697
     GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
@@ -82,23 +112,38 @@ RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 1777 "$GOPATH"
 
 # Install Go utilities
 
-# Used for generating CRD files.
+# coltroller-gen is used for generating CRD files.
 # Download a version of controller-gen that has been hacked to support additional types (e.g., float).
 # We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen
 # tooling. Example: float, all the types in the numorstring package, etc.
-RUN wget -O /usr/local/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/calico-0.1/controller-gen && chmod +x /usr/local/bin/controller-gen
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        wget -O /usr/local/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/calico-0.1/controller-gen && chmod +x /usr/local/bin/controller-gen; \
+    fi
 
 # crane is needed for our release targets to copy images from the dev registries to the release registries.
-RUN curl -sfL https://github.com/google/go-containerregistry/releases/download/${CONTAINERREGISTRY_VERSION}/go-containerregistry_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin crane
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        curl -sfL https://github.com/google/go-containerregistry/releases/download/${CONTAINERREGISTRY_VERSION}/go-containerregistry_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin crane; \
+    fi
 
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin $GO_LINT_VERSION
 
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/amd64/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-    wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-    wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/amd64/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+    wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/${TARGETARCH}/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+    wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
-RUN curl -sfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin --extract mockery
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+    'amd64') \
+        curl -sfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin --extract mockery; \
+        ;; \
+    'arm64') \
+        curl -sfL https://github.com/vektra/mockery/releases/download/v${MOCKERY_VERSION}/mockery_${MOCKERY_VERSION}_Linux_arm64.tar.gz | tar xz -C /usr/local/bin --extract mockery; \
+        ;; \
+    *) echo >&2 "warning: unsupported architecture '${TARGETARCH}'" ;; \
+    esac
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
@@ -129,12 +174,15 @@ ENV HOME $GOPATH
 RUN echo $'Host *\n    StrictHostKeyChecking no' >> /etc/ssh/ssh_config.d/10-stricthostkey.conf
 
 # Add bpftool for Felix UT/FV.
-COPY --from=bpftool /bpftool /usr/local/bin
+COPY --from=bpftool /bpftool /usr/bin
 
 # Build ModSecurity for Dikastes.
-RUN git clone -b ${MODSEC_VERSION} --depth 1 --recurse-submodules --shallow-submodules https://github.com/SpiderLabs/ModSecurity.git /build && \
-    cd /build && ./build.sh && ./configure && \
-    make && make install && \
-    rm -fr /build
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
+        git clone -b ${MODSEC_VERSION} --depth 1 --recurse-submodules --shallow-submodules https://github.com/SpiderLabs/ModSecurity.git /build && \
+        cd /build && ./build.sh && ./configure && \
+        make -j4 && make install && \
+        rm -fr /build; \
+    fi
 
 WORKDIR $GOPATH

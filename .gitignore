@@ -1,4 +1,3 @@
-.idea
-.vscode/
+.qemu.downloaded
 hello-*
 qemu-*-static

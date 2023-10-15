@@ -50,6 +50,7 @@ RUN set -eux; \
         dnf --enablerepo=baseos --enablerepo=powertools install -y \
             elfutils-libelf-devel \
             iproute-devel \
+            iproute-tc \
             libbpf-devel \
             lmdb-devel; \
     fi; \

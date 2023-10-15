@@ -18,7 +18,7 @@ ENV PATH /usr/local/go/bin:$PATH
 # Supported qemu-user-static arch files are copied in Makefile `download-qemu` target
 COPY qemu-*-static /usr/bin
 
-# Install system dependencies
+# Install system dependencies and enable epel
 RUN dnf upgrade -y && dnf install -y \
     autoconf \
     automake \
@@ -47,12 +47,16 @@ COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
-        dnf --enablerepo=baseos --enablerepo=powertools install -y \
+        dnf --enablerepo=baseos,extras,powertools install -y \
             elfutils-libelf-devel \
+            epel-release \
             iproute-devel \
             iproute-tc \
             libbpf-devel \
             lmdb-devel; \
+        # requires epel-release package to be installed first
+        dnf install -y \
+            GeoIP-devel; \
     fi; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
         dnf --enablerepo=powertools install -y \

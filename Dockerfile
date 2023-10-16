@@ -1,4 +1,5 @@
 ARG TARGETARCH=${TARGETARCH}
+
 FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
 
 FROM registry.access.redhat.com/ubi8/ubi:latest
@@ -115,6 +116,12 @@ ENV GOPATH /go
 ENV PATH $GOPATH/bin:$PATH
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 1777 "$GOPATH"
 
+# su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
+RUN set -eux; \
+    curl -sfL https://raw.githubusercontent.com/ncopa/su-exec/master/su-exec.c -o /tmp/su-exec.c; \
+    gcc -Wall -O2 /tmp/su-exec.c -o /usr/bin/su-exec; \
+    rm -f /tmp/su-exec.c
+
 # Install Go utilities
 
 # coltroller-gen is used for generating CRD files.
@@ -173,7 +180,6 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
-ENV HOME $GOPATH
 
 # Disable ssh host key checking
 RUN echo $'Host *\n    StrictHostKeyChecking no' >> /etc/ssh/ssh_config.d/10-stricthostkey.conf
@@ -190,4 +196,5 @@ RUN set -eux; \
         rm -fr /build; \
     fi
 
-WORKDIR $GOPATH
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

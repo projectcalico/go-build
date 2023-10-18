@@ -14,6 +14,7 @@ LABEL maintainer="LoZ Open SourceEcosystem (https://www.ibm.com/developerworks/c
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.26.3
 ARG MANIFEST_TOOL_VERSION=v1.0.2
+ARG MODSEC_VERSION=v3.0.10
 
 # Enable non-native builds of this image on an amd64 hosts.
 # This must be the first RUN command in this file!
@@ -74,6 +75,12 @@ RUN chmod -R 777 $GOPATH
 
 RUN curl -sfL https://github.com/estesp/manifest-tool/releases/download/${MANIFEST_TOOL_VERSION}/manifest-tool-linux-s390x -o /usr/bin/manifest-tool && \
     chmod +x /usr/bin/manifest-tool
+
+# Build ModSecurity for Dikastes.
+RUN git clone -b ${MODSEC_VERSION} --depth 1 --recurse-submodules --shallow-submodules https://github.com/SpiderLabs/ModSecurity.git /build && \
+    cd /build && ./build.sh && ./configure && \
+    make && make install && \
+    rm -fr /build
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]

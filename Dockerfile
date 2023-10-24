@@ -11,7 +11,6 @@ ARG GOLANG_VERSION=1.21.3
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.27.6
 ARG MOCKERY_VERSION=2.35.3
-ARG MODSEC_VERSION=v3.0.10
 
 ENV PATH /usr/local/go/bin:$PATH
 
@@ -57,7 +56,8 @@ RUN set -eux; \
             lmdb-devel; \
         # requires epel-release package to be installed first
         dnf install -y \
-            GeoIP-devel; \
+            GeoIP-devel \
+            libmodsecurity-devel; \
     fi; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
         dnf --enablerepo=powertools install -y \
@@ -186,15 +186,6 @@ RUN echo $'Host *\n    StrictHostKeyChecking no' >> /etc/ssh/ssh_config.d/10-str
 
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin
-
-# Build ModSecurity for Dikastes.
-RUN set -eux; \
-    if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
-        git clone -b ${MODSEC_VERSION} --depth 1 --recurse-submodules --shallow-submodules https://github.com/SpiderLabs/ModSecurity.git /build && \
-        cd /build && ./build.sh && ./configure && \
-        make -j4 && make install && \
-        rm -fr /build; \
-    fi
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

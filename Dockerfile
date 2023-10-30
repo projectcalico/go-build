@@ -61,10 +61,6 @@ RUN set -eux; \
         dnf install -y \
             GeoIP-devel \
             libmodsecurity-devel; \
-    fi; \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
-        dnf --enablerepo=powertools install -y \
-            mingw64-gcc; \
     fi
 
 RUN dnf clean all

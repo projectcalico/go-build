@@ -6,8 +6,13 @@ FROM registry.access.redhat.com/ubi8/ubi:latest
 
 ARG TARGETARCH
 
-ARG CONTAINERREGISTRY_VERSION=v0.16.1
 ARG GOLANG_VERSION=1.21.3
+ARG GOLANG_SHA256_AMD64=1241381b2843fae5a9707eec1f8fb2ef94d827990582c7c7c32f5bdfbfd420c8
+ARG GOLANG_SHA256_ARM64=fc90fa48ae97ba6368eecb914343590bbb61b388089510d0c56c2dde52987ef3
+ARG GOLANG_SHA256_PPC64LE=3b0e10a3704f164a6e85e0377728ec5fd21524fabe4c925610e34076586d5826
+ARG GOLANG_SHA256_S390X=4c78e2e6f4c684a3d5a9bdc97202729053f44eb7be188206f0627ef3e18716b6
+
+ARG CONTAINERREGISTRY_VERSION=v0.16.1
 ARG GO_LINT_VERSION=v1.54.2
 ARG K8S_VERSION=v1.27.6
 ARG MOCKERY_VERSION=2.35.3
@@ -70,19 +75,19 @@ RUN set -eux; \
     case "${TARGETARCH}" in \
     'amd64') \
         url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz"; \
-        sha256='1241381b2843fae5a9707eec1f8fb2ef94d827990582c7c7c32f5bdfbfd420c8'; \
+        sha256="${GOLANG_SHA256_AMD64}"; \
         ;; \
     'arm64') \
         url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz"; \
-        sha256='fc90fa48ae97ba6368eecb914343590bbb61b388089510d0c56c2dde52987ef3'; \
+        sha256="${GOLANG_SHA256_ARM64}"; \
         ;; \
     'ppc64le') \
         url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-ppc64le.tar.gz"; \
-        sha256='3b0e10a3704f164a6e85e0377728ec5fd21524fabe4c925610e34076586d5826'; \
+        sha256="${GOLANG_SHA256_PPC64LE}"; \
         ;; \
     's390x') \
         url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-s390x.tar.gz"; \
-        sha256='4c78e2e6f4c684a3d5a9bdc97202729053f44eb7be188206f0627ef3e18716b6'; \
+        sha256="${GOLANG_SHA256_S390X}"; \
         ;; \
     *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
     esac; \

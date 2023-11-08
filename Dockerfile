@@ -6,16 +6,16 @@ FROM registry.access.redhat.com/ubi8/ubi:latest
 
 ARG TARGETARCH
 
-ARG GOLANG_VERSION=1.21.3
-ARG GOLANG_SHA256_AMD64=1241381b2843fae5a9707eec1f8fb2ef94d827990582c7c7c32f5bdfbfd420c8
-ARG GOLANG_SHA256_ARM64=fc90fa48ae97ba6368eecb914343590bbb61b388089510d0c56c2dde52987ef3
-ARG GOLANG_SHA256_PPC64LE=3b0e10a3704f164a6e85e0377728ec5fd21524fabe4c925610e34076586d5826
-ARG GOLANG_SHA256_S390X=4c78e2e6f4c684a3d5a9bdc97202729053f44eb7be188206f0627ef3e18716b6
+ARG GOLANG_VERSION=1.21.4
+ARG GOLANG_SHA256_AMD64=73cac0215254d0c7d1241fa40837851f3b9a8a742d0b54714cbdfb3feaf8f0af
+ARG GOLANG_SHA256_ARM64=ce1983a7289856c3a918e1fd26d41e072cc39f928adfb11ba1896440849b95da
+ARG GOLANG_SHA256_PPC64LE=2c63b36d2adcfb22013102a2ee730f058ec2f93b9f27479793c80b2e3641783f
+ARG GOLANG_SHA256_S390X=7a75ba4afc7a96058ca65903d994cd862381825d7dca12b2183f087c757c26c0
 
 ARG CONTAINERREGISTRY_VERSION=v0.16.1
-ARG GO_LINT_VERSION=v1.54.2
-ARG K8S_VERSION=v1.27.6
-ARG MOCKERY_VERSION=2.35.3
+ARG GO_LINT_VERSION=v1.55.2
+ARG K8S_VERSION=v1.27.7
+ARG MOCKERY_VERSION=2.36.1
 
 ENV PATH /usr/local/go/bin:$PATH
 
@@ -168,13 +168,13 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go
     go install golang.org/x/tools/cmd/goimports@v0.14.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.14.0 && \
     go install gotest.tools/gotestsum@latest && \
-    go install k8s.io/code-generator/cmd/client-gen@v0.27.6 && \
-    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.6 && \
-    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.6 && \
-    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.6 && \
-    go install k8s.io/code-generator/cmd/informer-gen@v0.27.6 && \
-    go install k8s.io/code-generator/cmd/lister-gen@v0.27.6 && \
-    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.6 && \
+    go install k8s.io/code-generator/cmd/client-gen@v0.27.7 && \
+    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.7 && \
+    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.7 && \
+    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.7 && \
+    go install k8s.io/code-generator/cmd/informer-gen@v0.27.7 && \
+    go install k8s.io/code-generator/cmd/lister-gen@v0.27.7 && \
+    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.7 && \
     go clean -modcache && go clean -cache
 
 # Ensure that everything under the GOPATH is writable by everyone

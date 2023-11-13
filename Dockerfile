@@ -123,8 +123,8 @@ RUN set -eux; \
 
 # Install Go utilities
 
-# coltroller-gen is used for generating CRD files.
-# Download a version of controller-gen that has been hacked to support additional types (e.g., float).
+# controller-gen is used for generating CRD files.
+# Download a version of controller-gen that has been updated to support additional types (e.g., float).
 # We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen
 # tooling. Example: float, all the types in the numorstring package, etc.
 RUN set -eux; \

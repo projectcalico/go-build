@@ -17,6 +17,8 @@ ARG GO_LINT_VERSION=v1.55.2
 ARG K8S_VERSION=v1.27.7
 ARG MOCKERY_VERSION=2.36.1
 
+ARG CALICO_CONTROLLER_TOOLS=calico-0.1
+
 ENV PATH /usr/local/go/bin:$PATH
 
 # Enable non-native runs on amd64 architecture hosts
@@ -129,7 +131,7 @@ RUN set -eux; \
 # tooling. Example: float, all the types in the numorstring package, etc.
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
-        wget -O /usr/local/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/calico-0.1/controller-gen && chmod +x /usr/local/bin/controller-gen; \
+        wget -O /usr/local/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/${CALICO_CONTROLLER_TOOLS}/controller-gen && chmod +x /usr/local/bin/controller-gen; \
     fi
 
 # crane is needed for our release targets to copy images from the dev registries to the release registries.

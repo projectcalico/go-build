@@ -162,12 +162,12 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
-    go install github.com/pmezard/licenses@master && \
+    go install github.com/pmezard/licenses@v0.0.0-20160314180953-1117911df3df && \
     go install github.com/swaggo/swag/cmd/swag@v1.16.2 && \
-    go install github.com/wadey/gocovmerge@master && \
+    go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
     go install golang.org/x/tools/cmd/goimports@v0.14.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.14.0 && \
-    go install gotest.tools/gotestsum@latest && \
+    go install gotest.tools/gotestsum@v1.11.0 && \
     go install k8s.io/code-generator/cmd/client-gen@v0.27.7 && \
     go install k8s.io/code-generator/cmd/conversion-gen@v0.27.7 && \
     go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.7 && \

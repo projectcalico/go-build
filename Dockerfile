@@ -182,8 +182,8 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 
-# Disable ssh host key checking
-RUN echo $'Host *\n    StrictHostKeyChecking no' >> /etc/ssh/ssh_config.d/10-stricthostkey.conf
+# Allow validated remote servers
+COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
 
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin

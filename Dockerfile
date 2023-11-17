@@ -14,7 +14,7 @@ ARG GOLANG_SHA256_S390X=7a75ba4afc7a96058ca65903d994cd862381825d7dca12b2183f087c
 
 ARG CONTAINERREGISTRY_VERSION=v0.16.1
 ARG GO_LINT_VERSION=v1.55.2
-ARG K8S_VERSION=v1.27.7
+ARG K8S_VERSION=v1.27.8
 ARG MOCKERY_VERSION=2.36.1
 
 ARG CALICO_CONTROLLER_TOOLS=calico-0.1
@@ -170,13 +170,13 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go
     go install golang.org/x/tools/cmd/goimports@v0.14.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.14.0 && \
     go install gotest.tools/gotestsum@v1.11.0 && \
-    go install k8s.io/code-generator/cmd/client-gen@v0.27.7 && \
-    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.7 && \
-    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.7 && \
-    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.7 && \
-    go install k8s.io/code-generator/cmd/informer-gen@v0.27.7 && \
-    go install k8s.io/code-generator/cmd/lister-gen@v0.27.7 && \
-    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.7 && \
+    go install k8s.io/code-generator/cmd/client-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/informer-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/lister-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.8 && \
     go clean -modcache && go clean -cache
 
 # Ensure that everything under the GOPATH is writable by everyone

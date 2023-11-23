@@ -98,14 +98,13 @@ push-manifest:
 		--amend $(DEFAULTIMAGE)-arm64 \
 		--amend $(DEFAULTIMAGE)-ppc64le \
 		--amend $(DEFAULTIMAGE)-s390x
-	docker manifest push $(DEFAULTIMAGE)
+	docker manifest push --purge $(DEFAULTIMAGE)
 
 .PHONY: clean
 clean:
 	rm -f qemu-*-static
 	rm -f $(QEMU_DOWNLOADED)
 	-docker image rm -f $$(docker images $(GOBUILD_IMAGE) -a -q)
-	-docker manifest rm $(DEFAULTIMAGE)
 
 ###############################################################################
 # UTs

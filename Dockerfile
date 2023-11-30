@@ -65,6 +65,12 @@ RUN set -eux; \
             libmodsecurity-devel; \
     fi
 
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        dnf --enablerepo=powertools install -y \
+            mingw64-gcc; \
+    fi
+
 RUN dnf clean all
 
 # Install Go official release

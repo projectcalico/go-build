@@ -41,13 +41,6 @@ DEFAULTIMAGE ?= $(GOBUILD_IMAGE):$(VERSION)
 ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
 BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
 
-# Check if the docker daemon is running in experimental mode (to get the --squash flag)
-DOCKER_EXPERIMENTAL=$(shell docker version -f '{{ .Server.Experimental }}')
-DOCKER_BUILD_ARGS?=
-ifeq ($(DOCKER_EXPERIMENTAL),true)
-DOCKER_BUILD_ARGS+=--squash
-endif
-
 ###############################################################################
 # Building the image
 ###############################################################################
@@ -64,7 +57,7 @@ $(QEMU_DOWNLOADED):
 .PHONY: image
 image: calico/go-build
 calico/go-build: register download-qemu
-	docker buildx build --pull $(DOCKER_BUILD_ARGS) --platform=linux/$(ARCH) -t $(ARCHIMAGE) -f Dockerfile . --load
+	docker buildx build --pull --platform=linux/$(ARCH) -t $(ARCHIMAGE) -f Dockerfile . --load
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:

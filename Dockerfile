@@ -2,7 +2,7 @@ ARG TARGETARCH=${TARGETARCH}
 
 FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
 
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
 
 ARG TARGETARCH
 
@@ -19,7 +19,7 @@ ARG MOCKERY_VERSION=2.36.1
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
-ENV PATH /usr/local/go/bin:$PATH
+ENV PATH=/usr/local/go/bin:$PATH
 
 # Enable non-native runs on amd64 architecture hosts
 # Supported qemu-user-static arch files are copied in Makefile `download-qemu` target
@@ -119,8 +119,8 @@ RUN set -eux; \
 # https://github.com/docker-library/golang/issues/472
 ENV GOTOOLCHAIN=local
 
-ENV GOPATH /go
-ENV PATH $GOPATH/bin:$PATH
+ENV GOPATH=/go
+ENV PATH=$GOPATH/bin:$PATH
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 1777 "$GOPATH"
 
 # su-exec is used by the entrypoint script to execute the user's command with the right UID/GID.
@@ -195,4 +195,14 @@ COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=bpftool /bpftool /usr/bin
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Squash into a single layer
+FROM scratch
+
+ENV GOPATH=/go
+ENV GOTOOLCHAIN=local
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+
+COPY --from=ubi / /
+
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

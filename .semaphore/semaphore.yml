@@ -20,49 +20,47 @@ global_job_config:
       - git fetch --unshallow
 
 blocks:
+  - name: Build images and run tests
+    dependencies: []
+    task:
+      secrets:
+        - name: quay-robot-calico-and-semaphoreci
+        - name: docker
+      env_vars:
+        # The branch to test the current go-build against
+        - name: CALICO_BRANCH
+          value: master
+      jobs:
+        - name: Build and push images
+          commands:
+            - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
+            - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
+            - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
+            - export VERSION=$BRANCH_NAME
+            - make image ARCH=$TARGET_ARCH
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
+            - git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico
+            - cd calico
+            - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}-${TARGET_ARCH}"'/' metadata.mk
+            - if [ "${TARGET_ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
+          matrix:
+            - env_var: TARGET_ARCH
+              values: ["amd64", "arm64", "ppc64le", "s390x"]
 
-- name: "Build images and run ut"
-  dependencies: []
-  task:
-    secrets:
-    - name: quay-robot-calico-and-semaphoreci
-    - name: docker
-    env_vars:
-      # The branch to test the current go-build against
-      - name: CALICO_BRANCH
-        value: master
-    jobs:
-    - name: Build and push image
-      commands:
-      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-      - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
-      - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
-      - export VERSION=$BRANCH_NAME
-      - make image ARCH=$TARGET_ARCH
-      - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
-      - git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico
-      - cd calico
-      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}-${TARGET_ARCH}"'/' metadata.mk
-      - if [ "${TARGET_ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
-      matrix:
-      - env_var: TARGET_ARCH
-        values: ["amd64", "arm64", "ppc64le", "s390x"]
-
-- name: "Push manifest"
-  skip:
-    # Only run on branches, not PRs.
-    when: "branch !~ '.+'"
-  dependencies: ["Build images and run ut"]
-  task:
-    secrets:
-    - name: quay-robot-calico-and-semaphoreci
-    - name: docker
-    jobs:
-    - name: Push multi-arch manifest
-      commands:
-      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-      - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
-      - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
-      - export VERSION=$BRANCH_NAME
-      - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-manifest CONFIRM=true; fi
-
+  - name: Push multi-arch manifests
+    skip:
+      # Only run on branches, not PRs.
+      when: "branch !~ '.+'"
+    dependencies: ["Build images and run tests"]
+    task:
+      secrets:
+        - name: quay-robot-calico-and-semaphoreci
+        - name: docker
+      jobs:
+        - name: Push multi-arch manifests
+          commands:
+            - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
+            - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
+            - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
+            - export VERSION=$BRANCH_NAME
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-manifest CONFIRM=true; fi

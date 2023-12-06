@@ -46,7 +46,7 @@ BASE_IMAGE ?= $(BASE):latest
 BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 
 ###############################################################################
-# Building the image
+# Building images
 ###############################################################################
 QEMU_DOWNLOADED=.qemu.downloaded
 QEMU_VERSION=v7.2.0-1
@@ -58,20 +58,29 @@ $(QEMU_DOWNLOADED):
 	chmod 755 qemu-*-static
 	touch $@
 
-.PHONY: image
-image: calico/go-build calico/base
-
 .PHONY: calico/go-build
 calico/go-build: register download-qemu
 	docker buildx build --load --pull --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
+
+.PHONY: image
+image: calico/go-build
+
+.PHONY: image-all
+image-all: $(addprefix sub-image-,$(ARCHES))
+sub-image-%:
+	$(MAKE) image ARCH=$*
 
 .PHONY: calico/base
 calico/base: register download-qemu
 	docker buildx build --load --pull --platform=linux/$(ARCH) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile .
 
-image-all: $(addprefix sub-image-,$(ARCHES))
-sub-image-%:
-	$(MAKE) image ARCH=$*
+.PHONY: image-base
+image-base: calico/base
+
+.PHONY: image-base-all
+image-base-all: $(addprefix sub-image-base-,$(ARCHES))
+sub-image-base-%:
+	$(MAKE) image-base ARCH=$*
 
 # Enable binfmt adding support for miscellaneous binary formats.
 .PHONY: register
@@ -89,9 +98,14 @@ ifeq ($(ARCH),amd64)
 	docker push quay.io/$(GOBUILD_IMAGE)
 endif
 
+.PHONY: push-base
+push-base: image-base
+	docker push $(BASE_ARCH_IMAGE)
+
 push-all: $(addprefix sub-push-,$(ARCHES))
 sub-push-%:
 	$(MAKE) push ARCH=$*
+	$(MAKE) push-base ARCH=$*
 
 .PHONY: push-manifest
 push-manifest:
@@ -123,14 +137,12 @@ testcompile:
 # CI
 ###############################################################################
 .PHONY: ci
-## Run what CI runs
-ci: image-all test
+ci: image-all image-base-all test
 
 ###############################################################################
 # CD
 ###############################################################################
 .PHONY: cd
-## Deploys images to registry
 cd:
 ifndef CONFIRM
 	$(error CONFIRM is undefined - run using make <target> CONFIRM=true)

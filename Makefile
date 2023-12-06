@@ -35,12 +35,15 @@ ifeq ($(ARCH),x86_64)
 	override ARCH=amd64
 endif
 
-###############################################################################
-GOBUILD_IMAGE ?= calico/go-build
 VERSION ?= latest
-DEFAULTIMAGE ?= $(GOBUILD_IMAGE):$(VERSION)
-ARCHIMAGE ?= $(DEFAULTIMAGE)-$(ARCH)
-BUILDIMAGE ?= $(DEFAULTIMAGE)-$(BUILDARCH)
+
+GOBUILD ?= calico/go-build
+GOBUILD_IMAGE ?= $(GOBUILD):$(VERSION)
+GOBUILD_ARCH_IMAGE ?= $(GOBUILD_IMAGE)-$(ARCH)
+
+BASE ?= calico/base
+BASE_IMAGE ?= $(BASE):latest
+BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 
 ###############################################################################
 # Building the image
@@ -56,9 +59,15 @@ $(QEMU_DOWNLOADED):
 	touch $@
 
 .PHONY: image
-image: calico/go-build
+image: calico/go-build calico/base
+
+.PHONY: calico/go-build
 calico/go-build: register download-qemu
-	docker buildx build --pull --platform=linux/$(ARCH) -t $(ARCHIMAGE) -f Dockerfile . --load
+	docker buildx build --load --pull --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
+
+.PHONY: calico/base
+calico/base: register download-qemu
+	docker buildx build --load --pull --platform=linux/$(ARCH) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile .
 
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
@@ -73,11 +82,11 @@ endif
 
 .PHONY: push
 push: image
-	docker push $(ARCHIMAGE)
+	docker push $(GOBUILD_ARCH_IMAGE)
 	# to handle default case, because quay.io does not support manifest yet
 ifeq ($(ARCH),amd64)
-	docker tag $(ARCHIMAGE) quay.io/$(DEFAULTIMAGE)
-	docker push quay.io/$(DEFAULTIMAGE)
+	docker tag $(GOBUILD_ARCH_IMAGE) quay.io/$(GOBUILD_IMAGE)
+	docker push quay.io/$(GOBUILD_IMAGE)
 endif
 
 push-all: $(addprefix sub-push-,$(ARCHES))
@@ -89,12 +98,15 @@ push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
 	docker manifest create $(DEFAULTIMAGE) $(addprefix --amend ,$(addprefix $(DEFAULTIMAGE)-,$(ARCHES)))
 	docker manifest push --purge $(DEFAULTIMAGE)
+	docker manifest create $(BASE_IMAGE) $(addprefix --amend ,$(addprefix $(BASE_IMAGE)-,$(ARCHES)))
+	docker manifest push --purge $(BASE_IMAGE)
 
 .PHONY: clean
 clean:
 	rm -f qemu-*-static
 	rm -f $(QEMU_DOWNLOADED)
-	-docker image rm -f $$(docker images $(GOBUILD_IMAGE) -a -q)
+	-docker image rm -f $$(docker images $(GOBUILD) -a -q)
+	-docker image rm -f $$(docker images $(BASE) -a -q)
 
 ###############################################################################
 # UTs
@@ -103,8 +115,8 @@ test: register
 	for arch in $(ARCHES) ; do ARCH=$$arch $(MAKE) testcompile; done
 
 testcompile:
-	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(BUILDIMAGE) go build -o hello-$(ARCH) hello.go
-	docker run --rm -v ${PWD}:/code $(BUILDIMAGE) /code/hello-$(ARCH) | grep -q "hello world"
+	docker run --rm -e LOCAL_USER_ID=$(shell id -u) -e GOARCH=$(ARCH) -w /code -v ${PWD}:/code $(GOBUILD_IMAGE)-$(BUILDARCH) go build -o hello-$(ARCH) hello.go
+	docker run --rm -v ${PWD}:/code $(GOBUILD_IMAGE)-$(BUILDARCH) /code/hello-$(ARCH) | grep -q "hello world"
 	@echo "success"
 
 ###############################################################################

@@ -52,17 +52,11 @@ COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
-        dnf --enablerepo=baseos,extras,powertools install -y \
+        dnf --enablerepo=baseos,powertools install -y \
             elfutils-libelf-devel \
-            epel-release \
             iproute-devel \
             iproute-tc \
-            libbpf-devel \
-            lmdb-libs; \
-        # requires epel-release package to be installed first
-        dnf install -y \
-            GeoIP-devel \
-            libmodsecurity-devel; \
+            libbpf-devel; \
     fi
 
 RUN set -eux; \

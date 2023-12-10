@@ -1,6 +1,8 @@
+FROM --platform=linux/amd64 calico/qemu-user-static:latest as qemu
+
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as ubi
 
-COPY qemu-*-static /usr/bin
+COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 
 RUN microdnf upgrade
 

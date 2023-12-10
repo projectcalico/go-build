@@ -45,37 +45,32 @@ BASE ?= calico/base
 BASE_IMAGE ?= $(BASE):latest
 BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 
+QEMU ?= calico/qemu-user-static
+QEMU_IMAGE ?= $(QEMU):latest
+
 ###############################################################################
 # Building images
 ###############################################################################
-QEMU_DOWNLOADED=.qemu.downloaded
-QEMU_VERSION=v7.2.0-1
+QEMU_IMAGE_CREATED=.qemu.created
 
-.PHONY: download-qemu
-download-qemu: $(QEMU_DOWNLOADED)
-$(QEMU_DOWNLOADED):
-	curl --remote-name-all -sfL --retry 3 https://github.com/multiarch/qemu-user-static/releases/download/${QEMU_VERSION}/qemu-{aarch64,ppc64le,s390x}-static
-	chmod 755 qemu-*-static
+.PHONY: image-qemu
+image-qemu: $(QEMU_IMAGE_CREATED)
+$(QEMU_IMAGE_CREATED): qemu/Dockerfile
+	docker buildx build --load --pull --platform=linux/amd64 -t $(QEMU_IMAGE) -f qemu/Dockerfile .
 	touch $@
 
-.PHONY: calico/go-build
-calico/go-build: register download-qemu
-	docker buildx build --load --pull --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
-
 .PHONY: image
-image: calico/go-build
+image: register image-qemu Dcokerfile entrypoint.sh
+	docker buildx build --load --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
 
 .PHONY: image-all
 image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
 	$(MAKE) image ARCH=$*
 
-.PHONY: calico/base
-calico/base: register download-qemu
-	docker buildx build --load --pull --platform=linux/$(ARCH) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile .
-
 .PHONY: image-base
-image-base: calico/base
+image-base: register image-qemu base/Dockerfile
+	docker buildx build --load --platform=linux/$(ARCH) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile .
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))
@@ -102,10 +97,15 @@ endif
 push-base: image-base
 	docker push $(BASE_ARCH_IMAGE)
 
+.PHONY: push-qemu
+push-qemu: image-qemu
+	docker push $(QEMU_IMAGE)
+
 push-all: $(addprefix sub-push-,$(ARCHES))
 sub-push-%:
 	$(MAKE) push ARCH=$*
 	$(MAKE) push-base ARCH=$*
+	$(MAKE) push-qemu
 
 .PHONY: push-manifest
 push-manifest:
@@ -117,10 +117,10 @@ push-manifest:
 
 .PHONY: clean
 clean:
-	rm -f qemu-*-static
-	rm -f $(QEMU_DOWNLOADED)
+	rm -f $(QEMU_IMAGE_CREATED)
 	-docker image rm -f $$(docker images $(GOBUILD) -a -q)
 	-docker image rm -f $$(docker images $(BASE) -a -q)
+	-docker image rm -f $$(docker images $(QEMU) -a -q)
 
 ###############################################################################
 # UTs

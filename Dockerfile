@@ -2,6 +2,8 @@ ARG TARGETARCH=${TARGETARCH}
 
 FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
 
+FROM --platform=amd64 calico/qemu-user-static:latest as qemu
+
 FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
 
 ARG TARGETARCH
@@ -23,7 +25,7 @@ ENV PATH=/usr/local/go/bin:$PATH
 
 # Enable non-native runs on amd64 architecture hosts
 # Supported qemu-user-static arch files are copied in Makefile `download-qemu` target
-COPY qemu-*-static /usr/bin
+COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 
 # Install system dependencies and enable epel
 RUN dnf upgrade -y && dnf install -y \

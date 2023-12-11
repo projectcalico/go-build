@@ -25,7 +25,7 @@ ENV PATH=/usr/local/go/bin:$PATH
 # Supported qemu-user-static arch files are copied in Makefile `download-qemu` target
 COPY qemu-*-static /usr/bin
 
-# Install system dependencies and enable epel
+# Install system dependencies
 RUN dnf upgrade -y && dnf install -y \
     autoconf \
     automake \
@@ -33,7 +33,6 @@ RUN dnf upgrade -y && dnf install -y \
     gcc \
     gcc-c++ \
     git \
-    glibc-static \
     iputils \
     jq \
     libcurl-devel \

@@ -8,6 +8,7 @@ all: image-all
 # The target architecture is select by setting the ARCH variable.
 # When ARCH is undefined it is set to the detected host architecture.
 # When ARCH differs from the host architecture a crossbuild will be performed.
+###############################################################################
 ARCHES = amd64 arm64 ppc64le s390x
 
 # BUILDARCH is the host architecture
@@ -17,10 +18,10 @@ BUILDARCH ?= $(shell uname -m)
 
 # canonicalized names for host architecture
 ifeq ($(BUILDARCH),aarch64)
-        BUILDARCH=arm64
+	BUILDARCH=arm64
 endif
 ifeq ($(BUILDARCH),x86_64)
-        BUILDARCH=amd64
+	BUILDARCH=amd64
 endif
 
 # unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
@@ -28,10 +29,10 @@ ARCH ?= $(BUILDARCH)
 
 # canonicalized names for target architecture
 ifeq ($(ARCH),aarch64)
-        override ARCH=arm64
+	override ARCH=arm64
 endif
 ifeq ($(ARCH),x86_64)
-        override ARCH=amd64
+	override ARCH=amd64
 endif
 
 ###############################################################################
@@ -86,11 +87,7 @@ sub-push-%:
 .PHONY: push-manifest
 push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
-	docker manifest create $(DEFAULTIMAGE) \
-		--amend $(DEFAULTIMAGE)-amd64 \
-		--amend $(DEFAULTIMAGE)-arm64 \
-		--amend $(DEFAULTIMAGE)-ppc64le \
-		--amend $(DEFAULTIMAGE)-s390x
+	docker manifest create $(DEFAULTIMAGE) $(addprefix --amend ,$(addprefix $(DEFAULTIMAGE)-,$(ARCHES)))
 	docker manifest push --purge $(DEFAULTIMAGE)
 
 .PHONY: clean

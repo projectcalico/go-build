@@ -56,7 +56,7 @@ QEMU_IMAGE_CREATED=.qemu.created
 .PHONY: image-qemu
 image-qemu: $(QEMU_IMAGE_CREATED)
 $(QEMU_IMAGE_CREATED):
-	docker buildx build --load --pull --platform=linux/amd64 -t $(QEMU_IMAGE) -f qemu/Dockerfile .
+	docker buildx build --load --pull --platform=linux/amd64 -t $(QEMU_IMAGE) -f qemu/Dockerfile qemu
 	touch $@
 
 .PHONY: image
@@ -70,7 +70,7 @@ sub-image-%:
 
 .PHONY: image-base
 image-base: register image-qemu
-	docker buildx build --load --platform=linux/$(ARCH) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile .
+	docker buildx build --load --platform=linux/$(ARCH) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))

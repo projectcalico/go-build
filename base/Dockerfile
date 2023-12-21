@@ -6,6 +6,9 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 
 RUN microdnf upgrade
 
+RUN mkdir /licenses
+COPY base/licenses /licenses/
+
 FROM scratch as source
 
 # Required external C dependencies for CGO builds.
@@ -25,6 +28,9 @@ COPY --from=ubi /etc/nsswitch.conf /etc/nsswitch.conf
 
 # tmp.tar has a /tmp with the correct permissions 01777.
 ADD base/tmp.tar /
+
+COPY --from=ubi /etc/os-release /etc/os-release
+COPY --from=ubi /licenses /licenses/
 
 FROM scratch
 

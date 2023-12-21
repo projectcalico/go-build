@@ -23,8 +23,12 @@ COPY --from=ubi /etc/hosts /etc/hosts
 COPY --from=ubi /etc/networks /etc/networks
 COPY --from=ubi /etc/nsswitch.conf /etc/nsswitch.conf
 
+COPY --from=ubi /etc/os-release /etc/os-release
+
 # tmp.tar has a /tmp with the correct permissions 01777.
-ADD base/tmp.tar /
+ADD tmp.tar /
+
+COPY licenses /licenses/
 
 FROM scratch
 

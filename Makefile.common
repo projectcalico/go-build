@@ -92,9 +92,7 @@ filter-registry ?= $(if $(filter-out $(1),$(DOCKERHUB_REGISTRY)),$(1)/)
 # Convenience function to get the first dev image repo in the list.
 DEV_REGISTRY ?= $(firstword $(DEV_REGISTRIES))
 
-# remove from the list to push to manifest any registries that do not support multi-arch
-NONMANIFEST_REGISTRIES      ?=
-MANIFEST_REGISTRIES         ?= $(DEV_REGISTRIES:$(NONMANIFEST_REGISTRIES)%=)
+MANIFEST_REGISTRIES ?= $(DEV_REGISTRIES)
 
 PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach image,$(BUILD_IMAGES),$(call filter-registry,$(registry))$(image)))
 
@@ -132,14 +130,8 @@ endif
 # the one for the host should contain all the necessary cross-compilation tools
 # we do not need to use the arch since go-build:v0.15 now is multi-arch manifest
 GO_BUILD_IMAGE ?= calico/go-build
-CALICO_BUILD    = $(GO_BUILD_IMAGE):$(GO_BUILD_VER)
+CALICO_BUILD    = $(GO_BUILD_IMAGE):$(GO_BUILD_VER)-$(BUILDARCH)
 
-BIRD_VERSION=v0.3.1
-COREDNS_VERSION=1.5.2
-ETCD_VERSION=v3.5.1
-K8S_VERSION=v1.23.2
-KUBECTL_VERSION=v1.23.2
-PROTOC_VER=v0.1
 PROTOC_CONTAINER=calico/protoc:$(PROTOC_VER)-$(BUILDARCH)
 
 ifeq ($(GIT_USE_SSH),true)

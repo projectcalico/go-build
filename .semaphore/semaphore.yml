@@ -42,7 +42,7 @@ blocks:
       - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
       - git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico
       - cd calico
-      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}-${TARGET_ARCH}"'/' metadata.mk
+      - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
       - if [ "${TARGET_ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
       matrix:
       - env_var: TARGET_ARCH

@@ -4,7 +4,7 @@ FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
 
 FROM --platform=amd64 calico/qemu-user-static:latest as qemu
 
-FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
+FROM registry.access.redhat.com/ubi9/ubi:latest as ubi
 
 ARG TARGETARCH
 
@@ -14,10 +14,10 @@ ARG GOLANG_SHA256_ARM64=e2e8aa88e1b5170a0d495d7d9c766af2b2b6c6925a8f8956d834ad6b
 ARG GOLANG_SHA256_PPC64LE=e872b1e9a3f2f08fd4554615a32ca9123a4ba877ab6d19d36abc3424f86bc07f
 ARG GOLANG_SHA256_S390X=92894d0f732d3379bc414ffdd617eaadad47e1d72610e10d69a1156db03fc052
 
-ARG CONTAINERREGISTRY_VERSION=v0.16.1
+ARG CONTAINERREGISTRY_VERSION=v0.17.0
 ARG GO_LINT_VERSION=v1.55.2
-ARG K8S_VERSION=v1.27.8
-ARG MOCKERY_VERSION=2.36.1
+ARG K8S_VERSION=v1.27.9
+ARG MOCKERY_VERSION=2.39.1
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -49,11 +49,12 @@ RUN dnf upgrade -y && dnf install -y \
     zip
 
 # Install system dependencies that are not in UBI repos
-COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
+COPY rockylinux/rocky.repo /etc/yum.repos.d/rocky.repo
+COPY rockylinux/RPM-GPG-KEY-Rocky-9 /etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
-        dnf --enablerepo=baseos,powertools install -y \
+        dnf --enablerepo=baseos,appstream,crb install -y \
             elfutils-libelf-devel \
             iproute-devel \
             iproute-tc \
@@ -62,7 +63,7 @@ RUN set -eux; \
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
-        dnf --enablerepo=powertools install -y \
+        dnf --enablerepo=crb install -y \
             mingw64-gcc; \
     fi
 
@@ -161,23 +162,23 @@ RUN set -eux; \
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.2 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
     go install github.com/pmezard/licenses@v0.0.0-20160314180953-1117911df3df && \
     go install github.com/swaggo/swag/cmd/swag@v1.16.2 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
-    go install golang.org/x/tools/cmd/goimports@v0.14.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.14.0 && \
+    go install golang.org/x/tools/cmd/goimports@v0.16.1 && \
+    go install golang.org/x/tools/cmd/stringer@v0.16.1 && \
     go install gotest.tools/gotestsum@v1.11.0 && \
-    go install k8s.io/code-generator/cmd/client-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/informer-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/lister-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/client-gen@v0.27.9 && \
+    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.9 && \
+    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.9 && \
+    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.9 && \
+    go install k8s.io/code-generator/cmd/informer-gen@v0.27.9 && \
+    go install k8s.io/code-generator/cmd/lister-gen@v0.27.9 && \
+    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.9 && \
     go clean -modcache && go clean -cache
 
 # Ensure that everything under the GOPATH is writable by everyone

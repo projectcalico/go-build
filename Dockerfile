@@ -4,7 +4,7 @@ FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
 
 FROM --platform=amd64 calico/qemu-user-static:latest as qemu
 
-FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
+FROM registry.access.redhat.com/ubi9/ubi:latest as ubi
 
 ARG TARGETARCH
 
@@ -50,11 +50,12 @@ RUN dnf upgrade -y && dnf install -y \
     zip
 
 # Install system dependencies that are not in UBI repos
-COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
+COPY rockylinux/rocky.repo /etc/yum.repos.d/rocky.repo
+COPY rockylinux/RPM-GPG-KEY-Rocky-9 /etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
-        dnf --enablerepo=baseos,powertools install -y \
+        dnf --enablerepo=baseos,appstream,crb install -y \
             elfutils-libelf-devel \
             iproute-devel \
             iproute-tc \
@@ -63,7 +64,7 @@ RUN set -eux; \
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
-        dnf --enablerepo=powertools install -y \
+        dnf --enablerepo=crb install -y \
             mingw64-gcc; \
     fi
 

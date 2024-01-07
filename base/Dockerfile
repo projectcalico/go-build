@@ -1,6 +1,6 @@
 FROM --platform=linux/amd64 calico/qemu-user-static:latest as qemu
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as ubi
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest as ubi
 
 ARG LDSONAME
 
@@ -14,9 +14,10 @@ RUN mkdir -p /rootfs/lib64 /rootfs/etc
 
 # Copy dynamic loader and symbolic links.
 # Note: The dynamic loader name and links might be different in a future release.
-RUN cp /lib64/ld-2.28.so /rootfs/lib64/ld-2.28.so
 RUN set -eux; \
-    cp -a /lib64/${LDSONAME} /rootfs/lib64/${LDSONAME}; \
+    if [ -f /lib64/${LDSONAME} ]; then \
+        cp -a /lib64/${LDSONAME} /rootfs/lib64/${LDSONAME}; \
+    fi; \
     if [ -f /lib/${LDSONAME} ]; then \
         mkdir -p /rootfs/lib && cp -a /lib/${LDSONAME} /rootfs/lib/${LDSONAME}; \
     fi

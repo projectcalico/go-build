@@ -1,6 +1,6 @@
 FROM --platform=linux/amd64 calico/qemu-user-static:latest as qemu
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as ubi
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest as ubi
 
 COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 

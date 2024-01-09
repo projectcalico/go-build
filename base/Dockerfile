@@ -2,14 +2,16 @@ FROM --platform=linux/amd64 calico/qemu-user-static:latest as qemu
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as ubi
 
-COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
+COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 
-RUN microdnf upgrade
+RUN microdnf upgrade -y
 
 FROM scratch as source
 
+ARG LDSONAME
+
 # Required external C dependencies for CGO builds.
-COPY --from=ubi /lib64/ld-linux-*.so.2 /lib64/
+COPY --from=ubi /lib64/${LDSONAME} /lib64/${LDSONAME}
 COPY --from=ubi /lib64/libc.so.6 /lib64/libc.so.6
 COPY --from=ubi /lib64/libpthread.so.0 /lib64/libpthread.so.0
 COPY --from=ubi /lib64/libresolv.so.2 /lib64/libresolv.so.2

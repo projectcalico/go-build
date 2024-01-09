@@ -28,12 +28,24 @@ endif
 ARCH ?= $(BUILDARCH)
 
 # canonicalized names for target architecture
-ifeq ($(ARCH),aarch64)
-	override ARCH=arm64
-endif
 ifeq ($(ARCH),x86_64)
+	override ARCH=arm64
+else ifeq ($(ARCH),aarch64)
 	override ARCH=amd64
 endif
+
+# ELF interpreter (dynamic loader) soname
+LDSONAME=ld64.so.1
+ifeq ($(ARCH),amd64)
+	override LDSONAME=ld-linux-x86-64.so.2
+else ifeq ($(ARCH),arm64)
+	override LDSONAME=ld-linux-aarch64.so.1
+else ifeq ($(ARCH),ppc64le)
+	override LDSONAME=ld64.so.2
+else ifeq ($(ARCH),s390)
+	override LDSONAME=ld64.so.1
+endif
+
 
 VERSION ?= latest
 
@@ -56,7 +68,7 @@ QEMU_IMAGE_CREATED=.qemu.created
 .PHONY: image-qemu
 image-qemu: $(QEMU_IMAGE_CREATED)
 $(QEMU_IMAGE_CREATED):
-	docker buildx build --load --pull --platform=linux/amd64 -t $(QEMU_IMAGE) -f qemu/Dockerfile qemu
+	docker buildx build --load --platform=linux/amd64 --pull -t $(QEMU_IMAGE) -f qemu/Dockerfile qemu
 	touch $@
 
 .PHONY: image
@@ -70,7 +82,7 @@ sub-image-%:
 
 .PHONY: image-base
 image-base: register image-qemu
-	docker buildx build --load --platform=linux/$(ARCH) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
+	docker buildx build --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))

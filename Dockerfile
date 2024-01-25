@@ -183,6 +183,9 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
 
+# Do not create mail box.
+RUN sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
+
 # Allow validated remote servers
 COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
 

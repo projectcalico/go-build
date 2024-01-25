@@ -10,25 +10,23 @@ if [ "${RUN_AS_ROOT}" = "true" ]; then
 fi
 
 echo "Starting with UID : $USER_ID" 1>&2
-# Do not create mail box.
-/bin/sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
 # Don't pass "-m" to useradd if the home directory already exists (which can occur if it was volume mounted in) otherwise it will fail.
 if [[ ! -d "/home/user" ]]; then
-  /usr/sbin/useradd -m -U -s /bin/bash -u "$USER_ID" user
+  useradd -m -U -s /bin/bash -u "$USER_ID" user
 else
-  /usr/sbin/useradd -U -s /bin/bash -u "$USER_ID" user
+  useradd -U -s /bin/bash -u "$USER_ID" user
 fi
 
 export HOME=/home/user
 
 if [ -n "$EXTRA_GROUP_ID" ]; then
-  echo "Adding user to additional GID : $EXTRA_GROUP_ID" 1>&2
+  echo "Adding user to additional GID: $EXTRA_GROUP_ID" 1>&2
   # Adding the group can fail if it already exists.
-  if addgroup --gid "$EXTRA_GROUP_ID" group; then
-    adduser user group
+  if groupadd --gid "$EXTRA_GROUP_ID" group; then
+    usermod -a -G group user
   else
     echo "Adding user to existing group instead" 1>&2
-    adduser user "$(getent group "$EXTRA_GROUP_ID" | cut -d: -f1)"
+    usermod -a -G "$(getent group "$EXTRA_GROUP_ID" | cut -d: -f1)" user
   fi
 fi
 

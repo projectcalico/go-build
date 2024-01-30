@@ -20,9 +20,10 @@ ARG GOLANG_SHA256_S390X=24c6c5c9d515adea5d58ae78388348c97614a0c21ac4d4f4c0dab75e
 
 ARG CONTAINERREGISTRY_VERSION=v0.19.1
 ARG GO_LINT_VERSION=v1.57.2
-ARG K8S_VERSION=v1.28.11
-ARG K8S_LIBS_VERSION=v0.28.11
+ARG K8S_VERSION=v1.29.6
+ARG K8S_LIBS_VERSION=v0.29.6
 ARG MOCKERY_VERSION=2.43.2
+ARG PROTOC_VERSION=25.3
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -165,6 +166,28 @@ RUN set -eux; \
     *) echo >&2 "warning: unsupported architecture '${TARGETARCH}'" ;; \
     esac
 
+RUN set -eux; \
+    url=; \
+    case "${TARGETARCH}" in \
+    'amd64') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"; \
+        ;; \
+    'arm64') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-aarch_64.zip"; \
+        ;; \
+    'ppc64le') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-ppcle_64.zip"; \
+        ;; \
+    's390x') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-s390_64.zip"; \
+        ;; \
+    *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
+    esac; \
+    \
+    curl -sfL "$url" -o protoc.zip; \
+    unzip protoc.zip -d /usr/local -x readme.txt; \
+    rm -f protoc.zip
+
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
 RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.19.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
@@ -176,6 +199,8 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.19.0 && mv /go/bin/ginkgo /go
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
     go install golang.org/x/tools/cmd/goimports@v0.19.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.23.0 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4.0 && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
     go install gotest.tools/gotestsum@v1.11.0 && \
     go install k8s.io/code-generator/cmd/client-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/conversion-gen@${K8S_LIBS_VERSION} && \

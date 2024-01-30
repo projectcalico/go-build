@@ -388,8 +388,7 @@ git-commit:
 # different implementation.
 ###############################################################################
 
-CRANE_CMD         = docker run -t --entrypoint /bin/sh -v $(DOCKER_CONFIG):/home/user/.docker/config.json $(CALICO_BUILD) -c \
-                    $(double_quote)crane
+CRANE_CMD         = docker run -t -v $(DOCKER_CONFIG):/home/user/.docker/config.json $(CALICO_BUILD) crane
 GIT_CMD           = git
 DOCKER_CMD        = docker
 

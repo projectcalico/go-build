@@ -885,7 +885,7 @@ fetch-all:
 # git-dev-tag retrieves the dev tag for the current commit (the one are dev images are tagged with).
 git-dev-tag = $(shell git describe --tags --long --always --abbrev=12 --match "*dev*")
 # git-release-tag-from-dev-tag get's the release version from the current commits dev tag.
-git-release-tag-from-dev-tag = $(shell echo $(call git-dev-tag) | grep -P -o "^v\d*.\d*.\d*")
+git-release-tag-from-dev-tag = $(shell echo $(call git-dev-tag) | grep -P -o "^v\d*.\d*.\d*(-.*)?(?=-$(DEV_TAG_SUFFIX))")
 # git-release-tag-for-current-commit gets the release tag for the current commit if there is one.
 git-release-tag-for-current-commit = $(shell git describe --tags --exact-match --exclude "*dev*")
 

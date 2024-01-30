@@ -388,7 +388,7 @@ git-commit:
 # different implementation.
 ###############################################################################
 
-CRANE_CMD         = docker run -v $(DOCKER_CONFIG):/home/user/.docker/config.json $(CALICO_BUILD) crane
+CRANE_CMD         = docker run -e LOCAL_USER_ID=$(id -u) -v $(DOCKER_CONFIG):/home/user/.docker/config.json $(CALICO_BUILD) crane
 GIT_CMD           = git
 DOCKER_CMD        = docker
 

@@ -1064,7 +1064,7 @@ release-retag-dev-images-in-registry-%:
 # RELEASE_REGISTRIES then the retag is not done
 release-retag-dev-image-in-registry-%:
 	$(if $(filter-out $(RELEASE_REGISTRIES),$(DEV_REGISTRY)),\
-		$(CRANE) cp $(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG) $(DEV_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG)$(double_quote))
+		$(CRANE) cp $(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG) $(DEV_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG))
 
 # release-dev-images-to-registry-% copies and retags all the build / arch images specified by BUILD_IMAGES and
 # VALIDARCHES from the registry specified by DEV_REGISTRY to the registry specified by RELEASE_REGISTRY using the tag
@@ -1076,14 +1076,14 @@ release-dev-images-to-registry-%:
 # the dev repo specified by DEV_TAG and RELEASE.
 release-dev-image-to-registry-%:
 	$(if $(SKIP_MANIFEST_RELEASE),,\
-		$(CRANE) cp $(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG) $(RELEASE_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG))$(double_quote)
+		$(CRANE) cp $(DEV_REGISTRY)/$(call unescapefs,$*):$(DEV_TAG) $(RELEASE_REGISTRY)/$(call unescapefs,$*):$(RELEASE_TAG))
 	$(if $(SKIP_ARCH_RELEASE),,\
 		$(MAKE) $(addprefix release-dev-image-arch-to-registry-,$(VALIDARCHES)) BUILD_IMAGE=$(call unescapefs,$*))
 
 # release-dev-image-to-registry-% copies the build arch image specified by BUILD_IMAGE and ARCH from the dev repo
 # specified by DEV_TAG and RELEASE.
 release-dev-image-arch-to-registry-%:
-	$(CRANE) cp $(DEV_REGISTRY)/$(BUILD_IMAGE):$(DEV_TAG)-$* $(RELEASE_REGISTRY)/$(BUILD_IMAGE):$(RELEASE_TAG)-$*$(double_quote)
+	$(CRANE) cp $(DEV_REGISTRY)/$(BUILD_IMAGE):$(DEV_TAG)-$* $(RELEASE_REGISTRY)/$(BUILD_IMAGE):$(RELEASE_TAG)-$*
 
 # create-release-branch creates a release branch based off of the dev tag for the current commit on master. After the
 # release branch is created and pushed, git-create-next-dev-tag is called to create a new empty commit on master and

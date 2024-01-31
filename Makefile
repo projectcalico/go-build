@@ -54,8 +54,6 @@ GOBUILD_IMAGE ?= $(GOBUILD):$(VERSION)
 GOBUILD_ARCH_IMAGE ?= $(GOBUILD_IMAGE)-$(ARCH)
 
 BASE ?= calico/base
-BASE_IMAGE ?= $(BASE):latest
-BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 
 QEMU ?= calico/qemu-user-static
 QEMU_IMAGE ?= $(QEMU):latest
@@ -82,7 +80,13 @@ sub-image-%:
 
 .PHONY: image-base
 image-base: register image-qemu
-	docker buildx build --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
+	docker buildx build --load --platform=linux/$(ARCH) \
+		--build-arg LDSONAME=$(LDSONAME) \
+		-t $(BASE):ubi8-$(ARCH) -f base/Dockerfile.ubi8 base
+	docker buildx build --load --platform=linux/$(ARCH) \
+		--build-arg LDSONAME=$(LDSONAME) \
+		-t $(BASE):ubi9-$(ARCH) -f base/Dockerfile.ubi9 base
+	docker tag $(BASE):ubi8-$(ARCH) $(BASE):latest-$(ARCH)
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))
@@ -107,7 +111,9 @@ endif
 
 .PHONY: push-base
 push-base: image-base
-	docker push $(BASE_ARCH_IMAGE)
+	docker push $(BASE):ubi8-$(ARCH)
+	docker push $(BASE):ubi9-$(ARCH)
+	docker push $(BASE):latest-$(ARCH)
 
 .PHONY: push-qemu
 push-qemu: image-qemu
@@ -124,8 +130,12 @@ push-manifest:
 	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
 	docker manifest create $(GOBUILD_IMAGE) $(addprefix --amend ,$(addprefix $(GOBUILD_IMAGE)-,$(ARCHES)))
 	docker manifest push --purge $(GOBUILD_IMAGE)
-	docker manifest create $(BASE_IMAGE) $(addprefix --amend ,$(addprefix $(BASE_IMAGE)-,$(ARCHES)))
-	docker manifest push --purge $(BASE_IMAGE)
+	docker manifest create $(BASE):ubi8 $(addprefix --amend ,$(addprefix $(BASE):ubi8-,$(ARCHES)))
+	docker manifest push --purge $(BASE):ubi8
+	docker manifest create $(BASE):ubi9 $(addprefix --amend ,$(addprefix $(BASE):ubi9-,$(ARCHES)))
+	docker manifest push --purge $(BASE):ubi9
+	docker manifest create $(BASE):latest $(addprefix --amend ,$(addprefix $(BASE):latest-,$(ARCHES)))
+	docker manifest push --purge $(BASE):latest
 
 .PHONY: clean
 clean:

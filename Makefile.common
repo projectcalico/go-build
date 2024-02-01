@@ -942,7 +942,7 @@ endif
 	$(if $(filter-out $(CURRENT_RELEASE_VERSION),$(RELEASE_VERSION)),\
 		echo Given release version $(RELEASE_VERSION) does not match current commit release version $(CURRENT_RELEASE_VERSION). && exit 1)
 
-	$(eval RELEASE_BRANCH = release-$(if $CNX,calient-,)$(shell echo "$(RELEASE_VERSION)" | awk -F  "." '{print $$1"."$$2}'))
+	$(eval RELEASE_BRANCH = release-$(if $CNX,calient-,)$(shell echo "$(RELEASE_VERSION)" | awk -F  "." '{print $$1"."$$2}')$(shell echo "$(RELEASE_VERSION)" | awk '/1.0/ { print -1 }'))
 	$(eval WORKFLOW_FILE = $(if $(CONFIRM),cut-release.yml,test-cut-release.yml))
 
 	@echo Cutting release for $(RELEASE_VERSION) from dev tag $(RELEASE_TAG) \(commit $(GIT_COMMIT)\)

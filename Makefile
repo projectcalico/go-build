@@ -60,6 +60,10 @@ BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 QEMU ?= calico/qemu-user-static
 QEMU_IMAGE ?= $(QEMU):latest
 
+ifdef CI
+DOCKER_PROGRESS := --progress=plain
+endif
+
 ###############################################################################
 # Building images
 ###############################################################################
@@ -68,12 +72,12 @@ QEMU_IMAGE_CREATED=.qemu.created
 .PHONY: image-qemu
 image-qemu: $(QEMU_IMAGE_CREATED)
 $(QEMU_IMAGE_CREATED):
-	docker buildx build --progress=plain --load --platform=linux/amd64 --pull -t $(QEMU_IMAGE) -f qemu/Dockerfile qemu
+	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/amd64 --pull -t $(QEMU_IMAGE) -f qemu/Dockerfile qemu
 	touch $@
 
 .PHONY: image
 image: register image-qemu
-	docker buildx build --progress=plain --load --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
+	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
 
 .PHONY: image-all
 image-all: $(addprefix sub-image-,$(ARCHES))
@@ -82,7 +86,7 @@ sub-image-%:
 
 .PHONY: image-base
 image-base: register image-qemu
-	docker buildx build --progress=plain --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
+	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))

@@ -46,6 +46,7 @@ RUN dnf upgrade -y && dnf install -y \
     pcre-devel \
     pkg-config \
     wget \
+    xz \
     zip
 
 # Install system dependencies that are not in UBI repos

@@ -19,7 +19,6 @@ ARG GO_LINT_VERSION=v1.57.2
 ARG K8S_VERSION=v1.28.10
 ARG K8S_LIBS_VERSION=v0.28.10
 ARG MOCKERY_VERSION=2.42.2
-ARG PROTOC_VERSION=25.3
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -47,6 +46,7 @@ RUN dnf upgrade -y && dnf install -y \
     openssh-clients \
     pcre-devel \
     pkg-config \
+    protobuf-compiler \
     wget \
     xz \
     zip
@@ -159,28 +159,6 @@ RUN set -eux; \
         ;; \
     *) echo >&2 "warning: unsupported architecture '${TARGETARCH}'" ;; \
     esac
-
-RUN set -eux; \
-    url=; \
-    case "${TARGETARCH}" in \
-    'amd64') \
-        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"; \
-        ;; \
-    'arm64') \
-        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-aarch_64.zip"; \
-        ;; \
-    'ppc64le') \
-        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-ppcle_64.zip"; \
-        ;; \
-    's390x') \
-        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-s390_64.zip"; \
-        ;; \
-    *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
-    esac; \
-    \
-    curl -sfL "$url" -o protoc.zip; \
-    unzip protoc.zip -d /usr/local -x readme.txt; \
-    rm -f protoc.zip
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo

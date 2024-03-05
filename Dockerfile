@@ -14,10 +14,10 @@ ARG GOLANG_SHA256_ARM64=e2e8aa88e1b5170a0d495d7d9c766af2b2b6c6925a8f8956d834ad6b
 ARG GOLANG_SHA256_PPC64LE=e872b1e9a3f2f08fd4554615a32ca9123a4ba877ab6d19d36abc3424f86bc07f
 ARG GOLANG_SHA256_S390X=92894d0f732d3379bc414ffdd617eaadad47e1d72610e10d69a1156db03fc052
 
-ARG CONTAINERREGISTRY_VERSION=v0.16.1
-ARG GO_LINT_VERSION=v1.55.2
-ARG K8S_VERSION=v1.27.8
-ARG MOCKERY_VERSION=2.36.1
+ARG CONTAINERREGISTRY_VERSION=v0.19.0
+ARG GO_LINT_VERSION=v1.56.2
+ARG K8S_VERSION=v1.28.7
+ARG MOCKERY_VERSION=2.42.0
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -133,7 +133,7 @@ RUN set -eux; \
 # tooling. Example: float, all the types in the numorstring package, etc.
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
-        wget -O /usr/local/bin/controller-gen https://github.com/projectcalico/controller-tools/releases/download/${CALICO_CONTROLLER_TOOLS_VERSION}/controller-gen && chmod +x /usr/local/bin/controller-gen; \
+        curl -sfL https://github.com/projectcalico/controller-tools/releases/download/${CALICO_CONTROLLER_TOOLS_VERSION}/controller-gen -o /usr/local/bin/controller-gen && chmod +x /usr/local/bin/controller-gen; \
     fi
 
 # crane is needed for our release targets to copy images from the dev registries to the release registries.
@@ -145,9 +145,9 @@ RUN set -eux; \
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin $GO_LINT_VERSION
 
 # Install necessary Kubernetes binaries used in tests.
-RUN wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-apiserver -O /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-    wget https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/${TARGETARCH}/kubectl -O /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-    wget https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-controller-manager -O /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN curl -sfL https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-apiserver -o /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+    curl -sfL https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/${TARGETARCH}/kubectl -o /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+    curl -sfL https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-controller-manager -o /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 RUN set -eux; \
     case "${TARGETARCH}" in \
@@ -162,23 +162,23 @@ RUN set -eux; \
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.16.0 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
     go install github.com/pmezard/licenses@v0.0.0-20160314180953-1117911df3df && \
     go install github.com/swaggo/swag/cmd/swag@v1.16.2 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
-    go install golang.org/x/tools/cmd/goimports@v0.14.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.14.0 && \
+    go install golang.org/x/tools/cmd/goimports@v0.19.0 && \
+    go install golang.org/x/tools/cmd/stringer@v0.19.0 && \
     go install gotest.tools/gotestsum@v1.11.0 && \
-    go install k8s.io/code-generator/cmd/client-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/conversion-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/defaulter-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/informer-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/lister-gen@v0.27.8 && \
-    go install k8s.io/code-generator/cmd/openapi-gen@v0.27.8 && \
+    go install k8s.io/code-generator/cmd/client-gen@v0.28.7 && \
+    go install k8s.io/code-generator/cmd/conversion-gen@v0.28.7 && \
+    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.28.7 && \
+    go install k8s.io/code-generator/cmd/defaulter-gen@v0.28.7 && \
+    go install k8s.io/code-generator/cmd/informer-gen@v0.28.7 && \
+    go install k8s.io/code-generator/cmd/lister-gen@v0.28.7 && \
+    go install k8s.io/code-generator/cmd/openapi-gen@v0.28.7 && \
     go clean -modcache && go clean -cache
 
 # Ensure that everything under the GOPATH is writable by everyone

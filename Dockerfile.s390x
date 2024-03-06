@@ -7,12 +7,12 @@ RUN apk --update add curl
 # Enable non-native runs on amd64 architecture hosts
 RUN curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-s390x-static.tar.gz | tar xz -C /usr/bin
 
-FROM s390x/golang:1.21.6-alpine3.19
+FROM s390x/golang:1.21.8-alpine3.19
 
 LABEL maintainer="LoZ Open SourceEcosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)"
 
 ARG GO_LINT_VERSION=v1.54.2
-ARG K8S_VERSION=v1.26.3
+ARG K8S_VERSION=v1.26.14
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 
 # Enable non-native builds of this image on an amd64 hosts.
@@ -58,8 +58,8 @@ RUN go install github.com/mikefarah/yq/v3@3.4.1
 RUN rm -rf /go/src/*
 
 # Install generation tools.
-RUN  go install k8s.io/code-generator/cmd/openapi-gen@master
-RUN  go install k8s.io/code-generator/cmd/deepcopy-gen@master
+RUN  go install k8s.io/code-generator/cmd/openapi-gen@v0.26.14
+RUN  go install k8s.io/code-generator/cmd/deepcopy-gen@v0.26.14
 
 # Install Swaggo
 RUN go install github.com/swaggo/swag/cmd/swag@v1.8.7

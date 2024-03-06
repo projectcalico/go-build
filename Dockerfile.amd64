@@ -5,7 +5,7 @@ FROM golang:1.21.8-bullseye
 LABEL maintainer="Shaun Crampton <shaun@projectcalico.org>"
 
 ARG GO_LINT_VERSION=v1.54.2
-ARG K8S_VERSION=v1.26.3
+ARG K8S_VERSION=v1.26.14
 ARG LLVM_VERSION=15
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 ARG MOCKERY_VER=2.27.1
@@ -71,13 +71,13 @@ RUN \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.8.0 && \
-    go install k8s.io/code-generator/cmd/openapi-gen@v0.26.3 && \
-    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.26.3 && \
-    go install k8s.io/code-generator/cmd/client-gen@v0.26.3 && \
-    go install k8s.io/code-generator/cmd/lister-gen@v0.26.3 && \
-    go install k8s.io/code-generator/cmd/informer-gen@v0.26.3 && \
-    go install k8s.io/code-generator/cmd/defaulter-gen@v0.26.3 && \
-    go install k8s.io/code-generator/cmd/conversion-gen@v0.26.3 && \
+    go install k8s.io/code-generator/cmd/openapi-gen@v0.26.14 && \
+    go install k8s.io/code-generator/cmd/deepcopy-gen@v0.26.14 && \
+    go install k8s.io/code-generator/cmd/client-gen@v0.26.14 && \
+    go install k8s.io/code-generator/cmd/lister-gen@v0.26.14 && \
+    go install k8s.io/code-generator/cmd/informer-gen@v0.26.14 && \
+    go install k8s.io/code-generator/cmd/defaulter-gen@v0.26.14 && \
+    go install k8s.io/code-generator/cmd/conversion-gen@v0.26.14 && \
     go install github.com/swaggo/swag/cmd/swag@v1.8.7 && \
     go install gotest.tools/gotestsum@latest && \
     go clean -modcache && go clean -cache

@@ -3,7 +3,7 @@ name: go-build
 agent:
   machine:
     type: e1-standard-2
-    os_image: ubuntu1804
+    os_image: ubuntu20804
 
 execution_time_limit:
   minutes: 60

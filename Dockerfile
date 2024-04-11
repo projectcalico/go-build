@@ -139,9 +139,9 @@ RUN --mount=type=tmpfs,target=/tmp/cctools-port \
     git clone https://github.com/tpoechtrager/cctools-port /tmp/cctools-port && \
         cd /tmp/cctools-port/cctools && \
         ./configure && \
-        make -j12 -C libmacho && \
-        make -j12 -C libstuff && \
-        make -j12 -C misc lipo && \
+        make -j4 -C libmacho && \
+        make -j4 -C libstuff && \
+        make -j4 -C misc lipo && \
         cp misc/lipo /usr/local/bin; \
     fi
 

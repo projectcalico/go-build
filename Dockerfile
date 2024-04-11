@@ -130,6 +130,21 @@ RUN set -eux; \
     gcc -Wall -O2 /tmp/su-exec.c -o /usr/bin/su-exec; \
     rm -f /tmp/su-exec.c
 
+# Build lipo (for creating macOS universal binaries)
+
+RUN --mount=type=tmpfs,target=/tmp/cctools-port \
+    set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+    dnf install -y libdispatch && \
+    git clone https://github.com/tpoechtrager/cctools-port /tmp/cctools-port && \
+        cd /tmp/cctools-port/cctools && \
+        ./configure && \
+        make -j4 -C libmacho && \
+        make -j4 -C libstuff && \
+        make -j4 -C misc lipo && \
+        cp misc/lipo /usr/local/bin; \
+    fi
+
 # Install Go utilities
 
 # controller-gen is used for generating CRD files.

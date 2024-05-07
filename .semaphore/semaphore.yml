@@ -20,6 +20,35 @@ global_job_config:
       - git fetch --unshallow
 
 blocks:
+<<<<<<< Updated upstream
+=======
+  - name: "calico/go-build image"
+    dependencies: []
+    task:
+      secrets:
+        - name: quay-robot-calico-and-semaphoreci
+        - name: docker
+      env_vars:
+        # The branch to test the current go-build against
+        - name: CALICO_BRANCH
+          value: release-v3.27
+      jobs:
+        - name: Build and push go-build image
+          commands:
+            - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
+            - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
+            - export BRANCH_NAME=$SEMAPHORE_GIT_BRANCH
+            - export VERSION=$BRANCH_NAME
+            - make image ARCH=$TARGET_ARCH
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
+            - git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico
+            - cd calico
+            - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
+            - if [ "${TARGET_ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
+          matrix:
+            - env_var: TARGET_ARCH
+              values: ["amd64", "arm64", "ppc64le", "s390x"]
+>>>>>>> Stashed changes
 
 - name: "Build images and run ut"
   dependencies: []

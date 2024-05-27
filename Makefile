@@ -105,7 +105,6 @@ push: image
 	docker push $(GOBUILD_ARCH_IMAGE)
 	# to handle default case, because quay.io does not support manifest yet
 ifeq ($(ARCH),amd64)
-	docker tag $(GOBUILD_ARCH_IMAGE) $(GOBUILD_IMAGE)
 	docker tag $(GOBUILD_ARCH_IMAGE) quay.io/$(GOBUILD_IMAGE)
 	docker push quay.io/$(GOBUILD_IMAGE)
 endif

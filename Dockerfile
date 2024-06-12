@@ -16,8 +16,8 @@ ARG GOLANG_SHA256_S390X=7590c3e278e2dc6040aae0a39da3ca1eb2e3921673a7304cc34d588c
 
 ARG CONTAINERREGISTRY_VERSION=v0.19.1
 ARG GO_LINT_VERSION=v1.57.2
-ARG K8S_VERSION=v1.28.7
-ARG K8S_LIBS_VERSION=v0.28.7
+ARG K8S_VERSION=v1.28.10
+ARG K8S_LIBS_VERSION=v0.28.10
 ARG MOCKERY_VERSION=2.42.2
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
@@ -51,16 +51,14 @@ RUN dnf upgrade -y && dnf install -y \
     zip
 
 # Install system dependencies that are not in UBI repos
-COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
+COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+COPY almalinux/almalinux*.repo /etc/yum.repos.d/
 
-RUN set -eux; \
-    if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
-        dnf --enablerepo=baseos,powertools install -y \
-            elfutils-libelf-devel \
-            iproute-devel \
-            iproute-tc \
-            libbpf-devel; \
-    fi
+RUN dnf --enablerepo=baseos,powertools install -y \
+    elfutils-libelf-devel \
+    iproute-devel \
+    iproute-tc \
+    libbpf-devel
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

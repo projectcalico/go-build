@@ -2,7 +2,7 @@ version: v1.0
 name: go-build
 agent:
   machine:
-    type: e1-standard-2
+    type: e1-standard-4
     os_image: ubuntu2004
 
 execution_time_limit:
@@ -13,8 +13,6 @@ global_job_config:
     - name: docker-hub
   prologue:
     commands:
-      # Free up space on the build machine.
-      - sudo rm -rf ~/{.kerl,.kiex,.npm,.nvm,.phpbrew,.rbenv,.sbt} /opt/{apache-maven*,firefox*,scala} /usr/lib/jvm /usr/local/{aws2,golang,phantomjs*}
       - echo $DOCKERHUB_PASSWORD | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
       - checkout
       # Semaphore is doing shallow clone on a commit without tags.

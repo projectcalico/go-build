@@ -1,7 +1,5 @@
 ARG TARGETARCH=${TARGETARCH}
 
-FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
-
 FROM --platform=amd64 calico/qemu-user-static:latest as qemu
 
 FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
@@ -19,6 +17,7 @@ ARG GO_LINT_VERSION=v1.57.2
 ARG K8S_VERSION=v1.28.10
 ARG K8S_LIBS_VERSION=v0.28.10
 ARG MOCKERY_VERSION=2.42.2
+ARG BPFTOOL_VERSION=v7.4.0
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -42,6 +41,7 @@ RUN dnf upgrade -y && dnf install -y \
     libpcap-devel \
     libtool \
     llvm \
+    llvm-devel \
     make \
     openssh-clients \
     pcre-devel \
@@ -190,7 +190,9 @@ RUN sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
 COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
 
 # Add bpftool for Felix UT/FV.
-COPY --from=bpftool /bpftool /usr/bin
+RUN git clone --recurse-submodules --depth 1 -b $BPFTOOL_VERSION https://github.com/libbpf/bpftool.git
+RUN make -C bpftool/src && mv bpftool/src/bpftool /usr/bin
+
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 

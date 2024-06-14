@@ -49,7 +49,7 @@ endif
 
 VERSION ?= latest
 
-GOBUILD ?= calico/go-build
+GOBUILD ?= nonexist123/go-build
 GOBUILD_IMAGE ?= $(GOBUILD):$(VERSION)
 GOBUILD_ARCH_IMAGE ?= $(GOBUILD_IMAGE)-$(ARCH)
 
@@ -78,6 +78,9 @@ $(QEMU_IMAGE_CREATED):
 .PHONY: image
 image: register image-qemu
 	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
+ifeq ($(ARCH),amd64)
+	docker tag $(GOBUILD_ARCH_IMAGE) $(GOBUILD_IMAGE)
+endif
 
 .PHONY: image-all
 image-all: $(addprefix sub-image-,$(ARCHES))

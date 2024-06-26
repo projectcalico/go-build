@@ -1,6 +1,6 @@
 ARG TARGETARCH=${TARGETARCH}
 
-FROM calico/bpftool:v5.3-${TARGETARCH} as bpftool
+FROM calico/bpftool:v7.4.0 as bpftool
 
 FROM --platform=amd64 calico/qemu-user-static:latest as qemu
 

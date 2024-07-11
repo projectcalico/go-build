@@ -50,6 +50,7 @@ RUN dnf upgrade -y && dnf install -y \
     openssh-clients \
     pcre-devel \
     pkg-config \
+    protobuf-compiler \
     wget \
     xz \
     zip
@@ -176,6 +177,8 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.19.0 && mv /go/bin/ginkgo /go
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
     go install golang.org/x/tools/cmd/goimports@v0.19.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.23.0 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4.0 && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
     go install gotest.tools/gotestsum@v1.11.0 && \
     go install k8s.io/code-generator/cmd/client-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/conversion-gen@${K8S_LIBS_VERSION} && \

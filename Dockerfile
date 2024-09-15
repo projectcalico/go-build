@@ -8,17 +8,17 @@ FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
 
 ARG TARGETARCH
 
-ARG GOLANG_VERSION=1.22.7
-ARG GOLANG_SHA256_AMD64=fc5d49b7a5035f1f1b265c17aa86e9819e6dc9af8260ad61430ee7fbe27881bb
-ARG GOLANG_SHA256_ARM64=ed695684438facbd7e0f286c30b7bc2411cfc605516d8127dc25c62fe5b03885
-ARG GOLANG_SHA256_PPC64LE=a6441d5da40a961039ec22b0aadbc8b513f52b31bb8919c359a7e2c3c5bcf26a
-ARG GOLANG_SHA256_S390X=08dc28de0dafb175501b9d1623c9b11a9b734eb4b3a35c9c658cc91d4dfce3f3
+ARG GOLANG_VERSION=1.23.1
+ARG GOLANG_SHA256_AMD64=49bbb517cfa9eee677e1e7897f7cf9cfdbcf49e05f61984a2789136de359f9bd
+ARG GOLANG_SHA256_ARM64=faec7f7f8ae53fda0f3d408f52182d942cc89ef5b7d3d9f23ff117437d4b2d2f
+ARG GOLANG_SHA256_PPC64LE=042888cae54b5fbfd9dd1e3b6bc4a5134879777fe6497fc4c62ec394b5ecf2da
+ARG GOLANG_SHA256_S390X=47dc49ad45c45e192efa0df7dc7bc5403f5f2d15b5d0dc74ef3018154b616f4d
 
-ARG CONTAINERREGISTRY_VERSION=v0.19.1
-ARG GO_LINT_VERSION=v1.57.2
-ARG K8S_VERSION=v1.29.6
-ARG K8S_LIBS_VERSION=v0.29.6
-ARG MOCKERY_VERSION=2.42.2
+ARG CONTAINERREGISTRY_VERSION=v0.20.2
+ARG GO_LINT_VERSION=v1.61.0
+ARG K8S_VERSION=v1.29.9
+ARG K8S_LIBS_VERSION=v0.29.9
+ARG MOCKERY_VERSION=2.45.1
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -162,18 +162,18 @@ RUN set -eux; \
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.17.1 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
     go install github.com/pmezard/licenses@v0.0.0-20160314180953-1117911df3df && \
     go install github.com/swaggo/swag/cmd/swag@v1.16.3 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
-    go install golang.org/x/tools/cmd/goimports@v0.19.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.20.0 && \
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4.0 && \
+    go install golang.org/x/tools/cmd/goimports@v0.25.0 && \
+    go install golang.org/x/tools/cmd/stringer@v0.25.0 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
-    go install gotest.tools/gotestsum@v1.11.0 && \
+    go install gotest.tools/gotestsum@v1.12.0 && \
     go install k8s.io/code-generator/cmd/client-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/conversion-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/deepcopy-gen@${K8S_LIBS_VERSION} && \

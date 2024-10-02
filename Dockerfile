@@ -4,20 +4,6 @@ FROM calico/bpftool:v7.4.0 as bpftool
 
 FROM --platform=amd64 calico/qemu-user-static:latest as qemu
 
-FROM --platform=amd64 golang:latest AS sembuilder
-
-ARG TARGETARCH
-
-WORKDIR /semhome
-
-COPY semvalidator/go.mod semvalidator/go.sum ./
-
-RUN go mod download
-
-COPY semvalidator/main.go .
-
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o semvalidator .
-
 FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
 
 ARG TARGETARCH
@@ -194,8 +180,16 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go
     go install k8s.io/code-generator/cmd/defaulter-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/informer-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/lister-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/openapi-gen@${K8S_LIBS_VERSION} && \
-    go clean -modcache && go clean -cache
+    go install k8s.io/code-generator/cmd/openapi-gen@${K8S_LIBS_VERSION}
+
+# Build and install semvalidator
+COPY semvalidator/go.mod semvalidator/go.sum semvalidator/main.go /tmp/semvalidator/
+
+RUN cd /tmp/semvalidator && CGO_ENABLED=0 go build -o /usr/local/bin/semvalidator -v -buildvcs=false -ldflags "-s -w" main.go \
+    && rm -fr /tmp/semvalidator
+
+# Cleanup module cache after we have built and installed all Go utilities
+RUN go clean -modcache && go clean -cache
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH
@@ -208,9 +202,6 @@ COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
 
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin
-
-# Add semvalidator
-COPY --from=sembuilder /semhome/semvalidator /usr/bin/
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 

@@ -180,8 +180,16 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go
     go install k8s.io/code-generator/cmd/defaulter-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/informer-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/lister-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/openapi-gen@${K8S_LIBS_VERSION} && \
-    go clean -modcache && go clean -cache
+    go install k8s.io/code-generator/cmd/openapi-gen@${K8S_LIBS_VERSION}
+
+# Build and install semvalidator
+COPY semvalidator/go.mod semvalidator/go.sum semvalidator/main.go /tmp/semvalidator/
+
+RUN cd /tmp/semvalidator && CGO_ENABLED=0 go build -o /usr/local/bin/semvalidator -v -buildvcs=false -ldflags "-s -w" main.go \
+    && rm -fr /tmp/semvalidator
+
+# Cleanup module cache after we have built and installed all Go utilities
+RUN go clean -modcache && go clean -cache
 
 # Ensure that everything under the GOPATH is writable by everyone
 RUN chmod -R 777 $GOPATH

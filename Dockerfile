@@ -167,7 +167,7 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
     go install github.com/pmezard/licenses@v0.0.0-20160314180953-1117911df3df && \
-    go install github.com/swaggo/swag/cmd/swag@v1.16.3 && \
+    go install github.com/swaggo/swag/cmd/swag@v1.18.12 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
     go install golang.org/x/tools/cmd/goimports@v0.25.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.25.0 && \

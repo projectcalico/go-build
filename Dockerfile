@@ -4,6 +4,20 @@ FROM calico/bpftool:v7.4.0 as bpftool
 
 FROM --platform=amd64 calico/qemu-user-static:latest as qemu
 
+FROM --platform=amd64 golang:latest AS sembuilder
+
+ARG TARGETARCH
+
+WORKDIR /semhome
+
+COPY semvalidator/go.mod semvalidator/go.sum ./
+
+RUN go mod download
+
+COPY semvalidator/main.go .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o semvalidator .
+
 FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
 
 ARG TARGETARCH
@@ -194,6 +208,9 @@ COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
 
 # Add bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin
+
+# Add semvalidator
+COPY --from=sembuilder /semhome/semvalidator /usr/bin/
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 

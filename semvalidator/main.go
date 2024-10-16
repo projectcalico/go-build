@@ -39,7 +39,7 @@ var (
 
 func init() {
 	flag.StringVar(&dir, "dirs", "", "comma separated list of directories to search for Semaphore pipeline files")
-	flag.StringVar(&skipDir, "skip-dirs", "", "comma separated list of directories to skip when searching for Semaphore pipeline files")
+	flag.StringVar(&skipDir, "skip-dirs", "", "comma separated list of directories to skip")
 	flag.StringVar(&file, "files", "", "comma separated list of Semaphore pipeline files")
 	flag.StringVar(&org, "org", "", "Semaphore organization")
 	flag.StringVar(&orgURL, "org-url", "", "Semaphore organization URL")
@@ -52,7 +52,7 @@ func inSkipDirs(path string, skipDirs []string) bool {
 		return false
 	}
 	for _, skipDir := range skipDirs {
-		if strings.HasSuffix(path, skipDir) {
+		if path == skipDir || strings.Contains(path, skipDir+"/") {
 			return true
 		}
 	}
@@ -68,7 +68,7 @@ func getPipelineYAMLFiles(dir string, skipDirs []string) ([]string, error) {
 		// Skip the YAML .semaphore/semaphore.yml.d directory
 		// as it contains building blocks which are not full pipeline definitions
 		// The resulting pipeline will be validated as part of semaphore.yml and semaphore-scheduled-builds.yml
-		if info.IsDir() && !inSkipDirs(path, skipDirs) {
+		if info.IsDir() && !inSkipDirs(info.Name(), skipDirs) {
 			return filepath.SkipDir
 		}
 		if !info.IsDir() && (filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml") {
@@ -141,7 +141,12 @@ func main() {
 	// Get YAML files
 	var yamlFiles []string
 	if file != "" {
-		yamlFiles = strings.Split(file, ",")
+		files := strings.Split(file, ",")
+		for _, f := range files {
+			if !inSkipDirs(f, strings.Split(skipDir, ",")) {
+				yamlFiles = append(yamlFiles, f)
+			}
+		}
 	}
 	if dir != "" {
 		semaphoreDirs := strings.Split(dir, ",")

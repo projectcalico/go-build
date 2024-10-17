@@ -28,19 +28,21 @@ import (
 )
 
 var (
-	dir     string
-	skipDir string
-	file    string
-	org     string
-	orgURL  string
-	token   string
-	debug   bool
+	dir      string
+	skipDir  string
+	skipFile string
+	file     string
+	org      string
+	orgURL   string
+	token    string
+	debug    bool
 )
 
 func init() {
 	flag.StringVar(&dir, "dirs", "", "comma separated list of directories to search for Semaphore pipeline files")
 	flag.StringVar(&skipDir, "skip-dirs", "", "comma separated list of directories to skip")
 	flag.StringVar(&file, "files", "", "comma separated list of Semaphore pipeline files")
+	flag.StringVar(&skipFile, "skip-files", "", "comma separated list of files to skip")
 	flag.StringVar(&org, "org", "", "Semaphore organization")
 	flag.StringVar(&orgURL, "org-url", "", "Semaphore organization URL")
 	flag.StringVar(&token, "token", "", "Semaphore API token")
@@ -59,7 +61,19 @@ func inSkipDirs(path string, skipDirs []string) bool {
 	return false
 }
 
-func getPipelineYAMLFiles(dir string, skipDirs []string) ([]string, error) {
+func inSkipFiles(path string, skipFiles []string) bool {
+	if len(skipFiles) == 0 {
+		return false
+	}
+	for _, skipFile := range skipFiles {
+		if path == skipFile {
+			return true
+		}
+	}
+	return false
+}
+
+func getPipelineYAMLFiles(dir string, skipDirs, skipFiles []string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -71,7 +85,7 @@ func getPipelineYAMLFiles(dir string, skipDirs []string) ([]string, error) {
 		if info.IsDir() && !inSkipDirs(info.Name(), skipDirs) {
 			return filepath.SkipDir
 		}
-		if !info.IsDir() && (filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml") {
+		if !info.IsDir() && !inSkipFiles(path, skipFiles) && (filepath.Ext(path) == ".yml" || filepath.Ext(path) == ".yaml") {
 			files = append(files, path)
 		}
 		return nil
@@ -143,7 +157,7 @@ func main() {
 	if file != "" {
 		files := strings.Split(file, ",")
 		for _, f := range files {
-			if !inSkipDirs(f, strings.Split(skipDir, ",")) {
+			if !inSkipDirs(f, strings.Split(skipDir, ",")) && !inSkipFiles(f, strings.Split(skipFile, ",")) {
 				yamlFiles = append(yamlFiles, f)
 			}
 		}
@@ -152,7 +166,7 @@ func main() {
 		semaphoreDirs := strings.Split(dir, ",")
 		logrus.WithField("semaphoreDirs", semaphoreDirs).Debug("looking for pipeline YAML files")
 		for _, semaphoreDir := range semaphoreDirs {
-			files, err := getPipelineYAMLFiles(semaphoreDir, strings.Split(skipDir, ","))
+			files, err := getPipelineYAMLFiles(semaphoreDir, strings.Split(skipDir, ","), strings.Split(skipFile, ","))
 			if err != nil {
 				logrus.WithError(err).Errorf("failed to get YAML files in %s", semaphoreDir)
 				continue

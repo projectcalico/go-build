@@ -28,19 +28,21 @@ import (
 )
 
 var (
-	dir     string
-	skipDir string
-	file    string
-	org     string
-	orgURL  string
-	token   string
-	debug   bool
+	dir      string
+	skipDir  string
+	skipFile string
+	file     string
+	org      string
+	orgURL   string
+	token    string
+	debug    bool
 )
 
 func init() {
 	flag.StringVar(&dir, "dirs", "", "comma separated list of directories to search for Semaphore pipeline files")
 	flag.StringVar(&skipDir, "skip-dirs", "", "comma separated list of directories to skip")
 	flag.StringVar(&file, "files", "", "comma separated list of Semaphore pipeline files")
+	flag.StringVar(&skipFile, "skip-files", "", "comma separated list of files to skip")
 	flag.StringVar(&org, "org", "", "Semaphore organization")
 	flag.StringVar(&orgURL, "org-url", "", "Semaphore organization URL")
 	flag.StringVar(&token, "token", "", "Semaphore API token")
@@ -53,6 +55,18 @@ func inSkipDirs(path string, skipDirs []string) bool {
 	}
 	for _, skipDir := range skipDirs {
 		if path == skipDir || strings.Contains(path, skipDir+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+func inSkipFiles(path string, skipFiles []string) bool {
+	if len(skipFiles) == 0 {
+		return false
+	}
+	for _, skipFile := range skipFiles {
+		if path == skipFile {
 			return true
 		}
 	}
@@ -143,7 +157,7 @@ func main() {
 	if file != "" {
 		files := strings.Split(file, ",")
 		for _, f := range files {
-			if !inSkipDirs(f, strings.Split(skipDir, ",")) {
+			if !inSkipDirs(f, strings.Split(skipDir, ",")) && !inSkipFiles(f, strings.Split(skipFile, ",")) {
 				yamlFiles = append(yamlFiles, f)
 			}
 		}

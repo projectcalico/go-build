@@ -1,10 +1,10 @@
 ARG TARGETARCH=${TARGETARCH}
 
-FROM calico/bpftool:v7.4.0 as bpftool
+FROM calico/bpftool:v7.4.0 AS bpftool
 
-FROM --platform=amd64 calico/qemu-user-static:latest as qemu
+FROM --platform=amd64 calico/qemu-user-static:latest AS qemu
 
-FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
+FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
 
@@ -16,8 +16,8 @@ ARG GOLANG_SHA256_S390X=de1f94d7dd3548ba3036de1ea97eb8243881c22a88fcc04cc08c704d
 
 ARG CONTAINERREGISTRY_VERSION=v0.20.2
 ARG GO_LINT_VERSION=v1.61.0
-ARG K8S_VERSION=v1.29.9
-ARG K8S_LIBS_VERSION=v0.29.9
+ARG K8S_VERSION=v1.30.5
+ARG K8S_LIBS_VERSION=v0.30.5
 ARG MOCKERY_VERSION=2.45.1
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
@@ -170,7 +170,6 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go
     go install github.com/swaggo/swag/cmd/swag@v1.16.3 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
     go install golang.org/x/tools/cmd/goimports@v0.25.0 && \
-    go install  mvdan.cc/gofumpt@v0.7.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.25.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
@@ -181,7 +180,8 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go
     go install k8s.io/code-generator/cmd/defaulter-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/informer-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/lister-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/openapi-gen@${K8S_LIBS_VERSION}
+    go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20241009091222-67ed5848f094 && \
+    go install mvdan.cc/gofumpt@v0.7.0
 
 # Build and install semvalidator
 COPY semvalidator/go.mod semvalidator/go.sum semvalidator/main.go /tmp/semvalidator/

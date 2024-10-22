@@ -1,8 +1,8 @@
-FROM fedora:latest as qemu
+FROM fedora:latest AS qemu
 
 RUN dnf install -y qemu-user-static
 
-FROM scratch as source
+FROM scratch AS source
 
 COPY --from=qemu /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64-static
 COPY --from=qemu /usr/bin/qemu-ppc64le-static /usr/bin/qemu-ppc64le-static

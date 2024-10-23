@@ -1,6 +1,6 @@
-FROM --platform=linux/amd64 calico/qemu-user-static:latest as qemu
+FROM --platform=linux/amd64 calico/qemu-user-static:latest AS qemu
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as ubi
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS ubi
 
 ARG LDSONAME
 
@@ -38,7 +38,7 @@ RUN cp /etc/nsswitch.conf /rootfs/etc/nsswitch.conf
 # Copy base image release info.
 RUN cp /etc/os-release /rootfs/etc/os-release
 
-FROM scratch as source
+FROM scratch AS source
 
 COPY --from=ubi /rootfs /
 

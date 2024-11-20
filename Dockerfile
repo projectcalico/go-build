@@ -1,10 +1,10 @@
 ARG TARGETARCH=${TARGETARCH}
 
-FROM calico/bpftool:v7.4.0 as bpftool
+FROM calico/bpftool:v7.4.0 AS bpftool
 
-FROM --platform=amd64 calico/qemu-user-static:latest as qemu
+FROM --platform=amd64 calico/qemu-user-static:latest AS qemu
 
-FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
+FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
 
@@ -32,7 +32,6 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 RUN dnf upgrade -y && dnf install -y \
     autoconf \
     automake \
-    clang \
     gcc \
     gcc-c++ \
     git \
@@ -41,7 +40,6 @@ RUN dnf upgrade -y && dnf install -y \
     libcurl-devel \
     libpcap-devel \
     libtool \
-    llvm \
     make \
     openssh-clients \
     pcre-devel \
@@ -55,11 +53,13 @@ RUN dnf upgrade -y && dnf install -y \
 COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/
 
-RUN dnf --enablerepo=baseos,powertools install -y \
+RUN dnf --enablerepo=baseos,powertools,appstream install -y \
     elfutils-libelf-devel \
     iproute-devel \
     iproute-tc \
-    libbpf-devel
+    libbpf-devel \
+    llvm-17.0.6 \
+    clang-17.0.6
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

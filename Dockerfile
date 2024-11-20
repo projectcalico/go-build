@@ -19,6 +19,8 @@ ARG GO_LINT_VERSION=v1.57.2
 ARG K8S_VERSION=v1.29.6
 ARG K8S_LIBS_VERSION=v0.29.6
 ARG MOCKERY_VERSION=2.42.2
+ARG CLANG_VERSION=17.0.6
+ARG LLVM_VERSION=17.0.6
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -53,12 +55,12 @@ COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/
 
 RUN dnf --enablerepo=baseos,powertools,appstream install -y \
+    clang-${CLANG_VERSION} \
     elfutils-libelf-devel \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-17.0.6 \
-    clang-17.0.6
+    llvm-${LLVM_VERSION}
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

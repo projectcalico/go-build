@@ -14,6 +14,7 @@ ARG GOLANG_SHA256_ARM64=1f7cbd7f668ea32a107ecd41b6488aaee1f5d77a66efd885b1754944
 ARG GOLANG_SHA256_PPC64LE=e3b926c81e8099d3cee6e6e270b85b39c3bd44263f8d3df29aacb4d7e00507c8
 ARG GOLANG_SHA256_S390X=6bd72fcef72b046b6282c2d1f2c38f31600e4fe9361fcd8341500c754fb09c38
 
+ARG CLANG_VERSION=18.1.8
 ARG CONTAINERREGISTRY_VERSION=v0.20.2
 ARG GO_LINT_VERSION=v1.61.0
 ARG K8S_VERSION=v1.30.5
@@ -32,7 +33,6 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 RUN dnf upgrade -y && dnf install -y \
     autoconf \
     automake \
-    clang \
     gcc \
     gcc-c++ \
     git \
@@ -41,7 +41,6 @@ RUN dnf upgrade -y && dnf install -y \
     libcurl-devel \
     libpcap-devel \
     libtool \
-    llvm \
     make \
     openssh-clients \
     pcre-devel \
@@ -55,11 +54,13 @@ RUN dnf upgrade -y && dnf install -y \
 COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/
 
-RUN dnf --enablerepo=baseos,powertools install -y \
+RUN dnf --enablerepo=baseos,powertools,appstream install -y \
+    clang-${CLANG_VERSION} \
     elfutils-libelf-devel \
     iproute-devel \
     iproute-tc \
-    libbpf-devel
+    libbpf-devel \
+    llvm-${CLANG_VERSION}
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

@@ -1,19 +1,20 @@
 ARG TARGETARCH=${TARGETARCH}
 
-FROM calico/bpftool:v7.4.0 as bpftool
+FROM calico/bpftool:v7.4.0 AS bpftool
 
-FROM --platform=amd64 calico/qemu-user-static:latest as qemu
+FROM --platform=amd64 calico/qemu-user-static:latest AS qemu
 
-FROM registry.access.redhat.com/ubi8/ubi:latest as ubi
+FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
 
-ARG GOLANG_VERSION=1.23.2
-ARG GOLANG_SHA256_AMD64=542d3c1705f1c6a1c5a80d5dc62e2e45171af291e755d591c5e6531ef63b454e
-ARG GOLANG_SHA256_ARM64=f626cdd92fc21a88b31c1251f419c17782933a42903db87a174ce74eeecc66a9
-ARG GOLANG_SHA256_PPC64LE=c164ce7d894b10fd861d7d7b96f1dbea3f993663d9f0c30bc4f8ae3915db8b0c
-ARG GOLANG_SHA256_S390X=de1f94d7dd3548ba3036de1ea97eb8243881c22a88fcc04cc08c704ded769e02
+ARG GOLANG_VERSION=1.23.3
+ARG GOLANG_SHA256_AMD64=a0afb9744c00648bafb1b90b4aba5bdb86f424f02f9275399ce0c20b93a2c3a8
+ARG GOLANG_SHA256_ARM64=1f7cbd7f668ea32a107ecd41b6488aaee1f5d77a66efd885b175494439d4e1ce
+ARG GOLANG_SHA256_PPC64LE=e3b926c81e8099d3cee6e6e270b85b39c3bd44263f8d3df29aacb4d7e00507c8
+ARG GOLANG_SHA256_S390X=6bd72fcef72b046b6282c2d1f2c38f31600e4fe9361fcd8341500c754fb09c38
 
+ARG CLANG_VERSION=17.0.6
 ARG CONTAINERREGISTRY_VERSION=v0.20.2
 ARG GO_LINT_VERSION=v1.61.0
 ARG K8S_VERSION=v1.29.9
@@ -32,7 +33,6 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 RUN dnf upgrade -y && dnf install -y \
     autoconf \
     automake \
-    clang \
     gcc \
     gcc-c++ \
     git \
@@ -41,7 +41,6 @@ RUN dnf upgrade -y && dnf install -y \
     libcurl-devel \
     libpcap-devel \
     libtool \
-    llvm \
     make \
     openssh-clients \
     pcre-devel \
@@ -55,11 +54,13 @@ RUN dnf upgrade -y && dnf install -y \
 COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/
 
-RUN dnf --enablerepo=baseos,powertools install -y \
+RUN dnf --enablerepo=baseos,powertools,appstream install -y \
+    clang-${CLANG_VERSION} \
     elfutils-libelf-devel \
     iproute-devel \
     iproute-tc \
-    libbpf-devel
+    libbpf-devel \
+    llvm-${CLANG_VERSION}
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

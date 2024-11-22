@@ -1,11 +1,11 @@
-FROM calico/bpftool:v5.3-amd64 as bpftool
+FROM calico/bpftool:v7.4.0 AS bpftool
 
-FROM golang:1.21.13-bullseye
+FROM golang:1.22.9-bullseye
 
 LABEL maintainer="Shaun Crampton <shaun@projectcalico.org>"
 
 ARG GO_LINT_VERSION=v1.54.2
-ARG K8S_VERSION=v1.26.14
+ARG K8S_VERSION=v1.27.16
 ARG LLVM_VERSION=15
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 ARG MOCKERY_VER=2.27.1
@@ -70,7 +70,7 @@ RUN \
     go install github.com/wadey/gocovmerge@master && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.8.0 && \
+    go install golang.org/x/tools/cmd/stringer@v0.27.0 && \
     go install k8s.io/code-generator/cmd/openapi-gen@v0.26.14 && \
     go install k8s.io/code-generator/cmd/deepcopy-gen@v0.26.14 && \
     go install k8s.io/code-generator/cmd/client-gen@v0.26.14 && \

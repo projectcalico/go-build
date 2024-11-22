@@ -1,4 +1,4 @@
-FROM --platform=amd64 alpine:3.17 as qemu
+FROM --platform=amd64 alpine:3.19 AS qemu
 
 ARG QEMU_VERSION=7.2.0-1
 
@@ -7,12 +7,12 @@ RUN apk --update add curl
 # Enable non-native runs on amd64 architecture hosts
 RUN curl -sfL https://github.com/multiarch/qemu-user-static/releases/download/v${QEMU_VERSION}/qemu-s390x-static.tar.gz | tar xz -C /usr/bin
 
-FROM --platform=linux/s390x s390x/golang:1.21.13-alpine3.19
+FROM --platform=linux/s390x s390x/golang:1.22.9-alpine3.19
 
 LABEL maintainer="LoZ Open SourceEcosystem (https://www.ibm.com/developerworks/community/groups/community/lozopensource)"
 
 ARG GO_LINT_VERSION=v1.54.2
-ARG K8S_VERSION=v1.26.14
+ARG K8S_VERSION=v1.27.16
 ARG MANIFEST_TOOL_VERSION=v1.0.2
 
 # Enable non-native builds of this image on an amd64 hosts.

@@ -1,4 +1,4 @@
-FROM calico/bpftool:v7.4-arm64 AS bpftool
+FROM calico/bpftool:v7.4.0-arm64 AS bpftool
 
 FROM --platform=amd64 debian:bullseye AS qemu
 

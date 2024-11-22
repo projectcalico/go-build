@@ -44,8 +44,6 @@ RUN apt-get update && apt-get -y upgrade && \
 
 RUN curl -sfL https://apt.llvm.org/llvm.sh | bash -s -- ${LLVM_VERSION} && \
     apt-get install clang-${LLVM_VERSION}
-RUN ln -s /usr/bin/clang-${LLVM_VERSION} /usr/bin/clang
-RUN ln -s /usr/bin/llc-${LLVM_VERSION} /usr/bin/llc
 
 RUN apt-get autoclean && apt-get clean
 

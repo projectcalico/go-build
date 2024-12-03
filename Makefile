@@ -46,11 +46,8 @@ else ifeq ($(ARCH),s390)
 	override LDSONAME=ld64.so.1
 endif
 
-
-VERSION ?= latest
-
 GOBUILD ?= calico/go-build
-GOBUILD_IMAGE ?= $(GOBUILD):$(VERSION)
+GOBUILD_IMAGE ?= $(GOBUILD):$(shell ./generate-version-tag.sh)
 GOBUILD_ARCH_IMAGE ?= $(GOBUILD_IMAGE)-$(ARCH)
 
 BASE ?= calico/base
@@ -166,8 +163,5 @@ cd:
 ifndef CONFIRM
 	$(error CONFIRM is undefined - run using make <target> CONFIRM=true)
 endif
-ifndef BRANCH_NAME
-	$(error BRANCH_NAME is undefined - run using make <target> BRANCH_NAME=var or set an environment variable)
-endif
-	$(MAKE) push-all VERSION=${BRANCH_NAME}
-	$(MAKE) push-manifest VERSION=${BRANCH_NAME}
+	$(MAKE) push-all
+	$(MAKE) push-manifest

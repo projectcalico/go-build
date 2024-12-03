@@ -8,18 +8,10 @@ FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
 
-ARG GOLANG_VERSION=1.23.3
-ARG GOLANG_SHA256_AMD64=a0afb9744c00648bafb1b90b4aba5bdb86f424f02f9275399ce0c20b93a2c3a8
-ARG GOLANG_SHA256_ARM64=1f7cbd7f668ea32a107ecd41b6488aaee1f5d77a66efd885b175494439d4e1ce
-ARG GOLANG_SHA256_PPC64LE=e3b926c81e8099d3cee6e6e270b85b39c3bd44263f8d3df29aacb4d7e00507c8
-ARG GOLANG_SHA256_S390X=6bd72fcef72b046b6282c2d1f2c38f31600e4fe9361fcd8341500c754fb09c38
-
-ARG CLANG_VERSION=18.1.8
 ARG CONTAINERREGISTRY_VERSION=v0.20.2
 ARG GO_LINT_VERSION=v1.61.0
-ARG K8S_VERSION=v1.30.5
-ARG K8S_LIBS_VERSION=v0.30.5
 ARG MOCKERY_VERSION=2.46.3
+ARG YQ_VERSION=v4.44.5
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
@@ -50,17 +42,24 @@ RUN dnf upgrade -y && dnf install -y \
     xz \
     zip
 
+# Install yq and copy versions.yaml
+RUN curl -sfL https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${TARGETARCH} -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+
+COPY versions.yaml /etc/versions.yaml
+
 # Install system dependencies that are not in UBI repos
 COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/
 
-RUN dnf --enablerepo=baseos,powertools,appstream install -y \
-    clang-${CLANG_VERSION} \
+RUN set -eux; \
+    llvm_version=$(yq -r .llvm.version /etc/versions.yaml); \
+    dnf --enablerepo=baseos,powertools,appstream install -y \
+    clang-${llvm_version} \
     elfutils-libelf-devel \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-${CLANG_VERSION}
+    llvm-${llvm_version}
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
@@ -72,23 +71,25 @@ RUN dnf clean all
 
 # Install Go official release
 RUN set -eux; \
+    golang_version=$(yq -r .golang.version /etc/versions.yaml); \
+    golang_checksum=$(yq -r .golang.checksum.sha256.${TARGETARCH} /etc/versions.yaml); \
     url=; \
     case "${TARGETARCH}" in \
     'amd64') \
-        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz"; \
-        sha256="${GOLANG_SHA256_AMD64}"; \
+        url="https://dl.google.com/go/go${golang_version}.linux-amd64.tar.gz"; \
+        sha256="${golang_checksum}"; \
         ;; \
     'arm64') \
-        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-arm64.tar.gz"; \
-        sha256="${GOLANG_SHA256_ARM64}"; \
+        url="https://dl.google.com/go/go${golang_version}.linux-arm64.tar.gz"; \
+        sha256="${golang_checksum}"; \
         ;; \
     'ppc64le') \
-        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-ppc64le.tar.gz"; \
-        sha256="${GOLANG_SHA256_PPC64LE}"; \
+        url="https://dl.google.com/go/go${golang_version}.linux-ppc64le.tar.gz"; \
+        sha256="${golang_checksum}"; \
         ;; \
     's390x') \
-        url="https://dl.google.com/go/go${GOLANG_VERSION}.linux-s390x.tar.gz"; \
-        sha256="${GOLANG_SHA256_S390X}"; \
+        url="https://dl.google.com/go/go${golang_version}.linux-s390x.tar.gz"; \
+        sha256="${golang_checksum}"; \
         ;; \
     *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
     esac; \
@@ -146,9 +147,11 @@ RUN set -eux; \
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin $GO_LINT_VERSION
 
 # Install necessary Kubernetes binaries used in tests.
-RUN curl -sfL https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-apiserver -o /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
-    curl -sfL https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/${TARGETARCH}/kubectl -o /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
-    curl -sfL https://dl.k8s.io/${K8S_VERSION}/bin/linux/${TARGETARCH}/kube-controller-manager -o /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
+RUN set -eux; \
+    k8s_version=$(yq -r .kubernetes.version /etc/versions.yaml); \
+    curl -sfL https://dl.k8s.io/v${k8s_version}/bin/linux/${TARGETARCH}/kube-apiserver -o /usr/local/bin/kube-apiserver && chmod +x /usr/local/bin/kube-apiserver && \
+    curl -sfL https://dl.k8s.io/release/v${k8s_version}/bin/linux/${TARGETARCH}/kubectl -o /usr/local/bin/kubectl && chmod +x /usr/local/bin/kubectl && \
+    curl -sfL https://dl.k8s.io/v${k8s_version}/bin/linux/${TARGETARCH}/kube-controller-manager -o /usr/local/bin/kube-controller-manager && chmod +x /usr/local/bin/kube-controller-manager
 
 RUN set -eux; \
     case "${TARGETARCH}" in \
@@ -163,7 +166,9 @@ RUN set -eux; \
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+RUN set -eux; \
+    k8s_libs_version=$(yq -r .kubernetes.version /etc/versions.yaml | sed 's/^1/0/'); \
+    go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
@@ -175,12 +180,12 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
     go install gotest.tools/gotestsum@v1.12.0 && \
-    go install k8s.io/code-generator/cmd/client-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/conversion-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/deepcopy-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/defaulter-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/informer-gen@${K8S_LIBS_VERSION} && \
-    go install k8s.io/code-generator/cmd/lister-gen@${K8S_LIBS_VERSION} && \
+    go install k8s.io/code-generator/cmd/client-gen@v${k8s_libs_version} && \
+    go install k8s.io/code-generator/cmd/conversion-gen@v${k8s_libs_version} && \
+    go install k8s.io/code-generator/cmd/deepcopy-gen@v${k8s_libs_version} && \
+    go install k8s.io/code-generator/cmd/defaulter-gen@v${k8s_libs_version} && \
+    go install k8s.io/code-generator/cmd/informer-gen@v${k8s_libs_version} && \
+    go install k8s.io/code-generator/cmd/lister-gen@v${k8s_libs_version} && \
     go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20241009091222-67ed5848f094 && \
     go install mvdan.cc/gofumpt@v0.7.0
 

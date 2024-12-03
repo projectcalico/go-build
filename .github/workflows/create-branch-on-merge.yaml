@@ -1,0 +1,36 @@
+name: Create new branch on pull request merge
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  create-branch:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate branch name
+        id: generate-branch-name
+        run: |
+          BRANCH_NAME=$(./generate-version-tag.sh)
+          echo "Branch name: $BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create and push new branch (if not exists)
+        run: |
+          BRANCH_NAME=${{ steps.generate-branch-name.outputs.branch_name }}
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists"
+          else
+            echo "Create branch $BRANCH_NAME"
+            git config user.name marvin-tigera
+            git config user.email marvin@projectcalico.io
+            git remote set-url origin https://x-access-token:${{ secrets.CALICO_GOBUILD_CONTENTS_RW }}@github.com/${{ github.repository }}.git
+            git checkout -b "$BRANCH_NAME"
+            git push origin "$BRANCH_NAME"
+          fi

@@ -1,76 +1,15 @@
-# Shortcut targets
-default: image
-
-## Build binary for current platform
-all: image-all
-###############################################################################
-# Both native and cross architecture builds are supported.
-# The target architecture is select by setting the ARCH variable.
-# When ARCH is undefined it is set to the detected host architecture.
-# When ARCH differs from the host architecture a crossbuild will be performed.
-###############################################################################
-ARCHES = amd64 arm64 ppc64le s390x
-
-# BUILDARCH is the host architecture
-# ARCH is the target architecture
-# we need to keep track of them separately
-BUILDARCH ?= $(shell uname -m)
-
-# canonicalized names for host architecture
-ifeq ($(BUILDARCH),aarch64)
-	BUILDARCH=arm64
-endif
-ifeq ($(BUILDARCH),x86_64)
-	BUILDARCH=amd64
-endif
-
-# unless otherwise set, I am building for my own architecture, i.e. not cross-compiling
-ARCH ?= $(BUILDARCH)
-
-# canonicalized names for target architecture
-ifeq ($(ARCH),x86_64)
-	override ARCH=amd64
-else ifeq ($(ARCH),aarch64)
-	override ARCH=arm64
-endif
-
-# ELF interpreter (dynamic loader) soname
-LDSONAME=ld64.so.1
-ifeq ($(ARCH),amd64)
-	override LDSONAME=ld-linux-x86-64.so.2
-else ifeq ($(ARCH),arm64)
-	override LDSONAME=ld-linux-aarch64.so.1
-else ifeq ($(ARCH),ppc64le)
-	override LDSONAME=ld64.so.2
-else ifeq ($(ARCH),s390)
-	override LDSONAME=ld64.so.1
-endif
+include lib.Makefile
 
 GOBUILD ?= calico/go-build
 GOBUILD_IMAGE ?= $(GOBUILD):$(shell ./generate-version-tag.sh)
 GOBUILD_ARCH_IMAGE ?= $(GOBUILD_IMAGE)-$(ARCH)
 
-BASE ?= calico/base
-BASE_IMAGE ?= $(BASE):latest
-BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
-
-QEMU ?= calico/qemu-user-static
-QEMU_IMAGE ?= $(QEMU):latest
-
-ifdef CI
-DOCKER_PROGRESS := --progress=plain
-endif
-
 ###############################################################################
-# Building images
+# Build images
 ###############################################################################
-QEMU_IMAGE_CREATED=.qemu.created
-
 .PHONY: image-qemu
-image-qemu: $(QEMU_IMAGE_CREATED)
-$(QEMU_IMAGE_CREATED):
-	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/amd64 --pull -t $(QEMU_IMAGE) -f qemu/Dockerfile qemu
-	touch $@
+image-qemu:
+	$(MAKE) -C qemu image
 
 .PHONY: image
 image: register image-qemu
@@ -84,59 +23,30 @@ image-all: $(addprefix sub-image-,$(ARCHES))
 sub-image-%:
 	$(MAKE) image ARCH=$*
 
-.PHONY: image-base
-image-base: register image-qemu
-	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
-
-.PHONY: image-base-all
-image-base-all: $(addprefix sub-image-base-,$(ARCHES))
-sub-image-base-%:
-	$(MAKE) image-base ARCH=$*
-
-# Enable binfmt adding support for miscellaneous binary formats.
-.PHONY: register
-register:
-ifeq ($(BUILDARCH),amd64)
-	docker run --rm --privileged multiarch/qemu-user-static:register --reset
-endif
-
+###############################################################################
+# Publish images and manifest
+###############################################################################
 .PHONY: push
 push: image
 	docker push $(GOBUILD_ARCH_IMAGE)
-	# to handle default case, because quay.io does not support manifest yet
-ifeq ($(ARCH),amd64)
-	docker tag $(GOBUILD_ARCH_IMAGE) quay.io/$(GOBUILD_IMAGE)
-	docker push quay.io/$(GOBUILD_IMAGE)
-endif
-
-.PHONY: push-base
-push-base: image-base
-	docker push $(BASE_ARCH_IMAGE)
-
-.PHONY: push-qemu
-push-qemu: image-qemu
-	docker push $(QEMU_IMAGE)
 
 push-all: $(addprefix sub-push-,$(ARCHES))
 sub-push-%:
 	$(MAKE) push ARCH=$*
-	$(MAKE) push-base ARCH=$*
-	$(MAKE) push-qemu
 
 .PHONY: push-manifest
 push-manifest:
-	# Docker login to hub.docker.com required before running this target as we are using $(HOME)/.docker/config.json holds the docker login credentials
 	docker manifest create $(GOBUILD_IMAGE) $(addprefix --amend ,$(addprefix $(GOBUILD_IMAGE)-,$(ARCHES)))
 	docker manifest push --purge $(GOBUILD_IMAGE)
-	docker manifest create $(BASE_IMAGE) $(addprefix --amend ,$(addprefix $(BASE_IMAGE)-,$(ARCHES)))
-	docker manifest push --purge $(BASE_IMAGE)
 
+###############################################################################
+# Clean
+###############################################################################
 .PHONY: clean
 clean:
-	rm -f $(QEMU_IMAGE_CREATED)
+	$(MAKE) -C qemu clean
+	$(MAKE) -C base clean
 	-docker image rm -f $$(docker images $(GOBUILD) -a -q)
-	-docker image rm -f $$(docker images $(BASE) -a -q)
-	-docker image rm -f $$(docker images $(QEMU) -a -q)
 
 ###############################################################################
 # UTs
@@ -150,18 +60,7 @@ testcompile:
 	@echo "success"
 
 ###############################################################################
-# CI
+# CI/CD
 ###############################################################################
 .PHONY: ci
-ci: image-all image-base-all test
-
-###############################################################################
-# CD
-###############################################################################
-.PHONY: cd
-cd:
-ifndef CONFIRM
-	$(error CONFIRM is undefined - run using make <target> CONFIRM=true)
-endif
-	$(MAKE) push-all
-	$(MAKE) push-manifest
+ci: image-all test

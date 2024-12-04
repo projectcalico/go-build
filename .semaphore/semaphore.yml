@@ -4,9 +4,14 @@ agent:
   machine:
     type: f1-standard-2
     os_image: ubuntu2204
+auto_cancel:
+  running:
+    when: "branch != 'master'"
+  queued:
+    when: "branch != 'master'"
 
 execution_time_limit:
-  minutes: 120
+  minutes: 60
 
 global_job_config:
   secrets:
@@ -19,8 +24,25 @@ global_job_config:
       # unshallow it for GIT_VERSION:=$(shell git describe --tags --dirty --always) @ Makefile.common
       - git fetch --unshallow
 
+promotions:
+  # Publish calico/base and calico/qemu-user-static images for master changes only
+  # Publish calico/go-build images for both master and release branch changes
+  - name: Publish calico/base images
+    pipeline_file: promotions/base.yml
+    auto_promote:
+      when: "branch = 'master'"
+  - name: Publish calico/qemu-user-static image
+    pipeline_file: promotions/qemu.yml
+    auto_promote:
+      when: "branch = 'master'"
+  - name: Publish calico/go-build images
+    pipeline_file: promotions/go-build.yml
+    auto_promote:
+      # release branch name example: 1.23.3-llvm18.1.8-k8s1.30.5
+      when: "branch =~ 'master|\\d\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s\\d\\.\\d+\\.\\d'"
+
 blocks:
-  - name: "calico/go-build image"
+  - name: calico/go-build image
     dependencies: []
     task:
       agent:
@@ -35,61 +57,28 @@ blocks:
         - name: CALICO_BRANCH
           value: master
       jobs:
-        - name: Build and push go-build image
+        - name: Build calico/go-build image
           commands:
             - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-            - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
-            - make image ARCH=$TARGET_ARCH
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push ARCH=$TARGET_ARCH CONFIRM=true; fi
+            - make image ARCH=$ARCH
             - git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico
             - cd calico
             - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
-            - if [ "${TARGET_ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
+            - if [ "${ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
           matrix:
-            - env_var: TARGET_ARCH
+            - env_var: ARCH
               values: ["amd64", "arm64", "ppc64le", "s390x"]
 
-  - name: "calico/base image"
+  - name: calico/base image
     dependencies: []
     task:
       secrets:
         - name: docker
       jobs:
-        - name: Build and push base image
+        - name: Build calico/base image
           commands:
             - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-            - make image-base ARCH=$TARGET_ARCH
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-base ARCH=$TARGET_ARCH CONFIRM=true; fi
+            - make -C base image ARCH=$ARCH
           matrix:
-            - env_var: TARGET_ARCH
+            - env_var: ARCH
               values: ["amd64", "arm64", "ppc64le", "s390x"]
-
-  - name: "calico/qemu-user-static image"
-    dependencies: []
-    task:
-      secrets:
-        - name: docker
-      jobs:
-        - name: Build and push qemu image
-          commands:
-            - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-            - make image-qemu ARCH=$TARGET_ARCH
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-qemu ARCH=$TARGET_ARCH CONFIRM=true; fi
-
-  - name: Push multi-arch manifests
-    skip:
-      # Only run on branches, not PRs.
-      when: "branch !~ '.+'"
-    dependencies:
-      - "calico/base image"
-      - "calico/go-build image"
-    task:
-      secrets:
-        - name: quay-robot-calico-and-semaphoreci
-        - name: docker
-      jobs:
-        - name: Push multi-arch manifests
-          commands:
-            - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-            - echo $QUAY_TOKEN | docker login --username "$QUAY_USER" --password-stdin quay.io
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-manifest CONFIRM=true; fi

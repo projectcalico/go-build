@@ -1,7 +1,7 @@
 include lib.Makefile
 
 GOBUILD ?= calico/go-build
-GOBUILD_IMAGE ?= $(GOBUILD):$(shell ./generate-version-tag.sh)
+GOBUILD_IMAGE ?= $(GOBUILD):$(shell hack/generate-version-tag-name.sh versions.yaml)
 GOBUILD_ARCH_IMAGE ?= $(GOBUILD_IMAGE)-$(ARCH)
 
 ###############################################################################

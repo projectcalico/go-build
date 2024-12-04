@@ -25,21 +25,21 @@ global_job_config:
       - git fetch --unshallow
 
 promotions:
-  # Publish calico/base and calico/qemu-user-static images for master changes only
-  # Publish calico/go-build images for both master and release branch changes
+  # Publish calico/base and calico/qemu-user-static images for master or go1.x branch changes.
+  # Publish calico/go-build images for both master and release tags.
   - name: Publish calico/base images
     pipeline_file: promotions/base.yml
     auto_promote:
-      when: "branch = 'master'"
+      when: "branch =~ 'master|go1\\.\\d+'"
   - name: Publish calico/qemu-user-static image
     pipeline_file: promotions/qemu.yml
     auto_promote:
-      when: "branch = 'master'"
+      when: "branch =~ 'master|go1\\.\\d+'"
   - name: Publish calico/go-build images
     pipeline_file: promotions/go-build.yml
     auto_promote:
-      # release branch name example: 1.23.3-llvm18.1.8-k8s1.30.5
-      when: "branch =~ 'master|\\d\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s\\d\\.\\d+\\.\\d'"
+      # release tag name example: 1.23.3-llvm18.1.8-k8s1.30.5
+      when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
 
 blocks:
   - name: calico/go-build image

@@ -1,0 +1,42 @@
+name: Create new Git branch on Go compiler version change
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      # create a new go1.x branch when changes to golang version are merged
+      # to the master branch
+      - master
+
+jobs:
+  create-branch:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate Go branch name
+        id: generate-go-branch-name
+        run: |
+          BRANCH_NAME=$(hack/generate-go-branch-name.sh versions.yaml)
+          echo "Git branch name: $BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create and push new branch (if not exists)
+        run: |
+          BRANCH_NAME=${{ steps.generate-go-branch-name.outputs.branch_name }}
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Git branch $BRANCH_NAME already exists"
+          else
+            git config user.name "${{ github.actor }}"
+            git config user.email "${{ github.actor }}@users.noreply.github.com"
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            git checkout -b "$BRANCH_NAME"
+            git push origin "$BRANCH_NAME"
+            echo "Created Git branch $BRANCH_NAME"
+          fi

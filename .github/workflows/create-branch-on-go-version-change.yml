@@ -23,7 +23,7 @@ jobs:
       - name: Generate Go branch name
         id: generate-go-branch-name
         run: |
-          BRANCH_NAME=$(hack/generate-go-branch-name.sh versions.yaml)
+          BRANCH_NAME=$(hack/generate-go-branch-name.sh -f versions.yaml)
           echo "Git branch name: $BRANCH_NAME"
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 

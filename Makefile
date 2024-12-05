@@ -1,8 +1,10 @@
 include lib.Makefile
 
 GOBUILD ?= calico/go-build
-GOBUILD_IMAGE ?= $(GOBUILD):$(shell hack/generate-version-tag-name.sh versions.yaml)
+GOBUILD_IMAGE ?= $(GOBUILD):$(shell hack/generate-version-tag-name.sh -f versions.yaml)
 GOBUILD_ARCH_IMAGE ?= $(GOBUILD_IMAGE)-$(ARCH)
+GOBUILD_IMAGE_GO_VER ?= $(GOBUILD):$(shell hack/generate-version-tag-name.sh -f versions.yaml -g)
+GOBUILD_ARCH_IMAGE_GO_TAG ?= $(GOBUILD_IMAGE_GO_VER)-$(ARCH)
 
 ###############################################################################
 # Build images
@@ -14,6 +16,7 @@ image-qemu:
 .PHONY: image
 image: register image-qemu
 	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
+	docker tag $(GOBUILD_ARCH_IMAGE) $(GOBUILD_ARCH_IMAGE_GO_TAG)
 ifeq ($(ARCH),amd64)
 	docker tag $(GOBUILD_ARCH_IMAGE) $(GOBUILD_IMAGE)
 endif
@@ -38,6 +41,8 @@ sub-push-%:
 push-manifest:
 	docker manifest create $(GOBUILD_IMAGE) $(addprefix --amend ,$(addprefix $(GOBUILD_IMAGE)-,$(ARCHES)))
 	docker manifest push --purge $(GOBUILD_IMAGE)
+	docker manifest create $(GOBUILD_IMAGE_GO_VER) $(addprefix --amend ,$(addprefix $(GOBUILD_IMAGE_GO_VER)-,$(ARCHES)))
+	docker manifest push --purge $(GOBUILD_IMAGE_GO_VER)
 
 ###############################################################################
 # Clean

@@ -1,6 +1,6 @@
 FROM calico/bpftool:v7.4.0 AS bpftool
 
-FROM golang:1.22.9-bullseye
+FROM golang:1.22.10-bullseye
 
 LABEL maintainer="Shaun Crampton <shaun@projectcalico.org>"
 

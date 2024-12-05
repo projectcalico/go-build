@@ -2,16 +2,28 @@
 
 set -e
 
-ver_file="$1"
-if [[ -z $ver_file ]]; then
-    echo "missing version metadata"
-    exit 1
-fi
+ver_file=""
+
+while getopts ":f:" opt; do
+    case $opt in
+    f)
+        ver_file="$OPTARG"
+        ;;
+    :)
+        echo "option: -$OPTARG requires an argument" >&2
+        exit 1
+        ;;
+    *)
+        echo "invalid argument -$OPTARG" >&2
+        exit 1
+        ;;
+    esac
+done
 
 golang_ver=$(yq -r .golang.version "$ver_file")
 
 if [[ -z $golang_ver ]]; then
-    echo "golang version is empty"
+    echo "golang version is empty" >&2
     exit 1
 fi
 

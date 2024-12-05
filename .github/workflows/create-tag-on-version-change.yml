@@ -24,7 +24,7 @@ jobs:
       - name: Generate tag name
         id: generate-tag-name
         run: |
-          TAG_NAME=$(hack/generate-version-tag-name.sh versions.yaml)
+          TAG_NAME=$(hack/generate-version-tag-name.sh -f versions.yaml)
           echo "Git tag name: $TAG_NAME"
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
 

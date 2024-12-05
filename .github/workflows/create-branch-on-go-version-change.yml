@@ -23,20 +23,20 @@ jobs:
       - name: Generate Go branch name
         id: generate-go-branch-name
         run: |
-          BRANCH_NAME=$(hack/generate-go-branch-name.sh -f versions.yaml)
-          echo "Git branch name: $BRANCH_NAME"
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          branch_name=$(hack/generate-go-branch-name.sh -f versions.yaml)
+          echo "Git branch name: $branch_name"
+          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
 
       - name: Create and push new branch (if not exists)
         run: |
-          BRANCH_NAME=${{ steps.generate-go-branch-name.outputs.branch_name }}
-          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
-            echo "Git branch $BRANCH_NAME already exists"
+          branch_name=${{ steps.generate-go-branch-name.outputs.branch_name }}
+          if git ls-remote --heads origin "$branch_name" | grep -q "$branch_name"; then
+            echo "Git branch $branch_name already exists"
           else
             git config user.name "${{ github.actor }}"
             git config user.email "${{ github.actor }}@users.noreply.github.com"
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-            git checkout -b "$BRANCH_NAME"
-            git push origin "$BRANCH_NAME"
-            echo "Created Git branch $BRANCH_NAME"
+            git checkout -b "$branch_name"
+            git push origin "$branch_name"
+            echo "Created Git branch $branch_name"
           fi

@@ -24,20 +24,21 @@ jobs:
       - name: Generate tag name
         id: generate-tag-name
         run: |
-          TAG_NAME=$(hack/generate-version-tag-name.sh -f versions.yaml)
-          echo "Git tag name: $TAG_NAME"
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          tag_name=$(hack/generate-version-tag-name.sh -f versions.yaml)
+          echo "Git tag name: $tag_name"
+          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
 
       - name: Create and push new tag (if not exists)
         run: |
-          TAG_NAME=${{ steps.generate-tag-name.outputs.tag_name }}
-          if git ls-remote --tags origin "$TAG_NAME" | grep -q "refs/tags/$TAG_NAME"; then
-            echo "Git tag $TAG_NAME already exists"
-          else
-            git config user.name "${{ github.actor }}"
-            git config user.email "${{ github.actor }}@users.noreply.github.com"
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-            git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-            git push origin "$TAG_NAME"
-            echo "Created Git tag $TAG_NAME"
+          tag_name=${{ steps.generate-tag-name.outputs.tag_name }}
+          count=$(git ls-remote --tags origin "$tag_name" | grep -c "refs/tags/$tag_name")
+          if [ "$count" -gt 0 ] ; then
+            echo "Git tag $tag_name already exists. Using new tag $tag_name-$count."
+            tag_name="$tag_name-$count"
           fi
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git tag -a "$tag_name" -m "Release $tag_name"
+          git push origin "$tag_name"
+          echo "Created Git tag $tag_name"

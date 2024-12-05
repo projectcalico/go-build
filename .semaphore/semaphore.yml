@@ -33,7 +33,7 @@ blocks:
       env_vars:
         # The branch to test the current go-build against
         - name: CALICO_BRANCH
-          value: release-v3.28
+          value: release-v3.29
       jobs:
         - name: Build and push go-build image
           commands:

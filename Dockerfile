@@ -16,12 +16,11 @@ ARG GOLANG_SHA256_S390X=6bd72fcef72b046b6282c2d1f2c38f31600e4fe9361fcd8341500c75
 
 ARG CLANG_VERSION=18.1.8
 ARG CONTAINERREGISTRY_VERSION=v0.20.2
+ARG CONTROLLER_GEN_VERSION=v0.16.5
 ARG GO_LINT_VERSION=v1.61.0
 ARG K8S_VERSION=v1.30.5
 ARG K8S_LIBS_VERSION=v0.30.5
 ARG MOCKERY_VERSION=2.46.3
-
-ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
 ENV PATH=/usr/local/go/bin:$PATH
 
@@ -129,12 +128,9 @@ RUN set -eux; \
 # Install Go utilities
 
 # controller-gen is used for generating CRD files.
-# Download a version of controller-gen that has been updated to support additional types (e.g., float).
-# We can remove this once we update the Calico v3 APIs to use only types which are supported by the upstream controller-gen
-# tooling. Example: float, all the types in the numorstring package, etc.
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
-        curl -sfL https://github.com/projectcalico/controller-tools/releases/download/${CALICO_CONTROLLER_TOOLS_VERSION}/controller-gen -o /usr/local/bin/controller-gen && chmod +x /usr/local/bin/controller-gen; \
+        curl -sfL https://github.com/kubernetes-sigs/controller-tools/releases/download/${CONTROLLER_GEN_VERSION}/controller-gen-linux-amd64 -o /usr/local/bin/controller-gen && chmod +x /usr/local/bin/controller-gen; \
     fi
 
 # crane is needed for our release targets to copy images from the dev registries to the release registries.

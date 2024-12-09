@@ -9,6 +9,9 @@ execution_time_limit:
   minutes: 30
 
 global_job_config:
+  env_vars:
+    - name: DEV_REGISTRIES
+      value: docker.io
   secrets:
     - name: docker-hub
   prologue:
@@ -17,12 +20,17 @@ global_job_config:
       - checkout
 
 blocks:
-  - name: Publish calico/qemu-user-static image
+  - name: Publish calico/qemu-user-static amd64 image
     dependencies: []
+    env_vars:
+      - name: BRANCH_NAME
+        value: latest
+      - name: BUILD_IMAGES
+        value: calico/base
     skip:
       when: "branch !~ '.+'"
     task:
       jobs:
         - name: Linux amd64
           commands:
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C qemu push CONFIRM=true; fi
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images qemu-user-static-cd CONFIRM=true; fi

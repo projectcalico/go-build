@@ -23,23 +23,24 @@ global_job_config:
       # Semaphore is doing shallow clone on a commit without tags.
       # unshallow it for GIT_VERSION:=$(shell git describe --tags --dirty --always) @ Makefile.common
       - git fetch --unshallow
+      - export VERSION_TAG=$(hack/generate-version-tag-name.sh -f images/calico-go-build/versions.yaml)
 
 promotions:
   # Publish calico/base and calico/qemu-user-static images for master or go1.x branch changes.
   # Publish calico/go-build images for both master and release tags.
   - name: Publish calico/base images
-    pipeline_file: promotions/base.yml
-    auto_promote:
-      when: "branch =~ 'master|go1\\.\\d+'"
-  - name: Publish calico/qemu-user-static image
-    pipeline_file: promotions/qemu.yml
+    pipeline_file: promotions/calico-base.yml
     auto_promote:
       when: "branch =~ 'master|go1\\.\\d+'"
   - name: Publish calico/go-build images
-    pipeline_file: promotions/go-build.yml
+    pipeline_file: promotions/calico-go-build.yml
     auto_promote:
       # release tag name example: 1.23.3-llvm18.1.8-k8s1.30.5
       when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
+  - name: Publish calico/qemu-user-static image
+    pipeline_file: promotions/qemu-user-static.yml
+    auto_promote:
+      when: "branch =~ 'master|go1\\.\\d+'"
 
 blocks:
   - name: calico/go-build image
@@ -60,10 +61,10 @@ blocks:
         - name: Build calico/go-build image
           commands:
             - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-            - make image ARCH=$ARCH
+            - make -C images calico-go-build-image ARCH=$ARCH
             - git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico
             - cd calico
-            - perl -0777 -pi -e's/GO_BUILD_VER\s*[?:]?=\s*\K[\.0-9a-z]+/'"${SEMAPHORE_GIT_BRANCH}"'/' metadata.mk
+            - sed -i 's/^GO_BUILD_VER=.*$/GO_BUILD_VER=${VERSION_TAG}/' metadata.mk
             - if [ "${ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
           matrix:
             - env_var: ARCH
@@ -78,7 +79,7 @@ blocks:
         - name: Build calico/base image
           commands:
             - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-            - make -C base image ARCH=$ARCH
+            - make -C images calico-base-image ARCH=$ARCH
           matrix:
             - env_var: ARCH
               values: ["amd64", "arm64", "ppc64le", "s390x"]

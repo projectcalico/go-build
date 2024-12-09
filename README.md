@@ -73,25 +73,3 @@ docker run --rm --privileged multiarch/qemu-user-static:register
 ```
 
 If a cross built binary is executed in the go-build container qemu-static will automatically be used.
-
-### Testing Cross-Run
-
-There is a `Makefile` target that cross-builds and runs a binary. To run it on your own architecture:
-
-```bash
-make testcompile
-```
-
-or
-
-```bash
-make testcompile ARCH=$(uname -m)
-```
-
-To test on a different architecture, for example `arm64` when you are running on `amd64`, pass it an alternate architecture:
-
-```bash
-make testcompile ARCH=arm64
-```
-
-You should see the "success" message.

@@ -1,5 +1,5 @@
 version: v1.0
-name: Publish calico/qemu-user-static image
+name: Publish calico/base images
 agent:
   machine:
     type: f1-standard-2
@@ -9,6 +9,9 @@ execution_time_limit:
   minutes: 30
 
 global_job_config:
+  env_vars:
+    - name: DEV_REGISTRIES
+      value: docker.io
   secrets:
     - name: docker-hub
   prologue:
@@ -17,12 +20,17 @@ global_job_config:
       - checkout
 
 blocks:
-  - name: Publish calico/qemu-user-static image
+  - name: Publish calico/base multi-arch images
     dependencies: []
     skip:
       when: "branch !~ '.+'"
     task:
+      env_vars:
+        - name: BRANCH_NAME
+          value: latest
+        - name: BUILD_IMAGES
+          value: calico/base
       jobs:
-        - name: Linux amd64
+        - name: Linux multi-arch
           commands:
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C qemu push CONFIRM=true; fi
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images calico-base-cd CONFIRM=true; fi

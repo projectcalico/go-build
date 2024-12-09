@@ -9,6 +9,9 @@ execution_time_limit:
   minutes: 60
 
 global_job_config:
+  env_vars:
+    - name: DEV_REGISTRIES
+      value: docker.io
   secrets:
     - name: docker-hub
   prologue:
@@ -18,7 +21,12 @@ global_job_config:
       # If an image build is triggered from a git tag, use the git tag name set by semaphore.
       # For utility changes that don't affect calico/go-build versions, we will append a release
       # number in the tag. This is handled in create-tag-on-version-change github workflow.
-      - if [ "${SEMAPHORE_GIT_REF_TYPE}" = "tag" ]; export VERSION_TAG=${SEMAPHORE_GIT_TAG_NAME}; fi
+      - |
+        if [ "${SEMAPHORE_GIT_REF_TYPE}" = "tag" ]; then
+          export VERSION_TAG=${SEMAPHORE_GIT_TAG_NAME};
+        else
+          export VERSION_TAG=$(hack/generate-version-tag-name.sh -f images/calico-go-build/versions.yaml)
+        fi
 
 blocks:
   - name: Publish calico/go-build images
@@ -26,20 +34,14 @@ blocks:
     skip:
       when: "branch !~ '.+'"
     task:
+      env_vars:
+        - name: BRANCH_NAME
+          value: ${VERSION_TAG}
+        - name: BUILD_IMAGES
+          value: calico/go-build
+        - name: LATEST_IMAGE_TAG
+          value: ${VERSION_TAG}
       jobs:
         - name: Linux multi-arch
           commands:
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-all CONFIRM=true; fi
-
-  - name: Push calico/go-build multi-arch manifests
-    skip:
-      when: "branch !~ '.+'"
-    dependencies:
-      - Publish calico/go-build images
-    task:
-      secrets:
-        - name: docker
-      jobs:
-        - name: Linux multi-arch manifests
-          commands:
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-manifest CONFIRM=true; fi
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images calico-go-build-cd CONFIRM=true; fi

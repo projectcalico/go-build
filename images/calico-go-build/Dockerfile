@@ -191,11 +191,8 @@ RUN set -eux; \
     go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20241009091222-67ed5848f094 && \
     go install mvdan.cc/gofumpt@v0.7.0
 
-# Build and install semvalidator
-COPY semvalidator/go.mod semvalidator/go.sum semvalidator/main.go /tmp/semvalidator/
-
-RUN cd /tmp/semvalidator && CGO_ENABLED=0 go build -o /usr/local/bin/semvalidator -v -buildvcs=false -ldflags "-s -w" main.go \
-    && rm -fr /tmp/semvalidator
+# Install semvalidator
+COPY bin/semvalidator-${TARGETARCH} /usr/local/bin/semvalidator
 
 # Cleanup module cache after we have built and installed all Go utilities
 RUN go clean -modcache && go clean -cache

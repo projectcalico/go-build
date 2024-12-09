@@ -1,4 +1,4 @@
-module github.com/projectcalico/semvalidator
+module github.com/projectcalico/go-build
 
 go 1.23.2
 

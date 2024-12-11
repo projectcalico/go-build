@@ -45,3 +45,15 @@ blocks:
         - name: Linux multi-arch
           commands:
             - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images calico-go-build-cd CONFIRM=true; fi
+  - name: Trigger calico/go-build pin updates
+    dependencies:
+      - Publish calico/go-build images
+    skip:
+      when: "branch !~ '.+'"
+    task:
+      secrets:
+        - name: semaphore-api
+      jobs:
+        - name: Auto calico/go-build update
+          commands:
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make update-go-build-pins CONFIRM=true; fi

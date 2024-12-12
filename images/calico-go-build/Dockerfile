@@ -133,12 +133,10 @@ RUN set -eux; \
 COPY patches/controller-gen-Support-Calico-NumOrString-types.patch /tmp/controller-tools/calico.patch
 
 RUN set -eux; \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
-        curl -sfL https://github.com/kubernetes-sigs/controller-tools/archive/refs/tags/${CONTROLLER_TOOLS_VERSION}.tar.gz | tar xz --strip-components 1 -C /tmp/controller-tools; \
-        cd /tmp/controller-tools && patch -p1 < calico.patch && CGO_ENABLED=0 go build -o /usr/local/bin/controller-gen -v -buildvcs=false \
-            -ldflags "-X sigs.k8s.io/controller-tools/pkg/version.version=${CONTROLLER_TOOLS_VERSION} -s -w" ./cmd/controller-gen; \
-        rm -fr /tmp/controller-tools; \
-    fi
+    curl -sfL https://github.com/kubernetes-sigs/controller-tools/archive/refs/tags/${CONTROLLER_TOOLS_VERSION}.tar.gz | tar xz --strip-components 1 -C /tmp/controller-tools; \
+    cd /tmp/controller-tools && patch -p1 < calico.patch && CGO_ENABLED=0 go build -o /usr/local/bin/controller-gen -v -buildvcs=false \
+        -ldflags "-X sigs.k8s.io/controller-tools/pkg/version.version=${CONTROLLER_TOOLS_VERSION} -s -w" ./cmd/controller-gen; \
+    rm -fr /tmp/controller-tools
 
 # crane is needed for our release targets to copy images from the dev registries to the release registries.
 RUN set -eux; \
@@ -191,9 +189,6 @@ RUN set -eux; \
     go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20241009091222-67ed5848f094 && \
     go install mvdan.cc/gofumpt@v0.7.0
 
-# Install semvalidator
-COPY bin/semvalidator-${TARGETARCH} /usr/local/bin/semvalidator
-
 # Cleanup module cache after we have built and installed all Go utilities
 RUN go clean -modcache && go clean -cache
 
@@ -206,8 +201,11 @@ RUN sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
 # Allow validated remote servers
 COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
 
-# Add bpftool for Felix UT/FV.
+# Copy bpftool for Felix UT/FV.
 COPY --from=bpftool /bpftool /usr/bin
+
+# Copy semvalidator release tool.
+COPY bin/semvalidator-${TARGETARCH} /usr/local/bin/semvalidator
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 

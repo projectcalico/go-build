@@ -1,0 +1,12 @@
+golang:
+  version: 1.23.4
+  checksum:
+    sha256:
+      amd64: 6924efde5de86fe277676e929dc9917d466efa02fb934197bc2eba35d5680971
+      arm64: 16e5017863a7f6071363782b1b8042eb12c6ca4f4cd71528b2123f0a1275b13e
+      ppc64le: 65a303ef51e48ff77e004a6a5b4db6ce59495cd59c6af51b54bf4f786c01a1b9
+      s390x: 74aab82bf4eca7c26c830a5b0e2a31d193a4d5ba47045526b92473cc7188d7d7
+kubernetes:
+  version: 1.30.8
+llvm:
+  version: 18.1.8

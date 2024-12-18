@@ -11,7 +11,8 @@ ARG LDSONAME
 
 COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 
-RUN microdnf upgrade -y
+ARG PKGMAN
+RUN ${PKGMAN} upgrade -y
 
 # Prepare a rootfs for necessary files from UBI.
 # Symbolic links are preserved.

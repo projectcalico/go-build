@@ -57,14 +57,16 @@ BASE ?= calico/base
 BASE_IMAGE ?= $(BASE):latest
 BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 
-# Base-image we'll use to build calico/base.
-UBIBASE ?= registry.access.redhat.com/ubi8/ubi-minimal:latest
 
 QEMU ?= calico/qemu-user-static
 QEMU_IMAGE ?= $(QEMU):latest
 
+# Base-image we'll use to build calico/base.
+UBIBASE ?= registry.access.redhat.com/ubi8/ubi-minimal:latest
 # The level of cleanup we perform on the calico/base image. One-of: stripped, unstripped.
-CLEANUPLEVEL ?= stripped
+BASE_CLEANUPLEVEL ?= stripped
+# Name of pkg manager binary, for installing deps on calico-base's UBI step.
+BASE_PKGMAN ?= microdnf
 
 ifdef CI
 DOCKER_PROGRESS := --progress=plain
@@ -98,8 +100,9 @@ image-base: register image-qemu
 	docker buildx build $(DOCKER_PROGRESS) --load \
 	 --platform=linux/$(ARCH) \
 	 --build-arg LDSONAME=$(LDSONAME) \
-	 --build-arg CLEANUPLEVEL=$(CLEANUPLEVEL) \
+	 --build-arg CLEANUPLEVEL=$(BASE_CLEANUPLEVEL) \
 	 --build-arg UBIBASE=$(UBIBASE) \
+	 --build-arg PKGMAN=$(BASE_PKGMAN) \
 	 -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
 
 .PHONY: image-base-all

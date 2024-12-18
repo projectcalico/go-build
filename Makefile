@@ -64,7 +64,7 @@ QEMU ?= calico/qemu-user-static
 QEMU_IMAGE ?= $(QEMU):latest
 
 # The level of cleanup we perform on the calico/base image. One-of: stripped, unstripped.
-CLEANUPLEVEL=stripped
+CLEANUPLEVEL ?= stripped
 
 ifdef CI
 DOCKER_PROGRESS := --progress=plain

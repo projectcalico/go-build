@@ -60,6 +60,9 @@ BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 QEMU ?= calico/qemu-user-static
 QEMU_IMAGE ?= $(QEMU):latest
 
+# The level of cleanup we perform on the calico/base image. One-of: stripped, unstripped.
+CLEANUPLEVEL=stripped
+
 ifdef CI
 DOCKER_PROGRESS := --progress=plain
 endif
@@ -89,7 +92,7 @@ sub-image-%:
 
 .PHONY: image-base
 image-base: register image-qemu
-	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
+	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) --build-arg CLEANUPLEVEL=$(CLEANUPLEVEL) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))

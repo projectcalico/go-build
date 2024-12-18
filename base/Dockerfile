@@ -1,3 +1,6 @@
+# CLEANUPLEVEL defines the level of FS stripping we apply to the generated image.
+ARG CLEANUPLEVEL=stripped
+
 FROM --platform=linux/amd64 calico/qemu-user-static:latest AS qemu
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS ubi
@@ -38,15 +41,21 @@ RUN cp /etc/nsswitch.conf /rootfs/etc/nsswitch.conf
 # Copy base image release info.
 RUN cp /etc/os-release /rootfs/etc/os-release
 
-FROM scratch AS source
 
+# Stripped image.
+FROM scratch AS intermediate-stripped
 COPY --from=ubi /rootfs /
-
 # tmp.tar has a /tmp with the correct permissions 01777.
 ADD tmp.tar /
-
 COPY licenses /licenses/
 
-FROM scratch
+FROM scratch AS source-stripped
+COPY --from=intermediate-stripped / /
 
-COPY --from=source / /
+# Unstripped image.
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS source-unstripped
+COPY --from=ubi / /
+RUN rm -rf /rootfs
+
+# Choose which image is shipped.
+FROM source-${CLEANUPLEVEL}

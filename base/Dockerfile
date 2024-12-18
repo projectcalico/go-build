@@ -1,9 +1,11 @@
 # CLEANUPLEVEL defines the level of FS stripping we apply to the generated image.
-ARG CLEANUPLEVEL=stripped
+ARG CLEANUPLEVEL
+
+ARG UBIBASE
 
 FROM --platform=linux/amd64 calico/qemu-user-static:latest AS qemu
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS ubi
+FROM ${UBIBASE} AS ubi
 
 ARG LDSONAME
 
@@ -53,7 +55,7 @@ FROM scratch AS source-stripped
 COPY --from=intermediate-stripped / /
 
 # Unstripped image.
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS source-unstripped
+FROM ${UBIBASE} AS source-unstripped
 COPY --from=ubi / /
 RUN rm -rf /rootfs
 

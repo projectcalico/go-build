@@ -57,6 +57,9 @@ BASE ?= calico/base
 BASE_IMAGE ?= $(BASE):latest
 BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 
+# Base-image we'll use to build calico/base.
+UBIBASE ?= registry.access.redhat.com/ubi8/ubi-minimal:latest
+
 QEMU ?= calico/qemu-user-static
 QEMU_IMAGE ?= $(QEMU):latest
 
@@ -92,7 +95,12 @@ sub-image-%:
 
 .PHONY: image-base
 image-base: register image-qemu
-	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) --build-arg CLEANUPLEVEL=$(CLEANUPLEVEL) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
+	docker buildx build $(DOCKER_PROGRESS) --load \
+	 --platform=linux/$(ARCH) \
+	 --build-arg LDSONAME=$(LDSONAME) \
+	 --build-arg CLEANUPLEVEL=$(CLEANUPLEVEL) \
+	 --build-arg UBIBASE=$(UBIBASE) \
+	 -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))

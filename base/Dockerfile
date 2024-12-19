@@ -1,11 +1,10 @@
 # CLEANUPLEVEL defines the level of FS stripping we apply to the generated image.
-ARG CLEANUPLEVEL
-
-ARG UBIBASE
+ARG CLEANUP_LEVEL
+ARG BASE
 
 FROM --platform=linux/amd64 calico/qemu-user-static:latest AS qemu
 
-FROM ${UBIBASE} AS ubi
+FROM ${BASE} AS ubi
 
 ARG LDSONAME
 
@@ -56,9 +55,9 @@ FROM scratch AS source-stripped
 COPY --from=intermediate-stripped / /
 
 # Unstripped image.
-FROM ${UBIBASE} AS source-unstripped
+FROM ${BASE} AS source-unstripped
 COPY --from=ubi / /
 RUN rm -rf /rootfs
 
 # Choose which image is shipped.
-FROM source-${CLEANUPLEVEL}
+FROM source-${CLEANUP_LEVEL}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eu
 
 ver_file=""
 go_ver_only=false

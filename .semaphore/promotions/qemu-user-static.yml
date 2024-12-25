@@ -22,8 +22,6 @@ global_job_config:
 blocks:
   - name: Publish calico/qemu-user-static amd64 image
     dependencies: []
-    skip:
-      when: "branch !~ '.+'"
     task:
       env_vars:
         - name: BRANCH_NAME

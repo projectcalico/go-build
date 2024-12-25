@@ -22,8 +22,6 @@ global_job_config:
 blocks:
   - name: Publish calico/base multi-arch images
     dependencies: []
-    skip:
-      when: "branch !~ '.+'"
     task:
       env_vars:
         - name: BRANCH_NAME

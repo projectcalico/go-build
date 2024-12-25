@@ -1,2 +1,3 @@
-.qemu.created
-hello-*
+cmd/bin
+images/.qemu-user-static.created
+images/calico-go-build/bin

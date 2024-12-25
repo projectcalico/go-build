@@ -1,0 +1,44 @@
+name: Create new Git tag on compiler version change
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      # create a release tag when changes to compiler versions are merged
+      # to the master branch or go1.x release branches.
+      - master
+      - go1.*
+
+jobs:
+  create-tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate tag name
+        id: generate-tag-name
+        run: |
+          tag_name=$(hack/generate-version-tag-name.sh -f versions.yaml)
+          echo "Git tag name: $tag_name"
+          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+
+      - name: Create and push new tag (if not exists)
+        run: |
+          tag_name=${{ steps.generate-tag-name.outputs.tag_name }}
+          count=$(git ls-remote --tags origin "$tag_name" | grep -c "refs/tags/$tag_name")
+          if [ "$count" -gt 0 ] ; then
+            echo "Git tag $tag_name already exists. Using new tag $tag_name-$count."
+            tag_name="$tag_name-$count"
+          fi
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git tag -a "$tag_name" -m "Release $tag_name"
+          git push origin "$tag_name"
+          echo "Created Git tag $tag_name"

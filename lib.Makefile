@@ -5,3 +5,5 @@ ifdef CI
 endif
 
 DOCKER_BUILD=docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH)
+
+DEV_REGISTRIES ?= calico

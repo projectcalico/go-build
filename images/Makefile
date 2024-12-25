@@ -1,17 +1,17 @@
 include ../Makefile.common
 include ../lib.Makefile
 
-CALICO_BASE ?= calico/base
+CALICO_BASE ?= base
 CALICO_BASE_IMAGE ?= $(CALICO_BASE):latest
 CALICO_BASE_ARCH_IMAGE ?= $(CALICO_BASE_IMAGE)-$(ARCH)
 
-QEMU_USER_STATIC ?= calico/qemu-user-static
+QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
 QEMU_USER_STATIC_IMAGE ?= $(QEMU_USER_STATIC):latest
 QEMU_USER_STATIC_IMAGE_CREATED = .qemu-user-static.created
 
 VERSION_TAG ?= $(shell ../hack/generate-version-tag-name.sh -f calico-go-build/versions.yaml)
 
-CALICO_GO_BUILD ?= calico/go-build
+CALICO_GO_BUILD ?= go-build
 CALICO_GO_BUILD_IMAGE ?= $(CALICO_GO_BUILD):$(VERSION_TAG)
 CALICO_GO_BUILD_ARCH_IMAGE ?= $(CALICO_GO_BUILD_IMAGE)-$(ARCH)
 
@@ -59,7 +59,8 @@ sub-calico-base-image-%:
 	$(MAKE) calico-base-image ARCH=$*
 
 .PHONY: calico-base-cd
-calico-base-cd: calico-base-image-all cd-common
+calico-base-cd: calico-base-image-all
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) cd-common
 
 # Calico builder which contains Go/Clang compilers and necessary utilities for UT/FVs.
 .PHONY: build
@@ -81,7 +82,8 @@ sub-calico-go-build-image-%:
 	$(MAKE) calico-go-build-image ARCH=$*
 
 .PHONY: calico-go-build-cd
-calico-go-build-cd: calico-go-build-image-all cd-common
+calico-go-build-cd: calico-go-build-image-all
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) cd-common
 
 .PHONY: clean
 clean:
@@ -91,8 +93,6 @@ clean:
 	-docker image rm -f $$(docker images $(CALICO_GO_BUILD) -a -q)
 	-docker image rm -f $$(docker images $(QEMU_USER_STATIC) -a -q)
 
-.PHONY: cd
-cd: image-all cd-common
-
+.PHONY: cd-common
 cd-common: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
 	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"

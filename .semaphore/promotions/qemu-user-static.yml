@@ -11,12 +11,12 @@ execution_time_limit:
 global_job_config:
   env_vars:
     - name: DEV_REGISTRIES
-      value: docker.io
+      value: calico
   secrets:
-    - name: docker-hub
+    - name: docker
   prologue:
     commands:
-      - echo $DOCKERHUB_PASSWORD | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
       - checkout
 
 blocks:
@@ -28,8 +28,6 @@ blocks:
       env_vars:
         - name: BRANCH_NAME
           value: latest
-        - name: BUILD_IMAGES
-          value: calico/qemu-user-static
       jobs:
         - name: Linux amd64
           commands:

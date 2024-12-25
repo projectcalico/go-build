@@ -1,4 +1,6 @@
-VALIDARCHES = amd64 arm64 ppc64le s390x
+ARCHES = amd64 arm64 ppc64le s390x
+
+DEV_REGISTRIES ?= calico
 
 ifdef CI
     DOCKER_PROGRESS := --progress=plain

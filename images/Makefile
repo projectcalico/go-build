@@ -1,17 +1,17 @@
-include ../Makefile.common
 include ../lib.Makefile
+include ../Makefile.common
 
-CALICO_BASE ?= calico/base
+CALICO_BASE ?= base
 CALICO_BASE_IMAGE ?= $(CALICO_BASE):latest
 CALICO_BASE_ARCH_IMAGE ?= $(CALICO_BASE_IMAGE)-$(ARCH)
 
-QEMU_USER_STATIC ?= calico/qemu-user-static
+QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
 QEMU_USER_STATIC_IMAGE ?= $(QEMU_USER_STATIC):latest
 QEMU_USER_STATIC_IMAGE_CREATED = .qemu-user-static.created
 
 VERSION_TAG ?= $(shell ../hack/generate-version-tag-name.sh -f calico-go-build/versions.yaml)
 
-CALICO_GO_BUILD ?= calico/go-build
+CALICO_GO_BUILD ?= go-build
 CALICO_GO_BUILD_IMAGE ?= $(CALICO_GO_BUILD):$(VERSION_TAG)
 CALICO_GO_BUILD_ARCH_IMAGE ?= $(CALICO_GO_BUILD_IMAGE)-$(ARCH)
 
@@ -52,6 +52,7 @@ endif
 .PHONY: calico-base-image
 calico-base-image: register qemu-user-static-image
 	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE_ARCH_IMAGE) -f calico-base/Dockerfile calico-base/
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=latest
 
 .PHONY: calico-base-image-all
 calico-base-image-all: $(addprefix sub-calico-base-image-,$(VALIDARCHES))
@@ -59,7 +60,8 @@ sub-calico-base-image-%:
 	$(MAKE) calico-base-image ARCH=$*
 
 .PHONY: calico-base-cd
-calico-base-cd: calico-base-image-all cd-common
+calico-base-cd: calico-base-image-all
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) cd-common
 
 # Calico builder which contains Go/Clang compilers and necessary utilities for UT/FVs.
 .PHONY: build
@@ -71,9 +73,7 @@ build:
 .PHONY: calico-go-build-image
 calico-go-build-image: register qemu-user-static-image build
 	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD_ARCH_IMAGE) -f calico-go-build/Dockerfile calico-go-build/
-ifeq ($(ARCH),amd64)
-	docker tag $(CALICO_GO_BUILD_ARCH_IMAGE) $(CALICO_GO_BUILD_IMAGE)
-endif
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) LATEST_IMAGE_TAG=$(VERSION_TAG) IMAGETAG=$(VERSION_TAG)
 
 .PHONY: calico-go-build-image-all
 calico-go-build-image-all: $(addprefix sub-calico-go-build-image-,$(VALIDARCHES))
@@ -81,7 +81,8 @@ sub-calico-go-build-image-%:
 	$(MAKE) calico-go-build-image ARCH=$*
 
 .PHONY: calico-go-build-cd
-calico-go-build-cd: calico-go-build-image-all cd-common
+calico-go-build-cd: calico-go-build-image-all
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) cd-common
 
 .PHONY: clean
 clean:
@@ -91,8 +92,6 @@ clean:
 	-docker image rm -f $$(docker images $(CALICO_GO_BUILD) -a -q)
 	-docker image rm -f $$(docker images $(QEMU_USER_STATIC) -a -q)
 
-.PHONY: cd
-cd: image-all cd-common
-
+.PHONY: cd-common
 cd-common: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
 	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"

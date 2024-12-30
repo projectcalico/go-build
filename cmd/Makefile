@@ -1,5 +1,5 @@
-include ../Makefile.common
 include ../lib.Makefile
+include ../Makefile.common
 
 .PHONY: build
 build: semvalidator-build-$(ARCH)

@@ -24,7 +24,7 @@ jobs:
       - name: Generate tag name
         id: generate-tag-name
         run: |
-          tag_name=$(hack/generate-version-tag-name.sh -f versions.yaml)
+          tag_name=$(hack/generate-version-tag-name.sh -f images/calico-go-build/versions.yaml)
           echo "Git tag name: $tag_name"
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
 

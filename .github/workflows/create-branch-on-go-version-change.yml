@@ -23,7 +23,7 @@ jobs:
       - name: Generate Go branch name
         id: generate-go-branch-name
         run: |
-          branch_name=$(hack/generate-go-branch-name.sh -f versions.yaml)
+          branch_name=$(hack/generate-go-branch-name.sh -f images/calico-go-build/versions.yaml)
           echo "Git branch name: $branch_name"
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
 

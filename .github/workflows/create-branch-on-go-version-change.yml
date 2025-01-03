@@ -35,7 +35,7 @@ jobs:
           else
             git config user.name "${{ github.actor }}"
             git config user.email "${{ github.actor }}@users.noreply.github.com"
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            git remote set-url origin https://x-access-token:${{ secrets.MARVIN_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
             git checkout -b "$branch_name"
             git push origin "$branch_name"
             echo "Created Git branch $branch_name"

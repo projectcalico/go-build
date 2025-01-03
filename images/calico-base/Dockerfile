@@ -4,7 +4,7 @@ ARG BASE
 
 FROM --platform=linux/amd64 calico/qemu-user-static:latest AS qemu
 
-FROM ${BASE} AS ubi
+FROM ${BASE} AS source-unstripped
 
 ARG LDSONAME
 
@@ -43,21 +43,15 @@ RUN cp /etc/nsswitch.conf /rootfs/etc/nsswitch.conf
 RUN cp /etc/os-release /rootfs/etc/os-release
 
 # Stripped image.
-FROM scratch AS intermediate-stripped
-
-COPY --from=ubi /rootfs /
-
+FROM scratch AS source-stripped
+COPY --from=source-unstripped /rootfs /
 # tmp.tar has a /tmp with the correct permissions 01777.
 ADD tmp.tar /
-
 COPY licenses /licenses/
 
-FROM scratch AS source-stripped
-COPY --from=intermediate-stripped / /
-
 # Unstripped image.
-FROM ${BASE} AS source-unstripped
-COPY --from=ubi / /
+FROM source-unstripped
+# Remove the prepped rootfs for the unstripped img.
 RUN rm -rf /rootfs
 
 # Choose which image is shipped.

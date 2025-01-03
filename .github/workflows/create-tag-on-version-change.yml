@@ -31,14 +31,14 @@ jobs:
       - name: Create and push new tag (if not exists)
         run: |
           tag_name=${{ steps.generate-tag-name.outputs.tag_name }}
-          count=$(git ls-remote --tags origin "$tag_name" | grep -c "refs/tags/$tag_name")
+          count=$(git ls-remote --tags origin "$tag_name" | grep -c "refs/tags/$tag_name" || :)
           if [ "$count" -gt 0 ] ; then
             echo "Git tag $tag_name already exists. Using new tag $tag_name-$count."
             tag_name="$tag_name-$count"
           fi
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git remote set-url origin https://x-access-token:${{ secrets.MARVIN_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git tag -a "$tag_name" -m "Release $tag_name"
           git push origin "$tag_name"
           echo "Created Git tag $tag_name"

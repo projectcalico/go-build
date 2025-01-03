@@ -1,13 +1,17 @@
+# CLEANUPLEVEL defines the level of FS stripping we apply to the generated image.
+ARG CLEANUP_LEVEL
+ARG BASE
+
 FROM --platform=linux/amd64 calico/qemu-user-static:latest AS qemu
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest AS ubi
+FROM ${BASE} AS source-unstripped
 
 ARG LDSONAME
 
 COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 
-RUN microdnf upgrade -y
-
+ARG PKGMAN
+RUN ${PKGMAN} upgrade -y
 # Prepare a rootfs for necessary files from UBI.
 # Symbolic links are preserved.
 RUN mkdir -p /rootfs/lib64 /rootfs/etc
@@ -38,15 +42,17 @@ RUN cp /etc/nsswitch.conf /rootfs/etc/nsswitch.conf
 # Copy base image release info.
 RUN cp /etc/os-release /rootfs/etc/os-release
 
-FROM scratch AS source
-
-COPY --from=ubi /rootfs /
-
+# Stripped image.
+FROM scratch AS source-stripped
+COPY --from=source-unstripped /rootfs /
 # tmp.tar has a /tmp with the correct permissions 01777.
 ADD tmp.tar /
-
 COPY licenses /licenses/
 
-FROM scratch
+# Unstripped image.
+FROM source-unstripped
+# Remove the prepped rootfs for the unstripped img.
+RUN rm -rf /rootfs
 
-COPY --from=source / /
+# Choose which image is shipped.
+FROM source-${CLEANUP_LEVEL}

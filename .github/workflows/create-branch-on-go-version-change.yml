@@ -1,12 +1,11 @@
 name: Create new Git branch on Go compiler version change
 
 on:
+  # create a new go1.x branch and a release tag when changes are merged to the master branch
   pull_request:
     types:
       - closed
     branches:
-      # create a new go1.x branch when changes to golang version are merged
-      # to the master branch
       - master
 
 jobs:
@@ -27,6 +26,13 @@ jobs:
           echo "Git branch name: $branch_name"
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
 
+      - name: Generate tag name
+        id: generate-tag-name
+        run: |
+          tag_name=$(hack/generate-version-tag-name.sh -f images/calico-go-build/versions.yaml)
+          echo "Git tag name: $tag_name"
+          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+
       - name: Create and push new branch (if not exists)
         run: |
           branch_name=${{ steps.generate-go-branch-name.outputs.branch_name }}
@@ -36,7 +42,13 @@ jobs:
             git config user.name "${{ github.actor }}"
             git config user.email "${{ github.actor }}@users.noreply.github.com"
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
             git checkout -b "$branch_name"
             git push origin "$branch_name"
             echo "Created Git branch $branch_name"
+
+            tag_name=${{ steps.generate-tag-name.outputs.tag_name }}
+            git tag -a "$tag_name" -m "Release $tag_name"
+            git push origin "$tag_name"
+            echo "Created Git tag $tag_name"
           fi

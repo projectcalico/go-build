@@ -1,13 +1,11 @@
 name: Create new Git tag on compiler version change
 
 on:
+  # create a new release tag when changes are merged to the go1.x release branches
   pull_request:
     types:
       - closed
     branches:
-      # create a release tag when changes to compiler versions are merged
-      # to the master branch or go1.x release branches.
-      - master
       - go1.*
 
 jobs:
@@ -39,6 +37,7 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
           git tag -a "$tag_name" -m "Release $tag_name"
           git push origin "$tag_name"
           echo "Created Git tag $tag_name"

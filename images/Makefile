@@ -9,7 +9,7 @@ QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
 QEMU_USER_STATIC_IMAGE ?= $(QEMU_USER_STATIC):latest
 QEMU_USER_STATIC_IMAGE_CREATED = .qemu-user-static.created
 
-VERSION_TAG ?= $(shell ../hack/generate-version-tag-name.sh -f calico-go-build/versions.yaml)
+VERSION_TAG ?= latest
 
 CALICO_GO_BUILD ?= go-build
 CALICO_GO_BUILD_IMAGE ?= $(CALICO_GO_BUILD):$(VERSION_TAG)
@@ -73,7 +73,7 @@ build:
 .PHONY: calico-go-build-image
 calico-go-build-image: register qemu-user-static-image build
 	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD_ARCH_IMAGE) -f calico-go-build/Dockerfile calico-go-build/
-	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) LATEST_IMAGE_TAG=$(VERSION_TAG) IMAGETAG=$(VERSION_TAG)
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(VERSION_TAG)
 
 .PHONY: calico-go-build-image-all
 calico-go-build-image-all: $(addprefix sub-calico-go-build-image-,$(VALIDARCHES))

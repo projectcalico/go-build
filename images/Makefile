@@ -1,19 +1,13 @@
 include ../lib.Makefile
 include ../Makefile.common
 
+VERSION_TAG ?= latest
+
 CALICO_BASE ?= base
-CALICO_BASE_IMAGE ?= $(CALICO_BASE):latest
-CALICO_BASE_ARCH_IMAGE ?= $(CALICO_BASE_IMAGE)-$(ARCH)
+CALICO_GO_BUILD ?= go-build
 
 QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
-QEMU_USER_STATIC_IMAGE ?= $(QEMU_USER_STATIC):latest
 QEMU_USER_STATIC_IMAGE_CREATED = .qemu-user-static.created
-
-VERSION_TAG ?= $(shell ../hack/generate-version-tag-name.sh -f calico-go-build/versions.yaml)
-
-CALICO_GO_BUILD ?= go-build
-CALICO_GO_BUILD_IMAGE ?= $(CALICO_GO_BUILD):$(VERSION_TAG)
-CALICO_GO_BUILD_ARCH_IMAGE ?= $(CALICO_GO_BUILD_IMAGE)-$(ARCH)
 
 .PHONY: image
 image: qemu-user-static-image calico-base-image calico-go-build-image
@@ -27,13 +21,13 @@ image-all: qemu-user-static-image calico-base-image-all calico-go-build-image-al
 qemu-user-static-image: $(QEMU_USER_STATIC_IMAGE_CREATED)
 $(QEMU_USER_STATIC_IMAGE_CREATED):
 	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/amd64 --pull \
-		-t $(QEMU_USER_STATIC_IMAGE) \
+		-t $(QEMU_USER_STATIC):latest \
 		-f qemu-user-static/Dockerfile qemu-user-static/
 	touch $@
 
 .PHONY: qemu-user-static-cd
 qemu-user-static-cd: qemu-user-static-image
-	docker push $(QEMU_USER_STATIC_IMAGE)
+	docker push $(QEMU_USER_STATIC):latest
 
 # Base image for all calico components.
 
@@ -51,7 +45,7 @@ endif
 
 .PHONY: calico-base-image
 calico-base-image: register qemu-user-static-image
-	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE_ARCH_IMAGE) -f calico-base/Dockerfile calico-base/
+	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE):latest-$(ARCH) -f calico-base/Dockerfile calico-base/
 	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=latest
 
 .PHONY: calico-base-image-all
@@ -72,8 +66,8 @@ build:
 
 .PHONY: calico-go-build-image
 calico-go-build-image: register qemu-user-static-image build
-	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD_ARCH_IMAGE) -f calico-go-build/Dockerfile calico-go-build/
-	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) LATEST_IMAGE_TAG=$(VERSION_TAG) IMAGETAG=$(VERSION_TAG)
+	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH) -f calico-go-build/Dockerfile calico-go-build/
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(VERSION_TAG)
 
 .PHONY: calico-go-build-image-all
 calico-go-build-image-all: $(addprefix sub-calico-go-build-image-,$(VALIDARCHES))

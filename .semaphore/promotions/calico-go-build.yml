@@ -23,22 +23,17 @@ global_job_config:
       # number in the tag. This is handled in create-tag-on-version-change github workflow.
       - |
         if [ "${SEMAPHORE_GIT_REF_TYPE}" = "tag" ]; then
-          export VERSION_TAG=${SEMAPHORE_GIT_TAG_NAME};
+          export BRANCH_NAME=${SEMAPHORE_GIT_TAG_NAME}
         else
-          export VERSION_TAG=$(hack/generate-version-tag-name.sh -f images/calico-go-build/versions.yaml)
+          export BRANCH_NAME=${SEMAPHORE_GIT_WORKING_BRANCH}
         fi
 
 blocks:
   - name: Publish calico/go-build images
     dependencies: []
-    skip:
-      when: "branch !~ '.+'"
+    run:
+      when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
     task:
-      env_vars:
-        - name: BRANCH_NAME
-          value: ${VERSION_TAG}
-        - name: LATEST_IMAGE_TAG
-          value: ${VERSION_TAG}
       jobs:
         - name: Linux multi-arch
           commands:
@@ -46,8 +41,8 @@ blocks:
   - name: Trigger calico/go-build pin updates
     dependencies:
       - Publish calico/go-build images
-    skip:
-      when: "branch !~ '.+'"
+    run:
+      when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
     task:
       secrets:
         - name: semaphore-api

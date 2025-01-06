@@ -31,7 +31,7 @@ jobs:
       - name: Create and push new tag (if not exists)
         run: |
           tag_name=${{ steps.generate-tag-name.outputs.tag_name }}
-          count=$(git ls-remote --tags origin "$tag_name" | grep -c "refs/tags/$tag_name")
+          count=$(git ls-remote --tags origin "$tag_name" | grep -c "refs/tags/$tag_name" || :)
           if [ "$count" -gt 0 ] ; then
             echo "Git tag $tag_name already exists. Using new tag $tag_name-$count."
             tag_name="$tag_name-$count"

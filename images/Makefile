@@ -3,18 +3,22 @@ include ../Makefile.common
 
 VERSION_TAG ?= latest
 
-CALICO_BASE ?= base
-CALICO_GO_BUILD ?= go-build
-
-QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
-QEMU_USER_STATIC_IMAGE_CREATED = .qemu-user-static.created
-
 # Base-image we'll use to build calico/base.
 BASE_BASEIMG ?= registry.access.redhat.com/ubi8/ubi-minimal:latest
 # Name of pkg manager binary, for installing deps on calico-base's UBI step.
 BASE_PKGMAN ?= microdnf
 # The level of cleanup we perform on the calico/base image. One-of: stripped, unstripped.
 BASE_CLEANUP_LEVEL ?= stripped
+
+ifeq ($(BASE_CLEANUP_LEVEL), unstripped)
+CALICO_BASE ?= base-unstripped
+else
+CALICO_BASE ?= base
+endif
+CALICO_GO_BUILD ?= go-build
+
+QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
+QEMU_USER_STATIC_IMAGE_CREATED = .qemu-user-static.created
 
 .PHONY: image
 image: qemu-user-static-image calico-base-image calico-go-build-image

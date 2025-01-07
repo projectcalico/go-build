@@ -56,9 +56,9 @@ blocks:
         - name: Build calico/go-build image
           commands:
             - make -C images calico-go-build-image ARCH=$ARCH
-            - git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico
-            - cd calico
-            - sed -i 's/^GO_BUILD_VER=.*$/GO_BUILD_VER=${VERSION_TAG}/' metadata.mk
+            - if [ "${ARCH}" == "amd64" ]; git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico; fi
+            - if [ "${ARCH}" == "amd64" ]; cd calico; fi
+            - if [ "${ARCH}" == "amd64" ]; sed -i 's/^GO_BUILD_VER=.*$/GO_BUILD_VER=${VERSION_TAG}/' metadata.mk; fi
             - if [ "${ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
           matrix:
             - env_var: ARCH
@@ -70,7 +70,15 @@ blocks:
       jobs:
         - name: Build calico/base image
           commands:
-            - make -C images calico-base-image ARCH=$ARCH
+            - make -C images calico-base-image ARCH=$ARCH CALICO_BASE_CLEANUP=$CALICO_BASE_CLEANUP
+            # Verify the unstripped calico/base builds Calico modules (only necessary for unstripped base where we have no other visibility into proper Calico function).
+            - if [ "${ARCH}" == "amd64" -a "$CALICO_BASE_CLEANUP" == "unstripped" ]; then git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico; fi
+            - if [ "${ARCH}" == "amd64" -a "$CALICO_BASE_CLEANUP" == "unstripped" ]; then cd calico; fi
+            - if [ "${ARCH}" == "amd64" -a "$CALICO_BASE_CLEANUP" == "unstripped" ]; then sed -i 's/^CALICO_BASE=.*$/CALICO_BASE=base-unstripped:${VERSION_TAG}-amd64/' metadata.mk; fi
+            - if [ "${ARCH}" == "amd64" -a "$CALICO_BASE_CLEANUP" == "unstripped" ]; then make NO_DOCKER_PULL=1 -C apiserver image && make NO_DOCKER_PULL=1 -C calicoctl image && make NO_DOCKER_PULL=1 -C cni-plugin image && make NO_DOCKER_PULL=1 -C typha image; fi
+
           matrix:
             - env_var: ARCH
               values: ["amd64", "arm64", "ppc64le", "s390x"]
+            - env_var: CALICO_BASE_CLEANUP
+              values: ["stripped", "unstripped"]

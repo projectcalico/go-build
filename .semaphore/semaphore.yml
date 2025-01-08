@@ -23,7 +23,12 @@ global_job_config:
       # Semaphore is doing shallow clone on a commit without tags.
       # unshallow it for GIT_VERSION:=$(shell git describe --tags --dirty --always) @ Makefile.common
       - git fetch --unshallow
-      - export VERSION_TAG=${SEMAPHORE_GIT_WORKING_BRANCH}
+      - |
+        if [ "${SEMAPHORE_GIT_REF_TYPE}" = "tag" ]; then
+          export VERSION_TAG=${SEMAPHORE_GIT_TAG_NAME}
+        else
+          export VERSION_TAG=${SEMAPHORE_GIT_WORKING_BRANCH}
+        fi
 
 promotions:
   # Publish images for master or release tags (example: 1.23.3-llvm18.1.8-k8s1.30.5).

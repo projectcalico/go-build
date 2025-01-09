@@ -56,9 +56,9 @@ blocks:
         - name: Build calico/go-build image
           commands:
             - make -C images calico-go-build-image ARCH=$ARCH
-            - if [ "${ARCH}" == "amd64" ]; git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico; fi
-            - if [ "${ARCH}" == "amd64" ]; cd calico; fi
-            - if [ "${ARCH}" == "amd64" ]; sed -i 's/^GO_BUILD_VER=.*$/GO_BUILD_VER=${VERSION_TAG}/' metadata.mk; fi
+            - if [ "${ARCH}" == "amd64" ]; then git clone -b "${CALICO_BRANCH}" --depth 1 git@github.com:projectcalico/calico.git calico; fi
+            - if [ "${ARCH}" == "amd64" ]; then cd calico; fi
+            - if [ "${ARCH}" == "amd64" ]; then sed -i 's/^GO_BUILD_VER=.*$/GO_BUILD_VER=${VERSION_TAG}/' metadata.mk; fi
             - if [ "${ARCH}" == "amd64" ]; then cd felix && make ut && cd ../calicoctl && make ut && cd ../libcalico-go && make ut; fi
           matrix:
             - env_var: ARCH

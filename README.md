@@ -73,3 +73,38 @@ docker run --rm --privileged multiarch/qemu-user-static:register
 ```
 
 If a cross built binary is executed in the go-build container qemu-static will automatically be used.
+
+# Calico Base
+
+Calico Base is the base-image used for various containerized Calico components, e.g. Typha.
+
+## Building the image
+
+To build the image:
+
+```bash
+make image
+```
+
+or
+
+```bash
+make -C images calico-base-image
+```
+
+## Disable image stripping
+
+By default, required libraries (.so files) are copied individually from an UBI-minimal base-image onto a scratch image.
+To instead preserve the entire UBI base image:
+
+```bash
+BASE_CLEANUP_LEVEL=unstripped make image
+```
+
+## Override the default UBI base
+
+Once image-stripping is disabled, you may bring your own UBI-style base image:
+
+```bash
+BASE_BASEIMG=some/ubi BASE_CLEANUP_LEVEL=unstripped make -C images calico-base-image
+```

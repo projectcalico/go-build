@@ -3,7 +3,18 @@ include ../Makefile.common
 
 VERSION_TAG ?= latest
 
+# Base-image we'll use to build calico/base.
+BASE_BASEIMG ?= registry.access.redhat.com/ubi8/ubi-minimal:latest
+# Name of pkg manager binary, for installing deps on calico-base's UBI step.
+BASE_PKGMAN ?= microdnf
+# The level of cleanup we perform on the calico/base image. One-of: stripped, unstripped.
+BASE_CLEANUP_LEVEL ?= stripped
+
+ifeq ($(BASE_CLEANUP_LEVEL), unstripped)
+CALICO_BASE ?= base-unstripped
+else
 CALICO_BASE ?= base
+endif
 CALICO_GO_BUILD ?= go-build
 
 QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
@@ -45,8 +56,14 @@ endif
 
 .PHONY: calico-base-image
 calico-base-image: register qemu-user-static-image
-	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE):latest-$(ARCH) -f calico-base/Dockerfile calico-base/
+	$(DOCKER_BUILD) \
+	  --build-arg LDSONAME=$(LDSONAME) \
+	  --build-arg CLEANUP_LEVEL=$(BASE_CLEANUP_LEVEL) \
+	  --build-arg BASE=$(BASE_BASEIMG) \
+	  --build-arg PKGMAN=$(BASE_PKGMAN) \
+	  -t $(CALICO_BASE):latest-$(ARCH) -f calico-base/Dockerfile calico-base/
 	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=latest
+
 
 .PHONY: calico-base-image-all
 calico-base-image-all: $(addprefix sub-calico-base-image-,$(VALIDARCHES))

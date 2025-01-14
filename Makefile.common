@@ -692,7 +692,7 @@ semaphore-run-auto-pin-update-workflow:
 # SEMAPHORE_AUTO_PIN_UPDATE_PROJECT_IDS.
 semaphore-run-auto-pin-update-workflows:
 	for ID in $(SEMAPHORE_AUTO_PIN_UPDATE_PROJECT_IDS); do\
-		SEMAPHORE_WORKFLOW_BRANCH=$(SEMAPHORE_GIT_BRANCH) SEMAPHORE_PROJECT_ID=$$ID $(MAKE) semaphore-run-auto-pin-update-workflow; \
+		SEMAPHORE_PROJECT_ID=$$ID $(MAKE) semaphore-run-auto-pin-update-workflow; \
 	done
 
 ###############################################################################

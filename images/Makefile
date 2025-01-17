@@ -75,7 +75,7 @@ sub-calico-go-build-image-%:
 	$(MAKE) calico-go-build-image ARCH=$*
 
 .PHONY: calico-go-build-cd
-calico-go-build-cd: calico-go-build-image-all
+calico-go-build-cd: calico-go-build-image
 	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) cd-common
 
 .PHONY: clean
@@ -88,4 +88,8 @@ clean:
 
 .PHONY: cd-common
 cd-common: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+
+.PHONY: push-calico-go-build-manifests
+push-calico-go-build-manifests: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"

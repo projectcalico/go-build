@@ -2,7 +2,7 @@ version: v1.0
 name: Publish calico/go-build images
 agent:
   machine:
-    type: f1-standard-4
+    type: f1-standard-2
     os_image: ubuntu2204
 
 execution_time_limit:
@@ -37,10 +37,23 @@ blocks:
       jobs:
         - name: Linux multi-arch
           commands:
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images calico-go-build-cd CONFIRM=true; fi
-  - name: Trigger calico/go-build pin updates
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images calico-go-build-cd VALIDARCHES=$ARCH CONFIRM=true; fi
+          matrix:
+            - env_var: ARCH
+              values: ["amd64", "arm64", "ppc64le", "s390x"]
+  - name: Publish calico/go-build multi-arch manifests
     dependencies:
       - Publish calico/go-build images
+    run:
+      when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
+    task:
+      jobs:
+        - name: Linux multi-arch manifests
+          commands:
+            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images push-calico-go-build-manifests CONFIRM=true; fi
+  - name: Trigger calico/go-build pin updates
+    dependencies:
+      - Publish calico/go-build multi-arch manifests
     run:
       when: "tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
     task:

@@ -54,8 +54,8 @@ sub-calico-base-image-%:
 	$(MAKE) calico-base-image ARCH=$*
 
 .PHONY: calico-base-cd
-calico-base-cd: calico-base-image-all
-	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) cd-common
+calico-base-cd: calico-base-image-all var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 # Calico builder which contains Go/Clang compilers and necessary utilities for UT/FVs.
 .PHONY: build
@@ -75,8 +75,8 @@ sub-calico-go-build-image-%:
 	$(MAKE) calico-go-build-image ARCH=$*
 
 .PHONY: calico-go-build-cd
-calico-go-build-cd: calico-go-build-image
-	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) cd-common
+calico-go-build-cd: calico-go-build-image var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 .PHONY: push-calico-go-build-manifests
 push-calico-go-build-manifests: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
@@ -89,7 +89,3 @@ clean:
 	-docker image rm -f $$(docker images $(CALICO_BASE) -a -q)
 	-docker image rm -f $$(docker images $(CALICO_GO_BUILD) -a -q)
 	-docker image rm -f $$(docker images $(QEMU_USER_STATIC) -a -q)
-
-.PHONY: cd-common
-cd-common: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"

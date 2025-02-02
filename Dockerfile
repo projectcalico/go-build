@@ -60,7 +60,8 @@ RUN dnf --enablerepo=baseos,powertools,appstream install -y \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-${CLANG_VERSION}
+    llvm-${CLANG_VERSION} \
+    protobuf-devel
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
@@ -175,7 +176,7 @@ RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go
     go install golang.org/x/tools/cmd/goimports@v0.25.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.25.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.4 && \
     go install gotest.tools/gotestsum@v1.12.0 && \
     go install k8s.io/code-generator/cmd/client-gen@${K8S_LIBS_VERSION} && \
     go install k8s.io/code-generator/cmd/conversion-gen@${K8S_LIBS_VERSION} && \

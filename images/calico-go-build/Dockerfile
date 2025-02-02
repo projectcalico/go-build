@@ -59,7 +59,8 @@ RUN set -eux; \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-${llvm_version}
+    llvm-${llvm_version} \
+    protobuf-devel
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

@@ -60,7 +60,8 @@ RUN dnf --enablerepo=baseos,powertools,appstream install -y \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-${CLANG_VERSION}
+    llvm-${CLANG_VERSION} \
+    protobuf-devel
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

@@ -59,7 +59,8 @@ RUN set -eux; \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-${llvm_version}
+    llvm-${llvm_version} \
+    protobuf-devel
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
@@ -178,7 +179,7 @@ RUN set -eux; \
     go install golang.org/x/tools/cmd/goimports@v0.28.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.28.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.1 && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.4 && \
     go install gotest.tools/gotestsum@v1.12.0 && \
     go install k8s.io/code-generator/cmd/client-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/conversion-gen@v${k8s_libs_version} && \

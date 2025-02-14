@@ -18,6 +18,7 @@ ARG CONTAINERREGISTRY_VERSION=v0.19.1
 ARG GO_LINT_VERSION=v1.57.2
 ARG K8S_VERSION=v1.28.15
 ARG K8S_LIBS_VERSION=v0.28.15
+ARG LLVM_VERSION=17.0.6
 ARG MOCKERY_VERSION=2.43.2
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
@@ -32,7 +33,6 @@ COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 RUN dnf upgrade -y && dnf install -y \
     autoconf \
     automake \
-    clang \
     gcc \
     gcc-c++ \
     git \
@@ -41,7 +41,6 @@ RUN dnf upgrade -y && dnf install -y \
     libcurl-devel \
     libpcap-devel \
     libtool \
-    llvm \
     make \
     openssh-clients \
     pcre-devel \
@@ -56,11 +55,13 @@ COPY rockylinux/Rocky*.repo /etc/yum.repos.d/
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
-        dnf --enablerepo=baseos,powertools install -y \
+        dnf --enablerepo=baseos,powertools,appstream install -y \
+            clang-${LLVM_VERSION} \
             elfutils-libelf-devel \
             iproute-devel \
             iproute-tc \
-            libbpf-devel; \
+            libbpf-devel \
+            llvm-${LLVM_VERSION}; \
     fi
 
 RUN set -eux; \

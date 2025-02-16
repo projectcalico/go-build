@@ -13,7 +13,6 @@ RUN microdnf upgrade -y
 RUN mkdir -p /rootfs/lib64 /rootfs/etc
 
 # Copy dynamic loader and symbolic links.
-# Note: The dynamic loader name and links might be different in a future release.
 RUN cp /lib64/ld-2.28.so /rootfs/lib64/ld-2.28.so
 RUN set -eux; \
     cp -a /lib64/${LDSONAME} /rootfs/lib64/${LDSONAME}; \

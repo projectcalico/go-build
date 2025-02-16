@@ -1,8 +1,6 @@
 include ../lib.Makefile
 include ../Makefile.common
 
-VERSION_TAG ?= latest
-
 CALICO_BASE ?= base
 CALICO_GO_BUILD ?= go-build
 
@@ -45,8 +43,10 @@ endif
 
 .PHONY: calico-base-image
 calico-base-image: register qemu-user-static-image
-	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE):latest-$(ARCH) -f calico-base/Dockerfile calico-base/
-	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=latest
+	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE):ubi8-latest-$(ARCH) -f calico-base/Dockerfile.ubi8 calico-base/
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries VALIDARCHES=$(ARCH) LATEST_IMAGE_TAG=ubi8-latest IMAGETAG=ubi8-latest
+	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE):ubi9-latest-$(ARCH) -f calico-base/Dockerfile.ubi9 calico-base/
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries VALIDARCHES=$(ARCH) LATEST_IMAGE_TAG=ubi9-latest IMAGETAG=ubi9-latest
 
 .PHONY: calico-base-image-all
 calico-base-image-all: $(addprefix sub-calico-base-image-,$(VALIDARCHES))
@@ -55,7 +55,8 @@ sub-calico-base-image-%:
 
 .PHONY: calico-base-cd
 calico-base-cd: calico-base-image-all var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries push-images-to-registries push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries push-images-to-registries push-manifests LATEST_IMAGE_TAG=ubi8-latest IMAGETAG=ubi8-$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries push-images-to-registries push-manifests LATEST_IMAGE_TAG=ubi9-latest IMAGETAG=ubi9-$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 # Calico builder which contains Go/Clang compilers and necessary utilities for UT/FVs.
 .PHONY: build
@@ -64,10 +65,12 @@ build:
 	mkdir -p calico-go-build/bin/
 	cp ../cmd/bin/semvalidator-$(ARCH) calico-go-build/bin/semvalidator-$(ARCH)
 
+CALICO_GO_BUILD_IMAGETAG ?= latest
+
 .PHONY: calico-go-build-image
 calico-go-build-image: register qemu-user-static-image build
 	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH) -f calico-go-build/Dockerfile calico-go-build/
-	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(VERSION_TAG)
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(CALICO_GO_BUILD_IMAGETAG)
 
 .PHONY: calico-go-build-image-all
 calico-go-build-image-all: $(addprefix sub-calico-go-build-image-,$(VALIDARCHES))
@@ -76,11 +79,11 @@ sub-calico-go-build-image-%:
 
 .PHONY: calico-go-build-cd
 calico-go-build-cd: calico-go-build-image var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 .PHONY: push-calico-go-build-manifests
 push-calico-go-build-manifests: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) push-manifests IMAGETAG=$(if $(IMAGETAG_PREFIX),$(IMAGETAG_PREFIX)-)$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) push-manifests IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 
 .PHONY: clean
 clean:

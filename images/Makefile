@@ -4,28 +4,11 @@ include ../Makefile.common
 CALICO_BASE ?= base
 CALICO_GO_BUILD ?= go-build
 
-QEMU_USER_STATIC ?= $(DEV_REGISTRIES)/qemu-user-static
-QEMU_USER_STATIC_IMAGE_CREATED = .qemu-user-static.created
-
 .PHONY: image
-image: qemu-user-static-image calico-base-image calico-go-build-image
+image: calico-base-image calico-go-build-image
 
 .PHONY: image-all
-image-all: qemu-user-static-image calico-base-image-all calico-go-build-image-all
-
-# Holder image for all qemu-*-static binaries Calico supports.
-# It only builds for linux/amd64 platform.
-.PHONY: qemu-user-static-image
-qemu-user-static-image: $(QEMU_USER_STATIC_IMAGE_CREATED)
-$(QEMU_USER_STATIC_IMAGE_CREATED):
-	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/amd64 --pull \
-		-t $(QEMU_USER_STATIC):latest \
-		-f qemu-user-static/Dockerfile qemu-user-static/
-	touch $@
-
-.PHONY: qemu-user-static-cd
-qemu-user-static-cd: qemu-user-static-image
-	docker push $(QEMU_USER_STATIC):latest
+image-all: calico-base-image-all calico-go-build-image-all
 
 # Base image for all calico components.
 
@@ -42,7 +25,7 @@ else ifeq ($(ARCH),s390)
 endif
 
 .PHONY: calico-base-image
-calico-base-image: register qemu-user-static-image
+calico-base-image: register
 	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE):ubi8-latest-$(ARCH) -f calico-base/Dockerfile.ubi8 calico-base/
 	$(MAKE) BUILD_IMAGES=$(CALICO_BASE) retag-build-images-with-registries VALIDARCHES=$(ARCH) LATEST_IMAGE_TAG=ubi8-latest IMAGETAG=ubi8-latest
 	$(DOCKER_BUILD) --build-arg LDSONAME=$(LDSONAME) -t $(CALICO_BASE):ubi9-latest-$(ARCH) -f calico-base/Dockerfile.ubi9 calico-base/
@@ -68,7 +51,7 @@ build:
 CALICO_GO_BUILD_IMAGETAG ?= latest
 
 .PHONY: calico-go-build-image
-calico-go-build-image: register qemu-user-static-image build
+calico-go-build-image: register
 	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH) -f calico-go-build/Dockerfile calico-go-build/
 	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(CALICO_GO_BUILD_IMAGETAG)
 
@@ -87,8 +70,6 @@ push-calico-go-build-manifests: var-require-one-of-CONFIRM-DRYRUN var-require-al
 
 .PHONY: clean
 clean:
-	rm -f $(QEMU_USER_STATIC_IMAGE_CREATED)
 	rm -fr calico-go-build/bin
 	-docker image rm -f $$(docker images $(CALICO_BASE) -a -q)
 	-docker image rm -f $$(docker images $(CALICO_GO_BUILD) -a -q)
-	-docker image rm -f $$(docker images $(QEMU_USER_STATIC) -a -q)

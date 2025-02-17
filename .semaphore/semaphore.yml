@@ -34,10 +34,6 @@ promotions:
     pipeline_file: promotions/calico-go-build.yml
     auto_promote:
       when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
-  - name: Publish calico/qemu-user-static image
-    pipeline_file: promotions/qemu-user-static.yml
-    auto_promote:
-      when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d'"
 
 blocks:
   - name: calico/go-build image

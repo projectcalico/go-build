@@ -66,18 +66,6 @@ blocks:
             - env_var: TARGET_ARCH
               values: ["amd64", "arm64", "ppc64le", "s390x"]
 
-  - name: "calico/qemu-user-static image"
-    dependencies: []
-    task:
-      secrets:
-        - name: docker
-      jobs:
-        - name: Build and push qemu image
-          commands:
-            - echo $DOCKER_TOKEN | docker login --username "$DOCKER_USER" --password-stdin
-            - make image-qemu ARCH=$TARGET_ARCH
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make push-qemu ARCH=$TARGET_ARCH CONFIRM=true; fi
-
   - name: Push multi-arch manifests
     skip:
       # Only run on branches, not PRs.

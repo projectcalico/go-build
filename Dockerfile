@@ -14,11 +14,11 @@ ARG GOLANG_SHA256_ARM64=561c780e8f4a8955d32bf72e46af0b5ee5e0debe1e4633df9a037818
 ARG GOLANG_SHA256_PPC64LE=0f817201e83d78ddbfa27f5f78d9b72450b92cc21d5e045145efacd0d3244a99
 ARG GOLANG_SHA256_S390X=321e7ed0d5416f731479c52fa7610b52b8079a8061967bd48cec6d66f671a60e
 
-ARG CLANG_VERSION=17.0.6
 ARG CONTAINERREGISTRY_VERSION=v0.20.2
 ARG GO_LINT_VERSION=v1.64.5
 ARG K8S_VERSION=v1.29.14
 ARG K8S_LIBS_VERSION=v0.29.14
+ARG LLVM_VERSION=18.1.8
 ARG MOCKERY_VERSION=2.45.1
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
@@ -55,12 +55,12 @@ COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/
 
 RUN dnf --enablerepo=baseos,powertools,appstream install -y \
-    clang-${CLANG_VERSION} \
+    clang-${LLVM_VERSION} \
     elfutils-libelf-devel \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-${CLANG_VERSION}
+    llvm-${LLVM_VERSION}
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \

@@ -16,9 +16,9 @@ ARG GOLANG_SHA256_S390X=321e7ed0d5416f731479c52fa7610b52b8079a8061967bd48cec6d66
 
 ARG CLANG_VERSION=17.0.6
 ARG CONTAINERREGISTRY_VERSION=v0.20.2
-ARG GO_LINT_VERSION=v1.61.0
+ARG GO_LINT_VERSION=v1.64.5
 ARG K8S_VERSION=v1.29.14
-ARG K8S_LIBS_VERSION=v0.29.9
+ARG K8S_LIBS_VERSION=v0.29.14
 ARG MOCKERY_VERSION=2.45.1
 
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
@@ -163,15 +163,15 @@ RUN set -eux; \
 
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
-RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.20.2 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@v2.22.2 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/mikefarah/yq/v3@3.4.1 && \
     go install github.com/pmezard/licenses@v0.0.0-20160314180953-1117911df3df && \
     go install github.com/swaggo/swag/cmd/swag@v1.16.3 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
-    go install golang.org/x/tools/cmd/goimports@v0.25.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.25.0 && \
+    go install golang.org/x/tools/cmd/goimports@v0.30.0 && \
+    go install golang.org/x/tools/cmd/stringer@v0.30.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
     go install gotest.tools/gotestsum@v1.12.0 && \

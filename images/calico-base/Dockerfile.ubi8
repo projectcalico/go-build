@@ -13,7 +13,7 @@ RUN cp /lib64/ld-2.28.so /rootfs/lib64/ld-2.28.so
 RUN set -eux; \
     cp -a /lib64/${LDSONAME} /rootfs/lib64/${LDSONAME}; \
     if [ -f /lib/${LDSONAME} ]; then \
-        mkdir -p /rootfs/lib && cp -a /lib/${LDSONAME} /rootfs/lib/${LDSONAME}; \
+        mkdir -p /rootfs/lib && cp /lib/${LDSONAME} /rootfs/lib/${LDSONAME}; \
     fi
 
 # Required external C dependencies for CGO builds.

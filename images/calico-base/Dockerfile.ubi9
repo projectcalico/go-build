@@ -14,7 +14,7 @@ RUN set -eux; \
         cp -a /lib64/${LDSONAME} /rootfs/lib64/${LDSONAME}; \
     fi; \
     if [ -f /lib/${LDSONAME} ]; then \
-        mkdir -p /rootfs/lib && cp -a /lib/${LDSONAME} /rootfs/lib/${LDSONAME}; \
+        mkdir -p /rootfs/lib && cp /lib/${LDSONAME} /rootfs/lib/${LDSONAME}; \
     fi
 
 # Required external C dependencies for CGO builds.

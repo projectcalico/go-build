@@ -3,6 +3,7 @@ FROM --platform=linux/amd64 calico/qemu-user-static:latest as qemu
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as ubi
 
 ARG LDSONAME
+ARG TARGETARCH
 
 COPY --from=qemu /usr/bin/qemu-*-static /usr/bin/
 
@@ -13,12 +14,16 @@ RUN microdnf upgrade -y
 RUN mkdir -p /rootfs/lib64 /rootfs/etc
 
 # Copy dynamic loader and symbolic links.
-# Note: The dynamic loader name and links might be different in a future release.
+# For s390x architecture, modify the /lib/${LDSONAME} symlink to ../lib64/${LDSONAME}
+# instead of /usr/lib64 as the /usr/lib64 directory is not included in our base.
 RUN cp /lib64/ld-2.28.so /rootfs/lib64/ld-2.28.so
 RUN set -eux; \
     cp -a /lib64/${LDSONAME} /rootfs/lib64/${LDSONAME}; \
     if [ -f /lib/${LDSONAME} ]; then \
         mkdir -p /rootfs/lib && cp -a /lib/${LDSONAME} /rootfs/lib/${LDSONAME}; \
+        if [ "${TARGETARCH}" = "s390x" ]; then \
+            ln -sf ../lib64/${LDSONAME} /rootfs/lib/${LDSONAME}; \
+        fi \
     fi
 
 # Required external C dependencies for CGO builds.
@@ -41,6 +46,10 @@ RUN cp /etc/os-release /rootfs/etc/os-release
 FROM scratch as source
 
 COPY --from=ubi /rootfs /
+
+# Verify if glibc can be properly loaded.
+# This check ensures that the dynamic loader and symbolic links are copied correctly.
+RUN ["/lib64/libc.so.6"]
 
 # tmp.tar has a /tmp with the correct permissions 01777.
 ADD tmp.tar /

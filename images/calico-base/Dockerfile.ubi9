@@ -38,6 +38,10 @@ FROM scratch AS source
 
 COPY --from=ubi /rootfs /
 
+# Verify if glibc is properly loaded.
+# This check ensures that the dynamic loader and symbolic links are copied correctly.
+RUN ["/lib64/libc.so.6"]
+
 # tmp.tar has a /tmp with the correct permissions 01777.
 ADD tmp.tar /
 

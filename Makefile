@@ -1,3 +1,5 @@
+include Makefile.common
+
 # Shortcut targets
 default: image
 
@@ -57,9 +59,6 @@ BASE ?= calico/base
 BASE_IMAGE ?= $(BASE):latest
 BASE_ARCH_IMAGE ?= $(BASE_IMAGE)-$(ARCH)
 
-QEMU ?= calico/qemu-user-static
-QEMU_IMAGE ?= $(QEMU):latest
-
 ifdef CI
 DOCKER_PROGRESS := --progress=plain
 endif
@@ -67,16 +66,8 @@ endif
 ###############################################################################
 # Building images
 ###############################################################################
-QEMU_IMAGE_CREATED=.qemu.created
-
-.PHONY: image-qemu
-image-qemu: $(QEMU_IMAGE_CREATED)
-$(QEMU_IMAGE_CREATED):
-	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/amd64 --pull -t $(QEMU_IMAGE) -f qemu/Dockerfile qemu
-	touch $@
-
 .PHONY: image
-image: register image-qemu
+image: register
 	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) -t $(GOBUILD_ARCH_IMAGE) -f Dockerfile .
 ifeq ($(ARCH),amd64)
 	docker tag $(GOBUILD_ARCH_IMAGE) $(GOBUILD_IMAGE)
@@ -88,20 +79,13 @@ sub-image-%:
 	$(MAKE) image ARCH=$*
 
 .PHONY: image-base
-image-base: register image-qemu
+image-base: register
 	docker buildx build $(DOCKER_PROGRESS) --load --platform=linux/$(ARCH) --build-arg LDSONAME=$(LDSONAME) -t $(BASE_ARCH_IMAGE) -f base/Dockerfile base
 
 .PHONY: image-base-all
 image-base-all: $(addprefix sub-image-base-,$(ARCHES))
 sub-image-base-%:
 	$(MAKE) image-base ARCH=$*
-
-# Enable binfmt adding support for miscellaneous binary formats.
-.PHONY: register
-register:
-ifeq ($(BUILDARCH),amd64)
-	docker run --rm --privileged multiarch/qemu-user-static:register --reset
-endif
 
 .PHONY: push
 push: image
@@ -116,15 +100,10 @@ endif
 push-base: image-base
 	docker push $(BASE_ARCH_IMAGE)
 
-.PHONY: push-qemu
-push-qemu: image-qemu
-	docker push $(QEMU_IMAGE)
-
 push-all: $(addprefix sub-push-,$(ARCHES))
 sub-push-%:
 	$(MAKE) push ARCH=$*
 	$(MAKE) push-base ARCH=$*
-	$(MAKE) push-qemu
 
 .PHONY: push-manifest
 push-manifest:
@@ -136,10 +115,8 @@ push-manifest:
 
 .PHONY: clean
 clean:
-	rm -f $(QEMU_IMAGE_CREATED)
 	-docker image rm -f $$(docker images $(GOBUILD) -a -q)
 	-docker image rm -f $$(docker images $(BASE) -a -q)
-	-docker image rm -f $$(docker images $(QEMU) -a -q)
 
 ###############################################################################
 # UTs

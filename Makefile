@@ -1,3 +1,5 @@
+include Makefile.common
+
 # Shortcut targets
 default: image
 

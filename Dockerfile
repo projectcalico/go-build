@@ -2,8 +2,6 @@ ARG TARGETARCH=${TARGETARCH}
 
 FROM calico/bpftool:v7.4.0 AS bpftool
 
-FROM --platform=amd64 calico/qemu-user-static:latest AS qemu
-
 FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
@@ -24,10 +22,6 @@ ARG MOCKERY_VERSION=2.45.1
 ARG CALICO_CONTROLLER_TOOLS_VERSION=calico-0.1
 
 ENV PATH=/usr/local/go/bin:$PATH
-
-# Enable non-native runs on amd64 architecture hosts
-# Supported qemu-user-static arch files are copied in Makefile `download-qemu` target
-COPY --from=qemu /usr/bin/qemu-*-static /usr/bin
 
 # Install system dependencies
 RUN dnf upgrade -y && dnf install -y \

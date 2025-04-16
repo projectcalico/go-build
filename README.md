@@ -54,7 +54,7 @@ For example, if you registered the `s390x` emulator at `/usr/bin/qemu-s390x-stat
 To register emulators, we run:
 
 ```bash
-docker run -it --rm --privileged multiarch/qemu-user-static:register
+docker run --privileged --rm tonistiigi/binfmt --install all
 ```
 
 or simply
@@ -94,7 +94,7 @@ To _run_ a binary from a different architecture, you need to use `binfmt` and `q
 Register `qemu-*-static` for all supported processors except the current one using the following command:
 
 ```bash
-docker run --rm --privileged multiarch/qemu-user-static:register
+docker run --privileged --rm tonistiigi/binfmt --install all
 ```
 
 If a cross built binary is executed in the go-build container qemu-static will automatically be used.

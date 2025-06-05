@@ -6,11 +6,11 @@ FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
 
-ARG CONTAINERREGISTRY_VERSION=v0.20.3
+ARG CONTAINERREGISTRY_VERSION=v0.20.5
 ARG CONTROLLER_TOOLS_VERSION=v0.17.3
 ARG GO_LINT_VERSION=v1.64.8
-ARG MOCKERY_VERSION=2.52.3
-ARG YQ_VERSION=v4.45.1
+ARG MOCKERY_VERSION=2.53.4
+ARG YQ_VERSION=v4.45.4
 
 ENV PATH=/usr/local/go/bin:$PATH
 
@@ -163,23 +163,23 @@ RUN set -eux; \
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
 RUN set -eux; \
     k8s_libs_version=$(yq -r .kubernetes.version /etc/versions.yaml | sed 's/^1/0/'); \
-    go install github.com/onsi/ginkgo/v2/ginkgo@v2.23.3 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+    go install github.com/onsi/ginkgo/v2/ginkgo@v2.23.4 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
-    go install golang.org/x/tools/cmd/goimports@v0.31.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.31.0 && \
+    go install golang.org/x/tools/cmd/goimports@v0.33.0 && \
+    go install golang.org/x/tools/cmd/stringer@v0.33.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6 && \
-    go install gotest.tools/gotestsum@v1.12.1 && \
+    go install gotest.tools/gotestsum@v1.12.2 && \
     go install k8s.io/code-generator/cmd/client-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/conversion-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/deepcopy-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/defaulter-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/informer-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/lister-gen@v${k8s_libs_version} && \
-    go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20241212222426-2c72e554b1e7 && \
-    go install mvdan.cc/gofumpt@v0.7.0
+    go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20250318190949-c8a335a9a2ff && \
+    go install mvdan.cc/gofumpt@v0.8.0
 
 # Cleanup module cache after we have built and installed all Go utilities
 RUN go clean -modcache && go clean -cache

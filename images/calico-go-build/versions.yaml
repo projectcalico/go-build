@@ -1,5 +1,5 @@
 golang:
-  version: 1.23.10
+  version: 1.23.12
   checksum:
     sha256:
       amd64: 535f9f81802499f2a7dbfa70abb8fda3793725fcc29460f719815f6e10b5fd60
@@ -7,6 +7,6 @@ golang:
       ppc64le: 8fb94455cfa5e9a5e8af2bfbc7323a6fed2dabaffda1a69dae5dd41b669bbb57
       s390x: 7d0e8651eb54fce5cfe2d4b412ddfa50144ce21907f72192a6549ffe03db4e1f
 kubernetes:
-  version: 1.31.9
+  version: 1.31.11
 llvm:
   version: 18.1.8

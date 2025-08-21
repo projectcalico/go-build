@@ -211,3 +211,5 @@ ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 COPY --from=ubi / /
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+VOLUME /caches

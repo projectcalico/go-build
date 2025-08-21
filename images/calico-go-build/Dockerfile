@@ -34,7 +34,8 @@ RUN dnf upgrade -y && dnf install -y \
     protobuf-compiler \
     wget \
     xz \
-    zip
+    zip && \
+    dnf clean all
 
 # Install yq and copy versions.yaml
 RUN curl -sfL https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${TARGETARCH} -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
@@ -44,25 +45,6 @@ COPY versions.yaml /etc/versions.yaml
 # Install system dependencies that are not in UBI repos
 COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/
-
-RUN set -eux; \
-    llvm_version=$(yq -r .llvm.version /etc/versions.yaml); \
-    dnf --enablerepo=baseos,powertools,appstream install -y \
-    clang-${llvm_version} \
-    elfutils-libelf-devel \
-    iproute-devel \
-    iproute-tc \
-    libbpf-devel \
-    llvm-${llvm_version} \
-    protobuf-devel
-
-RUN set -eux; \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
-        dnf --enablerepo=powertools install -y \
-            mingw64-gcc; \
-    fi
-
-RUN dnf clean all
 
 # Install Go official release
 RUN set -eux; \
@@ -159,6 +141,36 @@ RUN set -eux; \
     *) echo >&2 "warning: unsupported architecture '${TARGETARCH}'" ;; \
     esac
 
+# Ensure that everything under the GOPATH is writable by everyone
+RUN chmod -R 777 $GOPATH
+
+# Do not create mail box.
+RUN sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
+
+# Allow validated remote servers
+COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
+
+# Copy bpftool for Felix UT/FV.
+COPY --from=bpftool /bpftool /usr/bin
+
+# Copy semvalidator release tool.
+COPY bin/semvalidator-${TARGETARCH} /usr/local/bin/semvalidator
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# Squash into a single layer
+FROM scratch as mini
+
+ENV GOPATH=/go
+ENV GOTOOLCHAIN=local
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+
+COPY --from=ubi / /
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+FROM mini as tools
+
 # Install go programs that we rely on
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
 RUN set -eux; \
@@ -179,35 +191,25 @@ RUN set -eux; \
     go install k8s.io/code-generator/cmd/informer-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/lister-gen@v${k8s_libs_version} && \
     go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20250710124328-f3f2b991d03b && \
-    go install mvdan.cc/gofumpt@v0.8.0
+    go install mvdan.cc/gofumpt@v0.8.0 && \
+    go clean -modcache && go clean -cache
 
-# Cleanup module cache after we have built and installed all Go utilities
-RUN go clean -modcache && go clean -cache
+FROM mini as maxi
 
-# Ensure that everything under the GOPATH is writable by everyone
-RUN chmod -R 777 $GOPATH
+ARG TARGETARCH
 
-# Do not create mail box.
-RUN sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
-
-# Allow validated remote servers
-COPY ssh_known_hosts /etc/ssh/ssh_known_hosts
-
-# Copy bpftool for Felix UT/FV.
-COPY --from=bpftool /bpftool /usr/bin
-
-# Copy semvalidator release tool.
-COPY bin/semvalidator-${TARGETARCH} /usr/local/bin/semvalidator
-
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-
-# Squash into a single layer
-FROM scratch
-
-ENV GOPATH=/go
-ENV GOTOOLCHAIN=local
-ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
-
-COPY --from=ubi / /
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+RUN set -eux; \
+    llvm_version=$(yq -r .llvm.version /etc/versions.yaml); \
+    dnf --enablerepo=baseos,powertools,appstream install -y \
+    clang-${llvm_version} \
+    elfutils-libelf-devel \
+    iproute-devel \
+    iproute-tc \
+    libbpf-devel \
+    llvm-${llvm_version} \
+    protobuf-devel && \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        dnf --enablerepo=powertools install -y \
+            mingw64-gcc; \
+    fi && \
+    dnf clean all

@@ -5,7 +5,7 @@ CALICO_BASE ?= base
 CALICO_GO_BUILD ?= go-build
 
 .PHONY: image
-image: calico-base-image calico-go-build-image
+image:  calico-go-build-image
 
 .PHONY: image-all
 image-all: calico-base-image-all calico-go-build-image-all
@@ -52,8 +52,11 @@ CALICO_GO_BUILD_IMAGETAG ?= latest
 
 .PHONY: calico-go-build-image
 calico-go-build-image: register build
-	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH) -f calico-go-build/Dockerfile calico-go-build/
-	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(CALICO_GO_BUILD_IMAGETAG)
+	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH)-ubi -f calico-go-build/Dockerfile --target=ubi calico-go-build/
+	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH)-mini -f calico-go-build/Dockerfile --target=mini calico-go-build/
+	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH)-maxi -f calico-go-build/Dockerfile --target=maxi calico-go-build/
+	$(DOCKER_BUILD) -t $(CALICO_GO_BUILD):latest-$(ARCH)-tools -f calico-go-build/Dockerfile --target=tools calico-go-build/
+	#$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(CALICO_GO_BUILD_IMAGETAG)
 
 .PHONY: calico-go-build-image-all
 calico-go-build-image-all: $(addprefix sub-calico-go-build-image-,$(VALIDARCHES))

@@ -6,6 +6,7 @@ FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
 
+ARG DOCKER_CREDHELPER_GCR_VERSION=v2.1.30
 ARG CONTAINERREGISTRY_VERSION=v0.20.6
 ARG CONTROLLER_TOOLS_VERSION=v0.18.0
 ARG GO_LINT_VERSION=v2.3.1
@@ -35,6 +36,39 @@ RUN dnf upgrade -y && dnf install -y \
     wget \
     xz \
     zip
+
+# Install Google Cloud SDK for GCR/GAR
+RUN cat <<EOM > /etc/yum.repos.d/google-cloud-sdk.repo
+[google-cloud-cli]
+name=Google Cloud CLI
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOM
+RUN <<EOF
+dnf install libxcrypt-compat.x86_64 -y
+dnf install google-cloud-cli -y
+EOF
+# Install standalone credential helper for Google Container Registry
+RUN <<EOF
+case "${TARGETARCH}" in
+  amd64)
+    curl -sfL https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/${DOCKER_CREDHELPER_GCR_VERSION}/docker-credential-gcr_linux_amd64-${DOCKER_CREDHELPER_GCR_VERSION#v}.tar.gz | tar xz -C /usr/local/bin docker-credential-gcr
+    ;;
+  arm64)
+    curl -sfL https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/${DOCKER_CREDHELPER_GCR_VERSION}/docker-credential-gcr_linux_arm64-${DOCKER_CREDHELPER_GCR_VERSION#v}.tar.gz | tar xz -C /usr/local/bin docker-credential-gcr
+    ;;
+  s390x)
+    curl -sfL https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/${DOCKER_CREDHELPER_GCR_VERSION}/docker-credential-gcr_linux_s390x-${DOCKER_CREDHELPER_GCR_VERSION#v}.tar.gz | tar xz -C /usr/local/bin docker-credential-gcr
+    ;;
+  *)
+    echo >&2 "error: unsupported architecture '${TARGETARCH}'"
+    exit 1
+    ;;
+esac
+EOF
 
 # Install yq and copy versions.yaml
 RUN curl -sfL https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${TARGETARCH} -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
@@ -198,6 +232,8 @@ COPY --from=bpftool /bpftool /usr/bin
 
 # Copy semvalidator release tool.
 COPY bin/semvalidator-${TARGETARCH} /usr/local/bin/semvalidator
+# Copy docker-credential-calieph tool.
+COPY bin/docker-credential-calieph-${TARGETARCH} /usr/local/bin/docker-credential-calieph
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 

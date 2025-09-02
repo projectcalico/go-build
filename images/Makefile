@@ -46,7 +46,7 @@ calico-base-cd: calico-base-image-all var-require-one-of-CONFIRM-DRYRUN var-requ
 build:
 	$(MAKE) -C ../cmd build
 	mkdir -p calico-go-build/bin/
-	cp ../cmd/bin/semvalidator-$(ARCH) calico-go-build/bin/semvalidator-$(ARCH)
+	cp ../cmd/bin/* calico-go-build/bin/
 
 CALICO_GO_BUILD_IMAGETAG ?= latest
 

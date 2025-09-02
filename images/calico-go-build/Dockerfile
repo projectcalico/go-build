@@ -10,6 +10,7 @@ ARG CONTAINERREGISTRY_VERSION=v0.20.6
 ARG CONTROLLER_TOOLS_VERSION=v0.18.0
 ARG GO_LINT_VERSION=v2.3.1
 ARG MOCKERY_VERSION=3.5.1
+ARG PROTOC_VERSION=32.0
 ARG YQ_VERSION=v4.47.1
 
 ENV PATH=/usr/local/go/bin:$PATH
@@ -18,6 +19,7 @@ ENV PATH=/usr/local/go/bin:$PATH
 RUN dnf upgrade -y && dnf install -y \
     autoconf \
     automake \
+    bsdtar \
     gcc \
     gcc-c++ \
     git \
@@ -31,7 +33,6 @@ RUN dnf upgrade -y && dnf install -y \
     patch \
     pcre-devel \
     pkg-config \
-    protobuf-compiler \
     wget \
     xz \
     zip
@@ -53,8 +54,7 @@ RUN set -eux; \
     iproute-devel \
     iproute-tc \
     libbpf-devel \
-    llvm-${llvm_version} \
-    protobuf-devel
+    llvm-${llvm_version}
 
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
@@ -122,6 +122,28 @@ RUN set -eux; \
     gcc -Wall -O2 /tmp/su-exec.c -o /usr/bin/su-exec; \
     rm -f /tmp/su-exec.c
 
+# Install Protocol Buffers compiler
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+    'amd64') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"; \
+        ;; \
+    'arm64') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-aarch_64.zip"; \
+        ;; \
+    'ppc64le') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-ppcle_64.zip"; \
+        ;; \
+    's390x') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-s390_64.zip"; \
+        ;; \
+    *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
+    esac; \
+    \
+    curl -sfL "$url" | bsdtar -xf - -C /usr && chmod +x /usr/bin/protoc; \
+    \
+    protoc --version
+
 # Install Go utilities
 
 # controller-gen is used for generating CRD files.
@@ -170,7 +192,7 @@ RUN set -eux; \
     go install golang.org/x/tools/cmd/goimports@v0.35.0 && \
     go install golang.org/x/tools/cmd/stringer@v0.35.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6 && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.8 && \
     go install gotest.tools/gotestsum@v1.12.3 && \
     go install k8s.io/code-generator/cmd/client-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/conversion-gen@v${k8s_libs_version} && \

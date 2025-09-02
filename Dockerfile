@@ -44,6 +44,26 @@ RUN dnf upgrade -y && dnf install -y \
     xz \
     zip
 
+# Install Google Cloud SDK for GCR/GAR
+RUN cat <<EOM > /etc/yum.repos.d/google-cloud-sdk.repo
+[google-cloud-cli]
+name=Google Cloud CLI
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOM
+RUN <<EOF
+dnf install libxcrypt-compat.x86_64 -y
+dnf install google-cloud-cli -y
+EOF
+# Install standalone credential helper for Google Container Registry
+RUN set -eux; \
+  if [ "${TARGETARCH}" != "ppc64le" ]; then \
+    curl -sfL https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/${DOCKER_CREDHELPER_GCR_VERSION}/docker-credential-gcr_linux_${TARGETARCH}-${DOCKER_CREDHELPER_GCR_VERSION#v}.tar.gz | tar xz -C /usr/local/bin docker-credential-gcr; \
+  fi
+
 # Install system dependencies that are not in UBI repos
 COPY almalinux/RPM-GPG-KEY-AlmaLinux /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 COPY almalinux/almalinux*.repo /etc/yum.repos.d/

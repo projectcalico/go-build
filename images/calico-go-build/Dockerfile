@@ -8,8 +8,8 @@ ARG TARGETARCH
 
 ARG CONTAINERREGISTRY_VERSION=v0.20.6
 ARG CONTROLLER_TOOLS_VERSION=v0.18.0
-ARG GO_LINT_VERSION=v2.3.1
-ARG MOCKERY_VERSION=3.5.1
+ARG GO_LINT_VERSION=v2.4.0
+ARG MOCKERY_VERSION=3.5.4
 ARG PROTOC_VERSION=32.0
 ARG YQ_VERSION=v4.47.1
 
@@ -185,12 +185,12 @@ RUN set -eux; \
 # Install ginkgo v2 as ginkgo2 and keep ginkgo v1 as ginkgo
 RUN set -eux; \
     k8s_libs_version=$(yq -r .kubernetes.version /etc/versions.yaml | sed 's/^1/0/'); \
-    go install github.com/onsi/ginkgo/v2/ginkgo@v2.23.4 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
+    go install github.com/onsi/ginkgo/v2/ginkgo@v2.25.2 && mv /go/bin/ginkgo /go/bin/ginkgo2 && \
     go install github.com/onsi/ginkgo/ginkgo@v1.16.5 && \
     go install github.com/jstemmer/go-junit-report@v1.0.0 && \
     go install github.com/wadey/gocovmerge@v0.0.0-20160331181800-b5bfa59ec0ad && \
-    go install golang.org/x/tools/cmd/goimports@v0.35.0 && \
-    go install golang.org/x/tools/cmd/stringer@v0.35.0 && \
+    go install golang.org/x/tools/cmd/goimports@v0.36.0 && \
+    go install golang.org/x/tools/cmd/stringer@v0.36.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.8 && \
     go install gotest.tools/gotestsum@v1.12.3 && \
@@ -200,7 +200,7 @@ RUN set -eux; \
     go install k8s.io/code-generator/cmd/defaulter-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/informer-gen@v${k8s_libs_version} && \
     go install k8s.io/code-generator/cmd/lister-gen@v${k8s_libs_version} && \
-    go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20250710124328-f3f2b991d03b && \
+    go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20250902184714-7fc278399c7f && \
     go install mvdan.cc/gofumpt@v0.8.0
 
 # Cleanup module cache after we have built and installed all Go utilities

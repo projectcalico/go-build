@@ -1,12 +1,12 @@
 golang:
-  version: 1.24.6
+  version: 1.25.1
   checksum:
     sha256:
-      amd64: bbca37cc395c974ffa4893ee35819ad23ebb27426df87af92e93a9ec66ef8712
-      arm64: 124ea6033a8bf98aa9fbab53e58d134905262d45a022af3a90b73320f3c3afd5
-      ppc64le: 63fc9559a3d6dfd63aa902f714375b879bbc848466181c035c122489b9646e27
-      s390x: 4cde28d9ffb6eef86bf8dac6852a45db335009f67e60bee3e477dd0ba0ff9704
+      amd64: 7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
+      arm64: 65a3e34fb2126f55b34e1edfc709121660e1be2dee6bdf405fc399a63a95a87d
+      ppc64le: 8b0c8d3ee5b1b5c28b6bd63dc4438792012e01d03b4bf7a61d985c87edab7d1f
+      s390x: 9cfe517ba423f59f3738ca5c3d907c103253cffbbcc2987142f79c5de8c1bf93
 kubernetes:
-  version: 1.33.3
+  version: 1.33.4
 llvm:
   version: 18.1.8

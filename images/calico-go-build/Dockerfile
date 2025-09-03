@@ -6,7 +6,6 @@ FROM registry.access.redhat.com/ubi8/ubi:latest AS ubi
 
 ARG TARGETARCH
 
-ARG DOCKER_CREDHELPER_GCR_VERSION=v2.1.30
 ARG CONTAINERREGISTRY_VERSION=v0.20.6
 ARG CONTROLLER_TOOLS_VERSION=v0.18.0
 ARG GO_LINT_VERSION=v2.3.1
@@ -41,21 +40,25 @@ RUN dnf upgrade -y && dnf install -y \
 RUN cat <<EOM > /etc/yum.repos.d/google-cloud-sdk.repo
 [google-cloud-cli]
 name=Google Cloud CLI
-baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el\$releasever-\$basearch
 enabled=1
 gpgcheck=1
 repo_gpgcheck=0
 gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOM
 RUN <<EOF
-dnf install libxcrypt-compat.x86_64 -y
-dnf install google-cloud-cli -y
+case "${TARGETARCH}" in
+  amd64|arm64)
+    dnf install libxcrypt-compat -y
+    dnf install google-cloud-cli google-cloud-cli-docker-credential-gcr -y
+    ;;
+  *)
+    rm -rf /etc/yum.repos.d/google-cloud-sdk.repo
+    echo "Unsupported architecture: ${TARGETARCH}"
+    exit 0
+    ;;
+esac
 EOF
-# Install standalone credential helper for Google Container Registry
-RUN set -eux; \
-  if [ "${TARGETARCH}" != "ppc64le" ]; then \
-    curl -sfL https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/${DOCKER_CREDHELPER_GCR_VERSION}/docker-credential-gcr_linux_${TARGETARCH}-${DOCKER_CREDHELPER_GCR_VERSION#v}.tar.gz | tar xz -C /usr/local/bin docker-credential-gcr; \
-  fi
 
 # Install yq and copy versions.yaml
 RUN curl -sfL https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${TARGETARCH} -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq

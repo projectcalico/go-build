@@ -48,7 +48,7 @@ RUN dnf upgrade -y && dnf install -y \
 RUN cat <<EOM > /etc/yum.repos.d/google-cloud-sdk.repo
 [google-cloud-cli]
 name=Google Cloud CLI
-baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el\$releasever-\$basearch
 enabled=1
 gpgcheck=1
 repo_gpgcheck=0

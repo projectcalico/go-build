@@ -62,6 +62,17 @@ RUN set -eux; \
             mingw64-gcc; \
     fi
 
+# Install Google Cloud SDK for GCR/GAR
+# See https://cloud.google.com/sdk/docs/install#rpm for installation details
+COPY google/google-cloud-sdk.repo /etc/yum.repos.d/google-cloud-sdk.repo
+
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
+        dnf --enablerepo=google-cloud-cli install -y \
+            google-cloud-cli \
+            google-cloud-cli-docker-credential-gcr; \
+    fi
+
 RUN dnf clean all
 
 # Install Go official release

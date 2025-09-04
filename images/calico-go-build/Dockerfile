@@ -36,30 +36,6 @@ RUN dnf upgrade -y && dnf install -y \
     xz \
     zip
 
-# Install Google Cloud SDK for GCR/GAR
-RUN cat <<EOM > /etc/yum.repos.d/google-cloud-sdk.repo
-[google-cloud-cli]
-name=Google Cloud CLI
-baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el\$releasever-\$basearch
-enabled=1
-gpgcheck=1
-repo_gpgcheck=0
-gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-EOM
-RUN <<EOF
-case "${TARGETARCH}" in
-  amd64|arm64)
-    dnf install libxcrypt-compat -y
-    dnf install google-cloud-cli google-cloud-cli-docker-credential-gcr -y
-    ;;
-  *)
-    rm -rf /etc/yum.repos.d/google-cloud-sdk.repo
-    echo "Unsupported architecture: ${TARGETARCH}"
-    exit 0
-    ;;
-esac
-EOF
-
 # Install yq and copy versions.yaml
 RUN curl -sfL https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${TARGETARCH} -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
 
@@ -84,6 +60,17 @@ RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
         dnf --enablerepo=powertools install -y \
             mingw64-gcc; \
+    fi
+
+# Install Google Cloud SDK for GCR/GAR
+# See https://cloud.google.com/sdk/docs/install#rpm for installation details
+COPY google/google-cloud-sdk.repo /etc/yum.repos.d/google-cloud-sdk.repo
+
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "amd64" ] || [ "${TARGETARCH}" = "arm64" ]; then \
+        dnf --enablerepo=google-cloud-cli install -y \
+            google-cloud-cli \
+            google-cloud-cli-docker-credential-gcr; \
     fi
 
 RUN dnf clean all

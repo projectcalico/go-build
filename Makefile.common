@@ -98,6 +98,9 @@ PUSH_MANIFEST_IMAGES := $(foreach registry,$(MANIFEST_REGISTRIES),$(foreach imag
 # location of docker credentials to push manifests
 DOCKER_CONFIG ?= $(HOME)/.docker/config.json
 
+# location of gcloud config
+GCLOUD_CONFIG ?= $(HOME)/.config/gcloud
+
 # If a repository still relies on vendoring, it must set GOMOD_VENDOR to "true".
 # If that's not the case and we're running in CI, set -mod=readonly to prevent builds
 # from being flagged as dirty due to updates in go.mod or go.sum _except_ for:
@@ -387,7 +390,7 @@ git-commit:
 # different implementation.
 ###############################################################################
 
-CRANE_CMD         = docker run -e LOCAL_USER_ID=$(LOCAL_USER_ID) -v $(DOCKER_CONFIG):/home/user/.docker/config.json $(CALICO_BUILD) crane
+CRANE_CMD         = docker run -e LOCAL_USER_ID=$(LOCAL_USER_ID) -v $(DOCKER_CONFIG):/home/user/.docker/config.json -v $(GCLOUD_CONFIG):/home/user/.config/gcloud $(CALICO_BUILD) crane
 GIT_CMD           = git
 DOCKER_CMD        = docker
 

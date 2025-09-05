@@ -5,8 +5,20 @@
 
 USER_ID=${LOCAL_USER_ID:-9001}
 
+# Make sure the cache directories exist.  We use /tmp-like permissions to
+# allow all users to create files in there.
+mkdir -p /caches/go-build-cache
+mkdir -p /caches/go-mod-cache
+chmod 1777 /caches/go-build-cache
+chmod 1777 /caches/go-mod-cache
+
 if [ "${RUN_AS_ROOT}" = "true" ]; then
+  export GOCACHE=/caches/go-build-cache/root
+  export GOMODCACHE=/caches/go-mod-cache/root
   exec "$@"
+else  
+  export GOCACHE=/caches/go-build-cache/$USER_ID
+  export GOMODCACHE=/caches/go-mod-cache/$USER_ID
 fi
 
 echo "Starting with UID: $USER_ID" 1>&2

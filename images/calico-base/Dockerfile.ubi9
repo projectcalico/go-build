@@ -22,14 +22,16 @@ RUN cp /lib64/libc.so.6 /rootfs/lib64/libc.so.6
 RUN cp /lib64/libpthread.so.0 /rootfs/lib64/libpthread.so.0
 RUN cp /lib64/libresolv.so.2 /rootfs/lib64/libresolv.so.2
 
-# glibc NSS plugins and config files.
+# Glibc NSS plugins and config files.
+# Use our customized configuration, since the base image only includes the dns and files plugins.
+COPY nsswitch.conf /rootfs/etc/nsswitch.conf
+
 RUN cp /lib64/libnss_dns.so.2 /rootfs/lib64/libnss_dns.so.2
 RUN cp /lib64/libnss_files.so.2 /rootfs/lib64/libnss_files.so.2
 
 RUN cp /etc/host.conf /rootfs/etc/host.conf
 RUN cp /etc/hosts /rootfs/etc/hosts
 RUN cp /etc/networks /rootfs/etc/networks
-RUN cp /etc/nsswitch.conf /rootfs/etc/nsswitch.conf
 
 # Copy base image release info.
 RUN cp /etc/os-release /rootfs/etc/os-release

@@ -25,9 +25,9 @@ global_job_config:
         else
           export BRANCH_NAME=${SEMAPHORE_GIT_WORKING_BRANCH}
         fi
-      - echo "BRANCH_NAME is set to: ${BRANCH_NAME}"
-      - echo "ARCH is set to: ${ARCH}"
-      - echo "SEMAPHORE_GIT_PR_NUMBER is: ${SEMAPHORE_GIT_PR_NUMBER}"
+        echo "BRANCH_NAME is set to: ${BRANCH_NAME}"
+        echo "ARCH is set to: ${ARCH}"
+        echo "SEMAPHORE_GIT_PR_NUMBER is: ${SEMAPHORE_GIT_PR_NUMBER}"
 
 blocks:
   - name: Publish calico/rust-build images

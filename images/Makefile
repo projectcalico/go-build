@@ -3,12 +3,13 @@ include ../Makefile.common
 
 CALICO_BASE ?= base
 CALICO_GO_BUILD ?= go-build
+CALICO_RUST_BUILD ?= rust-build
 
 .PHONY: image
-image: calico-base-image calico-go-build-image
+image: calico-base-image calico-go-build-image calico-rust-build-image
 
 .PHONY: image-all
-image-all: calico-base-image-all calico-go-build-image-all
+image-all: calico-base-image-all calico-go-build-image-all calico-rust-build-image-all
 
 # Base image for all calico components.
 
@@ -74,8 +75,39 @@ ifeq ($(BRANCH_NAME),master)
 	$(MAKE) BUILD_IMAGES=$(CALICO_GO_BUILD) push-manifests IMAGETAG=latest EXCLUDEARCH="$(EXCLUDEARCH)"
 endif
 
+# Calico rust-build image with Rust toolchain.
+CALICO_RUST_BUILD_IMAGETAG ?= latest
+
+.PHONY: calico-rust-build-image
+calico-rust-build-image: register
+	$(DOCKER_BUILD) --build-arg UBI_IMAGE=registry.access.redhat.com/ubi9/ubi-minimal:latest \
+		--build-arg RUST_VERSION=1.90.0 \
+		-t $(CALICO_RUST_BUILD):latest-$(ARCH) \
+		-f calico-rust-build/Dockerfile calico-rust-build/
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(CALICO_RUST_BUILD_IMAGETAG)
+
+.PHONY: calico-rust-build-image-all
+calico-rust-build-image-all: $(addprefix sub-calico-rust-build-image-,$(VALIDARCHES))
+sub-calico-rust-build-image-%:
+	$(MAKE) calico-rust-build-image ARCH=$*
+
+.PHONY: calico-rust-build-cd
+calico-rust-build-cd: calico-rust-build-image var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+ifeq ($(BRANCH_NAME),master)
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=latest EXCLUDEARCH="$(EXCLUDEARCH)"
+endif
+
+.PHONY: push-calico-rust-build-manifests
+push-calico-rust-build-manifests: var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) push-manifests IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+ifeq ($(BRANCH_NAME),master)
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) push-manifests IMAGETAG=latest EXCLUDEARCH="$(EXCLUDEARCH)"
+endif
+
 .PHONY: clean
 clean:
 	rm -fr calico-go-build/bin
 	-docker image rm -f $$(docker images $(CALICO_BASE) -a -q)
 	-docker image rm -f $$(docker images $(CALICO_GO_BUILD) -a -q)
+	-docker image rm -f $$(docker images $(CALICO_RUST_BUILD) -a -q)

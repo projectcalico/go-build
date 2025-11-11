@@ -30,7 +30,7 @@ blocks:
   - name: Publish calico/rust-build images
     dependencies: []
     run:
-      when: "branch = 'master' OR tag =~ '^rust.*'"
+      when: "branch = 'master' OR branch = 'calico-rust-build' OR tag =~ '^rust.*'"
     task:
       jobs:
         - name: Linux multi-arch
@@ -43,7 +43,7 @@ blocks:
     dependencies:
       - Publish calico/rust-build images
     run:
-      when: "branch = 'master' OR tag =~ '^rust.*'"
+      when: "branch = 'master' OR branch = 'calico-rust-build' OR tag =~ '^rust.*'"
     task:
       jobs:
         - name: Linux multi-arch manifests

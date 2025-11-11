@@ -93,9 +93,9 @@ sub-calico-rust-build-image-%:
 
 .PHONY: calico-rust-build-cd
 calico-rust-build-cd: calico-rust-build-image var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) VALIDARCHES=$(ARCH) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 ifeq ($(BRANCH_NAME),master)
-	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=latest EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) VALIDARCHES=$(ARCH) retag-build-images-with-registries push-images-to-registries IMAGETAG=latest EXCLUDEARCH="$(EXCLUDEARCH)"
 endif
 
 .PHONY: push-calico-rust-build-manifests

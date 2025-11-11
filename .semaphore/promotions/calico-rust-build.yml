@@ -29,8 +29,6 @@ global_job_config:
 blocks:
   - name: Publish calico/rust-build images
     dependencies: []
-    run:
-      when: "branch = 'master' OR branch = 'calico-rust-build' OR tag =~ '^rust.*'"
     task:
       jobs:
         - name: Linux multi-arch
@@ -42,8 +40,6 @@ blocks:
   - name: Publish calico/rust-build multi-arch manifests
     dependencies:
       - Publish calico/rust-build images
-    run:
-      when: "branch = 'master' OR branch = 'calico-rust-build' OR tag =~ '^rust.*'"
     task:
       jobs:
         - name: Linux multi-arch manifests

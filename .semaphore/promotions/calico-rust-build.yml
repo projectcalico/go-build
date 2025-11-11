@@ -25,6 +25,9 @@ global_job_config:
         else
           export BRANCH_NAME=${SEMAPHORE_GIT_WORKING_BRANCH}
         fi
+      - echo "BRANCH_NAME is set to: ${BRANCH_NAME}"
+      - echo "ARCH is set to: ${ARCH}"
+      - echo "SEMAPHORE_GIT_PR_NUMBER is: ${SEMAPHORE_GIT_PR_NUMBER}"
 
 blocks:
   - name: Publish calico/rust-build images
@@ -33,7 +36,9 @@ blocks:
       jobs:
         - name: Linux multi-arch
           commands:
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images calico-rust-build-cd VALIDARCHES=$ARCH CONFIRM=true; fi
+            - echo "Starting publish for ARCH=${ARCH}, BRANCH_NAME=${BRANCH_NAME}"
+            - echo "Running make calico-rust-build-cd..."
+            - make -C images calico-rust-build-cd VALIDARCHES=$ARCH CONFIRM=true
           matrix:
             - env_var: ARCH
               values: ["amd64", "arm64", "ppc64le", "s390x"]
@@ -44,4 +49,6 @@ blocks:
       jobs:
         - name: Linux multi-arch manifests
           commands:
-            - if [ -z "${SEMAPHORE_GIT_PR_NUMBER}" ]; then make -C images push-calico-rust-build-manifests CONFIRM=true; fi
+            - echo "Starting manifest push for BRANCH_NAME=${BRANCH_NAME}"
+            - echo "Running make push-calico-rust-build-manifests..."
+            - make -C images push-calico-rust-build-manifests CONFIRM=true

@@ -1,4 +1,2 @@
 rust:
   version: 1.90.0
-protoc:
-  version: 32.1

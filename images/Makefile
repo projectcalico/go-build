@@ -80,10 +80,7 @@ CALICO_RUST_BUILD_IMAGETAG ?= latest
 
 .PHONY: calico-rust-build-image
 calico-rust-build-image: register
-	$(DOCKER_BUILD) --build-arg UBI_IMAGE=registry.access.redhat.com/ubi9/ubi-minimal:latest \
-		--build-arg RUST_VERSION=1.90.0 \
-		-t $(CALICO_RUST_BUILD):latest-$(ARCH) \
-		-f calico-rust-build/Dockerfile calico-rust-build/
+	$(DOCKER_BUILD) -t $(CALICO_RUST_BUILD):latest-$(ARCH) -f calico-rust-build/Dockerfile calico-rust-build/
 	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries VALIDARCHES=$(ARCH) IMAGETAG=$(CALICO_RUST_BUILD_IMAGETAG)
 
 .PHONY: calico-rust-build-image-all
@@ -93,9 +90,9 @@ sub-calico-rust-build-image-%:
 
 .PHONY: calico-rust-build-cd
 calico-rust-build-cd: calico-rust-build-image var-require-one-of-CONFIRM-DRYRUN var-require-all-BRANCH_NAME
-	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) VALIDARCHES=$(ARCH) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=$(BRANCH_NAME) EXCLUDEARCH="$(EXCLUDEARCH)"
 ifeq ($(BRANCH_NAME),master)
-	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) VALIDARCHES=$(ARCH) retag-build-images-with-registries push-images-to-registries IMAGETAG=latest EXCLUDEARCH="$(EXCLUDEARCH)"
+	$(MAKE) BUILD_IMAGES=$(CALICO_RUST_BUILD) retag-build-images-with-registries push-images-to-registries IMAGETAG=latest EXCLUDEARCH="$(EXCLUDEARCH)"
 endif
 
 .PHONY: push-calico-rust-build-manifests

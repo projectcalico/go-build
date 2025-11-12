@@ -1,82 +1,92 @@
-ARG UBI_IMAGE=registry.access.redhat.com/ubi9/ubi-minimal:latest
-
-FROM ${UBI_IMAGE}
+FROM registry.access.redhat.com/ubi9/ubi:latest AS ubi
 
 ARG TARGETARCH
-ARG RUST_VERSION=1.90.0
+
 ARG PROTOC_VERSION=32.1
+ARG YQ_VERSION=v4.48.1
 
-RUN microdnf upgrade -y
-RUN microdnf install -y \
-  file \
-  clang \
-  make \
-  git \
-  pkg-config \
-  openssl-devel \
-  cmake \
-  unzip
+RUN dnf upgrade -y && dnf install -y \
+    bsdtar \
+    gcc \
+    make \
+    wget
 
-# install protoc
-ENV PROTOC_VERSION=${PROTOC_VERSION}
+RUN dnf clean all
+
+# Install yq and copy versions.yaml
+RUN curl -sfL https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${TARGETARCH} -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
+
+COPY versions.yaml /etc/versions.yaml
+
+# Install Rust official release
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH=/usr/local/cargo/bin:$PATH
+
 RUN set -eux; \
-    \
     case "${TARGETARCH}" in \
-        amd64) PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-x86_64.zip;; \
-        arm64) PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-aarch_64.zip;; \
-        ppc64le) PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-ppcle_64.zip;; \
-        s390x) PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-s390_64.zip;; \
-        *) echo "unsupported architecture: ${TARGETARCH}"; exit 1 ;; \
+    'amd64') \
+        rustup_arch='x86_64-unknown-linux-gnu'; \
+        rustup_sha256='20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c'; \
+        ;; \
+    'arm64') \
+        rustup_arch='aarch64-unknown-linux-gnu'; \
+        rustup_sha256='e3853c5a252fca15252d07cb23a1bdd9377a8c6f3efa01531109281ae47f841c'; \
+        ;; \
+    'ppc64le') \
+        rustup_arch='powerpc64le-unknown-linux-gnu'; \
+        rustup_sha256='acd89c42b47c93bd4266163a7b05d3f26287d5148413c0d47b2e8a7aa67c9dc0'; \
+        ;; \
+    's390x') \
+        rustup_arch='s390x-unknown-linux-gnu'; \
+        rustup_sha256='726b7fd5d8805e73eab4a024a2889f8859d5a44e36041abac0a2436a52d42572'; \
+        ;; \
+    *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
     esac; \
     \
-    curl -L -o "/tmp/${PROTOC_ZIP}" "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"; \
-    unzip "/tmp/${PROTOC_ZIP}" -d /tmp; \
-    mv /tmp/bin/protoc /usr/local/bin; \
-    chmod +x /usr/local/bin/protoc
+    url="https://static.rust-lang.org/rustup/archive/1.28.2/${rustup_arch}/rustup-init"; \
+    wget --progress=dot:giga "$url"; \
+    echo "${rustup_sha256} *rustup-init" | sha256sum -c -; \
+    \
+    chmod +x rustup-init; \
+    ./rustup-init -y \
+        --no-modify-path \
+        --profile minimal \
+        --component clippy --component llvm-tools --component rustfmt \
+        --default-toolchain $(yq -r .rust.version /etc/versions.yaml) --default-host ${rustup_arch}; \
+    rm rustup-init; \
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
+    \
+    rustup --version; \
+    cargo --version; \
+    rustc --version
 
-# install rust
-ENV RUST_VERSION=${RUST_VERSION}
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_VERSION} \
-  --profile minimal --component rustfmt --component clippy --component llvm-tools && \
-  mkdir -p /usr/local/lib/rustup && \
-  mv /root/.cargo /usr/local/lib/rustup/cargo && \
-  mv /root/.rustup /usr/local/lib/rustup/rustup
-RUN cat <<'EOF' > /etc/profile.d/rust.sh
-# Shared read-only Rust binaries
-export PATH=/usr/local/lib/rustup/cargo/bin:$PATH
+# Install Protocol Buffers compiler
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+    'amd64') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"; \
+        ;; \
+    'arm64') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-aarch_64.zip"; \
+        ;; \
+    'ppc64le') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-ppcle_64.zip"; \
+        ;; \
+    's390x') \
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-s390_64.zip"; \
+        ;; \
+    *) echo >&2 "error: unsupported architecture '${TARGETARCH}'"; exit 1 ;; \
+    esac; \
+    \
+    curl -sfL "$url" | bsdtar -xf - -C /usr && chmod +x /usr/bin/protoc; \
+    \
+    protoc --version
 
-# Per-user writable Cargo and Rustup directories
-if [ -z "$CARGO_HOME" ]; then
-    export CARGO_HOME="$HOME/.cargo"
-fi
-if [ -z "$RUSTUP_HOME" ]; then
-    export RUSTUP_HOME="$HOME/.rustup"
-fi
+FROM scratch
 
-[ -d "$CARGO_HOME" ] || mkdir -p "$CARGO_HOME"
-[ -d "$RUSTUP_HOME" ] || mkdir -p "$RUSTUP_HOME"
+ENV RUSTUP_HOME=/usr/local/rustup
+ENV CARGO_HOME=/usr/local/cargo
+ENV PATH=/usr/local/cargo/bin:$PATH
 
-# Copy system-wide toolchain to user home if empty
-if [ ! -d "$RUSTUP_HOME/toolchains" ]; then
-    cp -r /usr/local/lib/rustup/cargo/* "$CARGO_HOME/"
-    cp -r /usr/local/lib/rustup/rustup/* "$RUSTUP_HOME/"
-fi
-EOF
-ENV PATH=/usr/local/lib/rustup/cargo/bin:${PATH}
-
-RUN microdnf clean all
-
-# Build su-exec
-RUN curl -L -o /tmp/su-exec.c https://raw.githubusercontent.com/ncopa/su-exec/master/su-exec.c && \
-    clang -Os -o /usr/local/bin/su-exec /tmp/su-exec.c && \
-    chmod +x /usr/local/bin/su-exec && \
-    rm -f /tmp/su-exec.c
-
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["/bin/sh"]
-
-WORKDIR /work
+COPY --from=ubi / /

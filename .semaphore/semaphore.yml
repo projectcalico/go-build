@@ -38,7 +38,7 @@ promotions:
   - name: Publish calico/rust-build images
     pipeline_file: promotions/calico-rust-build.yml
     auto_promote:
-      when: "branch = 'master' AND change_in('/images/calico-rust-build/')"
+      when: change_in('/images/calico-rust-build/')"
 
 blocks:
   - name: calico/go-build image

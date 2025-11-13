@@ -25,7 +25,7 @@ global_job_config:
       - git fetch --unshallow
 
 promotions:
-  # Publish images for master or release tags (example: 1.23.3-llvm18.1.8-k8s1.30.5).
+  # Publish base and go-build images for master or release tags (example: 1.23.3-llvm18.1.8-k8s1.30.5).
   - name: Publish calico/base images
     pipeline_file: promotions/calico-base.yml
     auto_promote:
@@ -34,10 +34,11 @@ promotions:
     pipeline_file: promotions/calico-go-build.yml
     auto_promote:
       when: "branch = 'master' OR tag =~ '^1\\.\\d+\\.\\d+-llvm\\d+\\.\\d\\.\\d-k8s1\\.\\d+\\.\\d+'"
+  # Publish rust-build images for master and files under images/calico-rust-build have changed.
   - name: Publish calico/rust-build images
     pipeline_file: promotions/calico-rust-build.yml
     auto_promote:
-      when: "branch = 'master' OR branch = 'calico-rust-build' OR tag =~ '^rust.*'"
+      when: "branch = 'master' AND change_in('/images/calico-rust-build/')"
 
 blocks:
   - name: calico/go-build image
@@ -70,10 +71,6 @@ blocks:
   - name: calico/rust-build image
     dependencies: []
     task:
-      env_vars:
-        # The branch to test the current rust-build against
-        - name: CALICO_BRANCH
-          value: master
       prologue:
         commands:
           - |
